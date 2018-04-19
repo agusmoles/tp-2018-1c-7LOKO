@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <commons/string.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "../../Colores.h"
 
 typedef struct {
   char *nombre;				/* User printable name of the function. */
@@ -39,18 +41,17 @@ void main(){
 
   while(1){
 
-	linea = readline("ConsolaPlanificador> ");
-
-	if(linea){
-		add_history(linea);
-		ejecutar_linea(linea);
-	}
-
+	linea = readline(ANSI_COLOR_BOLDGREEN"ConsolaPlanificador> "ANSI_COLOR_RESET);
 
 	if(!strncmp(linea, "exit", 4)) {
        free(linea);
        break;
     }
+
+	if(linea){
+		add_history(linea);
+		ejecutar_linea(linea);
+	}
 
     free(linea);
   }
@@ -67,56 +68,27 @@ COMMAND * buscar_command (char *nombre){
 }
 
 int ejecutar_linea (char *line){
-  int i = 0;
+  int i;
   COMMAND *command;
-  char *word;
 
-  /* Aislar la palabra "comando" */
-  while (line[i] && whitespace (line[i]))
-    i++;
-  word = line + i;
+  char** separados;
 
-  while (line[i] && !whitespace (line[i]))
-    i++;
+  separados = string_split(line, " ");
 
-  if (line[i])
-    line[i++] = '\0';
-
-  command = buscar_command (word);
+  command = buscar_command(separados[0]);
 
   if (!command){
-      fprintf (stderr, "%s: No existe el comando.\n", word);
+      fprintf (stderr, "%s: No existe el comando.\n", separados[0]);
       return (-1);
     }
 
-  /* Revisar parametros del comando. */
-  while (whitespace (line[i]))
-    i++;
-
-  word = line + i;
+//  /* Revisar parametros del comando. */
+  for(i=1 ; separados[i]; i++){
+	  puts(separados[i]);
+  }
 
   /* Llamar a la funcion y devolver el resultado */
   return (command->func);
-}
-
-/*Esta parte saca los espacios*/
-/* Strip whitespace from the start and end of STRING.  Return a pointer
-   into STRING. */
-char * stripwhite (char *string){
-  char *s, *t;
-
-  for (s = string; whitespace (*s); s++)
-    ;
-
-  if (*s == 0)
-    return (s);
-
-  t = s + strlen (s) - 1;
-  while (t > s && whitespace (*t))
-    t--;
-  *++t = '\0';
-
-  return s;
 }
 
 int com_pausar(void){
