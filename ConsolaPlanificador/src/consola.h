@@ -25,7 +25,10 @@ int com_listar(char **args);
 int com_kill(char **args);
 int com_status(char **args);
 int com_deadlock(char **args);
+int com_man(char **args);
 
 int ejecutar_linea(char **args);
+
+void liberar_parametros(char **args);
 
 #endif /* CONSOLAPLANIFICADOR_SRC_CONSOLA_H_ */
