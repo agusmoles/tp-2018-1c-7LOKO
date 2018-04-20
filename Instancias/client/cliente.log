@@ -117,3 +117,25 @@
 [INFO] 16:09:07:501 cliente/(26922:26922): Se pudo conectar con el servidor
 [INFO] 16:09:47:399 cliente/(26959:26959): Se pudo conectar con el servidor
 [INFO] 16:10:35:101 cliente/(27004:27004): Se pudo conectar con el servidor
+[INFO] 00:04:14:780 cliente/(4138:4138): Se pudo conectar con el servidor
+[INFO] 00:04:28:725 cliente/(4139:4139): Se pudo conectar con el servidor
+[INFO] 00:14:09:704 cliente/(4525:4525): Se pudo conectar con el servidor
+[INFO] 00:17:05:765 cliente/(4614:4614): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:19:14:369 cliente/(4662:4662): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:22:11:48 cliente/(4762:4762): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:23:11:279 cliente/(5186:5186): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:23:15:405 cliente/(5189:5189): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:23:20:540 cliente/(5190:5190): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:23:23:937 cliente/(5191:5191): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:23:27:229 cliente/(5192:5192): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:24:19:89 cliente/(5219:5219): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:24:22:999 cliente/(5220:5220): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:24:24:806 cliente/(5221:5221): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:24:25:712 cliente/(5222:5222): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:24:26:305 cliente/(5223:5223): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:24:26:881 cliente/(5224:5224): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:26:37:982 cliente/(5245:5245): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:41:24:81 cliente/(5819:5819): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 00:41:53:188 cliente/(5845:5845): [1m[32mSe pudo conectar con el servidor[0m
+[ERROR] 00:42:21:834 cliente/(5850:5850): No se pudo conectar con el servidor
+[INFO] 00:42:25:933 cliente/(5852:5852): [1m[32mSe pudo conectar con el servidor[0m
