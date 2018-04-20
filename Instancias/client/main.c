@@ -1,19 +1,6 @@
 /******** CLIENTE *********/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <commons/log.h>
-#include <readline/readline.h> // Para usar readline
-
-#define IP "127.0.0.1"
-#define PUERTO "6666"
-
-t_log* logger;
+#include "main.h"
 
 void configurarLogger() {
 	logger = log_create("cliente.log", "cliente", 1, LOG_LEVEL_INFO);
@@ -42,7 +29,7 @@ int conectarSocket() {
 		_exit_with_error(server_socket, "No se pudo conectar con el servidor");
 	}
 
-	log_info(logger, "Se pudo conectar con el servidor");
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar con el servidor"ANSI_COLOR_RESET);
 
 	freeaddrinfo(serverInfo);
 
@@ -53,26 +40,36 @@ void enviarMensajes(int socket) {
 	int enviar = 1;
 	char* mensaje = malloc(1024);
 
-	printf("Envia los mensajes que quieras a continuacion ('exit' para salir):\n");
+	printf(ANSI_COLOR_BOLDGREEN"Envia los mensajes que quieras a continuacion ('exit' para salir):\n");
 
 	while (enviar) {
 		mensaje = readline("");
+
+		if(strcmp(mensaje,"exit") == 0) {
+			free(mensaje);
+			break;
+		}
 
 		if(send(socket, mensaje, strlen(mensaje)+1, 0) < 0) {
 			free(mensaje);
 			_exit_with_error(socket, "No se pudo enviar el mensaje");
 		}
 
-		if(strcmp(mensaje,"exit") == 0) {
-			free(mensaje);
-			enviar = 0;
-		}
-
 		free(mensaje);
 	}
 }
 
+void pipeHandler() {
+	printf(ANSI_COLOR_BOLDRED"***********************************EL SERVIDOR SE CERRO***********************************\n"ANSI_COLOR_RESET);
+	exit(1);
+}
+
 int main(void) {
+	struct sigaction finalizacion;
+	finalizacion.sa_handler = pipeHandler;
+	sigaction(SIGPIPE, &finalizacion, NULL);
+
+
 	configurarLogger();
 	int socket = conectarSocket();
 	enviarMensajes(socket);
