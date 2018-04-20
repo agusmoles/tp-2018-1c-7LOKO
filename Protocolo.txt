@@ -1,0 +1,4 @@
+-------------------------------PLANIFICADOR   -   ESI--------------------------------------------
+
+PLANIFICADOR ENVIA HANDSHAKE: ******PLANIFICADOR HANDSHAKE******
+PLANIFICADOR RECIBE DE ESI: ******PLANIFICADOR HANDSHAKE RECIEVED******

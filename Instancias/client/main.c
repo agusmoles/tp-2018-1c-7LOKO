@@ -38,7 +38,7 @@ int conectarSocket() {
 
 void enviarMensajes(int socket) {
 	int enviar = 1;
-	char* mensaje = malloc(1024);
+	char* mensaje;
 
 	printf(ANSI_COLOR_BOLDGREEN"Envia los mensajes que quieras a continuacion ('exit' para salir):\n");
 

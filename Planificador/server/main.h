@@ -16,6 +16,10 @@ t_log* logger;
 fd_set descriptoresLectura;
 int fdmax = NUMEROCLIENTES;
 
+void configurarLogger();
+int conectarSocketYReservarPuerto();
+void escuchar(int socket);
 void manejoDeClientes(int socket, int* socketCliente);
 void aceptarCliente(int socket, int* socketCliente);
 void recibirMensaje(int socket, int* socketCliente, int posicion);
+int envioHandshake(int socketCliente);

@@ -109,12 +109,21 @@ void aceptarCliente(int socket, int* socketCliente) {
 
 			socketCliente[i] = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
 
+			if (socketCliente[i] < 0) {
+				_exit_with_error(socket, socketCliente, "No se pudo conectar el cliente");		// MANEJO DE ERRORES
+			}
+
 			if (socketCliente[i] > fdmax) {
 				fdmax = socketCliente[i];
 			}
 
-			if (socketCliente[i] < 0) {
-				_exit_with_error(socket, socketCliente, "No se pudo conectar el cliente");		// MANEJO DE ERRORES
+			switch(envioHandshake(socketCliente[i])) {
+			case -1: _exit_with_error(socket, socketCliente, "No se pudo enviar el handshake");
+					break;
+			case -2: _exit_with_error(socket, socketCliente, "No se pudo recibir el handshake");
+					break;
+			case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el handshake correctamente"ANSI_COLOR_RESET);
+					break;
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar un cliente %d y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i], i);
@@ -145,6 +154,31 @@ void recibirMensaje(int socket, int* socketCliente, int posicion) {
 	}
 
 	free(buffer);
+}
+
+int envioHandshake(int socketCliente) {
+	char* handshake = "******PLANIFICADOR HANDSHAKE******";
+	char* handshakerecv = "******PLANIFICADOR HANDSHAKE RECIEVED******";
+
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
+
+	switch(send(socketCliente, handshake, strlen(handshake)+1, 0)) {
+		case -1: return -1;
+				break;
+		default:
+				break;
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"Recibiendo handshake..."ANSI_COLOR_RESET);
+
+	switch(recv(socketCliente, handshakerecv, strlen(handshakerecv)+1, MSG_WAITALL)) {
+		case -1: return -2;
+				break;
+		case 0: return -2;
+				break;
+		default: return 0;
+				break;
+	}
 }
 
 void intHandler() {
