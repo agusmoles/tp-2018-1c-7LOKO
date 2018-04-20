@@ -1,16 +1,15 @@
-/******** CLIENTE *********/
+/******** CLIENTE INSTANCIAS *********/
 
 #include "main.h"
-
-void configurarLogger() {
-	logger = log_create("cliente.log", "cliente", 1, LOG_LEVEL_INFO);
-}
-
 
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 	log_error(logger, mensaje);
 	exit(1);
+}
+
+void configurarLogger() {
+	logger = log_create("cliente.log", "cliente", 1, LOG_LEVEL_INFO);
 }
 
 int conectarSocket() {
@@ -59,6 +58,33 @@ void enviarMensajes(int socket) {
 	}
 }
 
+void reciboHandshake(int socket) {
+	char* handshake = "******COORDINADOR HANDSHAKE******";
+	char* buffer = malloc(strlen(handshake)+1);
+
+
+	switch (recv(socket, buffer, strlen(handshake)+1, MSG_WAITALL)) {
+		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el handshake"ANSI_COLOR_RESET);
+				break;
+		case 0:  _exit_with_error(socket, ANSI_COLOR_BOLDRED"Se desconecto el servidor forzosamente"ANSI_COLOR_RESET);
+				break;
+		default: if (strcmp(handshake, buffer) == 0) {
+					log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el handshake correctamente"ANSI_COLOR_RESET);
+				}
+				break;
+	}
+}
+
+void envioIdentificador(int socket) {
+	char* identificador = "1";
+
+	if (send(socket, identificador, strlen(identificador)+1, 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el identificador"ANSI_COLOR_RESET);
+}
+
 void pipeHandler() {
 	printf(ANSI_COLOR_BOLDRED"***********************************EL SERVIDOR SE CERRO***********************************\n"ANSI_COLOR_RESET);
 	exit(1);
@@ -72,6 +98,9 @@ int main(void) {
 
 	configurarLogger();
 	int socket = conectarSocket();
+
+	reciboHandshake(socket);
+	envioIdentificador(socket);
 	enviarMensajes(socket);
 
 	close(socket);

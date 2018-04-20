@@ -1,4 +1,17 @@
--------------------------------PLANIFICADOR   -   ESI--------------------------------------------
+-------------------------------PLANIFICADOR   -   CLIENTE--------------------------------------------
 
 PLANIFICADOR ENVIA HANDSHAKE: ******PLANIFICADOR HANDSHAKE******
-PLANIFICADOR RECIBE DE ESI: ******PLANIFICADOR HANDSHAKE RECIEVED******
+
+
+-------------------------------COORDINADOR   -   CLIENTES--------------------------------------------
+
+COORDINADOR ENVIA HANDSHAKE: ******COORDINADOR HANDSHAKE******
+
+Para verificar si el cliente que se conecto al coordinador es el planificador o las instancias, se recibirá un segundo mensaje del cliente siendo un numero:
+
+COORDINADOR RECIBE UN 1: EL PLANIFICADOR SE HA CONECTADO
+
+COORDINADOR RECIBE UN 2: INSTANCIA SE HA CONECTADO
+
+COORDINADOR RECIBE UN 3: ESI SE HA CONECTADO
+

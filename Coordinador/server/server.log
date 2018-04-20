@@ -1,0 +1,60 @@
+[INFO] 15:05:42:35 server/(10370:10370): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:05:42:35 server/(10370:10370): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:05:42:36 server/(10370:10370): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:05:42:36 server/(10370:10370): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:36:10:374 server/(11033:11033): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:36:10:374 server/(11033:11033): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:36:10:374 server/(11033:11033): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:36:10:374 server/(11033:11033): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:38:17:871 server/(11033:11033): [1m[33mUn nuevo cliente requiere acceso al servidor. Procediendo a aceptar..[0m
+[INFO] 15:38:17:871 server/(11033:11033): [1m[33mEnviando handshake...[0m
+[INFO] 15:38:17:871 server/(11033:11033): [1m[32mSe pudo enviar el handshake correctamente[0m
+[ERROR] 15:38:23:278 server/(11033:11033): [31mNo estas cumpliendo con el protocolo de conexion[0m
+[INFO] 15:39:33:826 server/(11118:11118): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:39:33:827 server/(11118:11118): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:39:33:827 server/(11118:11118): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:39:33:827 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:39:34:933 server/(11118:11118): [1m[33mUn nuevo cliente requiere acceso al servidor. Procediendo a aceptar..[0m
+[INFO] 15:39:34:933 server/(11118:11118): [1m[33mEnviando handshake...[0m
+[INFO] 15:39:34:933 server/(11118:11118): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:39:53:541 server/(11118:11118): [1m[32mSe pudo conectar un cliente (FD 5) y esta en la posicion 0 del array[0m
+[INFO] 15:39:53:541 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:39:53:541 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:40:03:612 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:40:05:224 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:40:05:869 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:40:06:862 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:40:08:726 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:40:09:297 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:40:25:628 server/(11118:11118): [1m[31mSe desconecto el cliente 0[0m
+[INFO] 15:40:25:630 server/(11118:11118): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:40:33:292 server/(11144:11144): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:40:33:292 server/(11144:11144): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:40:33:292 server/(11144:11144): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:40:33:292 server/(11144:11144): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:40:37:722 server/(11144:11144): [1m[33mUn nuevo cliente requiere acceso al servidor. Procediendo a aceptar..[0m
+[INFO] 15:40:37:722 server/(11144:11144): [1m[33mEnviando handshake...[0m
+[INFO] 15:40:37:722 server/(11144:11144): [1m[32mSe pudo enviar el handshake correctamente[0m
+[ERROR] 15:40:41:384 server/(11144:11144): [31mNo estas cumpliendo con el protocolo de conexion[0m
+[INFO] 15:49:00:550 server/(11349:11349): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:49:00:550 server/(11349:11349): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:49:00:551 server/(11349:11349): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:49:00:551 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:02:96 server/(11349:11349): [1m[33mUn nuevo cliente requiere acceso al servidor. Procediendo a aceptar..[0m
+[INFO] 15:49:02:96 server/(11349:11349): [1m[33mEnviando handshake...[0m
+[INFO] 15:49:02:96 server/(11349:11349): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:49:02:97 server/(11349:11349): [1m[32mSe pudo conectar un cliente (FD 5) y esta en la posicion 0 del array[0m
+[INFO] 15:49:02:97 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:08:968 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:10:636 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:11:431 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:12:150 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:14:572 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:15:756 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:16:703 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:20:799 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:24:977 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:31:431 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:35:567 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 15:49:47:55 server/(11349:11349): [1m[31mSe desconecto el cliente 0[0m
+[INFO] 15:49:47:55 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m

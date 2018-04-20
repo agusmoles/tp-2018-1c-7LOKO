@@ -14,3 +14,11 @@
 #define PUERTO "6666"
 
 t_log* logger;
+
+void _exit_with_error(int socket, char* mensaje);
+void configurarLogger();
+int conectarSocket();
+void enviarMensajes(int socket);
+void reciboHandshake(int socket);
+void envioIdentificador(int socket);
+void pipeHandler();

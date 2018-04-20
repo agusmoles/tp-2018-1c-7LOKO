@@ -153,3 +153,13 @@
 [INFO] 12:34:59:316 cliente/(7579:7579): [1m[32mSe pudo conectar con el servidor[0m
 [INFO] 12:35:43:20 cliente/(7597:7597): [1m[32mSe pudo conectar con el servidor[0m
 [INFO] 13:20:10:188 cliente/(8727:8727): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 15:38:17:872 cliente/(11112:11112): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 15:38:17:872 cliente/(11112:11112): [1m[32mSe recibio el handshake correctamente[0m
+[ERROR] 15:39:31:620 cliente/(11117:11117): No se pudo conectar con el servidor
+[INFO] 15:39:34:933 cliente/(11119:11119): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 15:39:34:934 cliente/(11119:11119): [1m[32mSe recibio el handshake correctamente[0m
+[INFO] 15:40:37:723 cliente/(11150:11150): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 15:40:37:723 cliente/(11150:11150): [1m[32mSe recibio el handshake correctamente[0m
+[INFO] 15:49:02:97 cliente/(11350:11350): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 15:49:02:97 cliente/(11350:11350): [1m[32mSe recibio el handshake correctamente[0m
+[INFO] 15:49:02:97 cliente/(11350:11350): [1m[32mSe envio correctamente el identificador[0m
