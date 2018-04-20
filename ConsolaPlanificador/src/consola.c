@@ -67,8 +67,16 @@ int ejecutar_linea (char **args){
 
 }
 
-int error_sobran_parametros(char ** args){
+int error_no_lleva_parametros(char ** args){
 	printf(ANSI_COLOR_RED "ERROR: '%s' no recibe parametros\n" ANSI_COLOR_RESET, args[0]);
+	for(int j=0; args[j]; j++)
+		   free(args[j]);
+
+	return -1;
+}
+
+int error_sobran_parametros(char ** args){
+	printf(ANSI_COLOR_RED "ERROR: '%s' tiene parametros de mas\n" ANSI_COLOR_RESET, args[0]);
 	for(int j=0; args[j]; j++)
 		   free(args[j]);
 
@@ -85,7 +93,7 @@ int error_faltan_parametros(char **args){
 
 int com_pausar(char **args){
 	if(args[1] != NULL){
-		return error_sobran_parametros(args);
+		return error_no_lleva_parametros(args);
 	}else{
 		puts("Estas en pausar");
 		return 1;
@@ -94,7 +102,7 @@ int com_pausar(char **args){
 
 int com_continuar(char **args){
 	if(args[1] != NULL){
-		return error_sobran_parametros(args);
+		return error_no_lleva_parametros(args);
 	}else{
 		puts("Estas en continuar");
 		return 1;
@@ -104,15 +112,21 @@ int com_continuar(char **args){
 int com_bloquear(char **args){
 	if(args[1] == NULL || args[2] == NULL){
 		return error_faltan_parametros(args);
-	}else{
-		puts("Estas en bloquear");
-		return 1;
 	}
+
+	for(int k=3; args[k]; k++){
+		if(args[3] != NULL)
+			return error_sobran_parametros(args);
+	}
+
+	puts("Estas en bloquear");
+	return 1;
+
 }
 
 int com_desbloquear(char **args){
 	if(args[1] == NULL || args[2] == NULL){
-		return error_faltan_parametros(args);
+		return error_no_lleva_parametros(args);
 	}else{
 		puts("Estas en desbloquear");
 		return 1;
@@ -149,7 +163,7 @@ int com_status(char **args){
 
 int com_deadlock(char **args){
 	if(args[1] != NULL){
-		return error_sobran_parametros(args);
+		return error_no_lleva_parametros(args);
 	}else{
 		puts("Estas en deadlock");
 		return 1;
