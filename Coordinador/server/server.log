@@ -58,3 +58,14 @@
 [INFO] 15:49:35:567 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
 [INFO] 15:49:47:55 server/(11349:11349): [1m[31mSe desconecto el cliente 0[0m
 [INFO] 15:49:47:55 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 20:43:14:660 server/(4302:4302): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 20:43:14:664 server/(4302:4302): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 20:43:14:664 server/(4302:4302): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 20:43:14:664 server/(4302:4302): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 20:43:19:301 server/(4302:4302): [1m[33mUn nuevo cliente requiere acceso al servidor. Procediendo a aceptar..[0m
+[INFO] 20:43:19:301 server/(4302:4302): [1m[33mEnviando handshake...[0m
+[INFO] 20:43:19:301 server/(4302:4302): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 20:43:19:307 server/(4302:4302): [1m[32mSe pudo conectar un cliente (FD 5) y esta en la posicion 0 del array[0m
+[INFO] 20:43:19:307 server/(4302:4302): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 20:43:19:307 server/(4302:4302): [1m[31mSe desconecto el cliente 0[0m
+[INFO] 20:43:19:307 server/(4302:4302): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m

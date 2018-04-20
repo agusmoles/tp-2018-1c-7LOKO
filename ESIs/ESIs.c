@@ -17,7 +17,7 @@
 t_log * logger;
 
 void configure_logger(){
-	log_create("esi.log","esi",1,LOG_LEVEL_INFO);
+	logger = log_create("esi.log","esi",1,LOG_LEVEL_INFO);
 }
 
 void exitError(int socket,char* error_msg){
@@ -73,7 +73,7 @@ void recibirHandshake(int socketServidor, char* handshake){
 		if(strcmp(buffer,handshake)!=0){
 			exitErrorBuffer(socketServidor,"Handshake erroneo",buffer);
 		}
-		log_info(logger,"Handshake recibido correctamente");
+		log_info(logger,ANSI_COLOR_BOLDGREEN"Handshake recibido correctamente"ANSI_COLOR_RESET);
 	}
 }
 
@@ -98,6 +98,7 @@ int enviarInstruccion(int socketServidor){
 
 
 int main(){
+	configure_logger();
 	int socketPlanificador,socketCoordinador;
 //	socketPlanificador = conect_to_server(IPPLANIFICADOR,PUERTOPLANIFICADOR);
 	//recibirHandshake(socketPlanificador,"******PLANIFICADOR HANDSHAKE******");
