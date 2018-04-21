@@ -1,0 +1,4 @@
+[ERROR] 20:41:51:888 esi/(3499:3499): No se pudo conectar con el servidor
+[INFO] 20:43:19:301 esi/(4308:4308): [1m[32mSe pudo conectar con el servidor[0m
+[INFO] 20:43:19:307 esi/(4308:4308): Handshake recibido correctamente
+[INFO] 20:43:19:307 esi/(4308:4308): [1m[32mSe envio correctamente el identificador[0m
