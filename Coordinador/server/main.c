@@ -190,13 +190,17 @@ int reciboIdentificacion(int socketCliente) {
 	}
 
 	if (strcmp(identificador, "1") == 0) {
+		free(identificador);
 		return 1;				//PLANIFICADOR
 	} else if(strcmp(identificador, "2") == 0) {
+		free(identificador);
 		return 2;				//INSTANCIA
 	} else if(strcmp(identificador, "3") == 0) {
+		free(identificador);
 		return 3;				//ESI
 	}
 
+	free(identificador);
 	return -1;
 }
 

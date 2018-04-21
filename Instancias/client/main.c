@@ -73,10 +73,12 @@ void reciboHandshake(int socket) {
 				}
 				break;
 	}
+
+	free(buffer);
 }
 
 void envioIdentificador(int socket) {
-	char* identificador = "1";
+	char* identificador = "2";			//INSTANCIA ES 2
 
 	if (send(socket, identificador, strlen(identificador)+1, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);

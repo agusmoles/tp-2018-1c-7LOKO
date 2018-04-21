@@ -58,3 +58,35 @@
 [INFO] 15:49:35:567 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
 [INFO] 15:49:47:55 server/(11349:11349): [1m[31mSe desconecto el cliente 0[0m
 [INFO] 15:49:47:55 server/(11349:11349): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:30:08:993 server/(12270:12270): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 16:30:08:993 server/(12270:12270): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 16:30:08:993 server/(12270:12270): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 16:30:08:993 server/(12270:12270): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:30:33:380 server/(12270:12270): [1m[33mUn nuevo cliente requiere acceso al servidor. Procediendo a aceptar..[0m
+[INFO] 16:30:33:380 server/(12270:12270): [1m[33mEnviando handshake...[0m
+[INFO] 16:30:33:380 server/(12270:12270): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 16:30:33:380 server/(12270:12270): [1m[32mSe pudo conectar un cliente (FD 5) y esta en la posicion 0 del array[0m
+[INFO] 16:30:33:381 server/(12270:12270): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:35:53:489 server/(12326:12326): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 16:35:53:515 server/(12326:12326): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 16:35:53:518 server/(12326:12326): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 16:35:53:520 server/(12326:12326): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:35:55:559 server/(12326:12326): [1m[33mUn nuevo cliente requiere acceso al servidor. Procediendo a aceptar..[0m
+[INFO] 16:35:55:564 server/(12326:12326): [1m[33mEnviando handshake...[0m
+[INFO] 16:35:55:568 server/(12326:12326): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 16:35:55:679 server/(12326:12326): [1m[32mSe pudo conectar un cliente (FD 5) y esta en la posicion 0 del array[0m
+[INFO] 16:35:55:680 server/(12326:12326): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:36:25:358 server/(12326:12326): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:36:26:794 server/(12326:12326): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:36:28:219 server/(12326:12326): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:36:29:239 server/(12326:12326): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:36:29:680 server/(12326:12326): [1m[31mSe desconecto el cliente 0[0m
+[INFO] 16:36:29:681 server/(12326:12326): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:39:54:727 server/(12508:12508): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 16:39:54:727 server/(12508:12508): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 16:39:54:727 server/(12508:12508): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 16:39:54:727 server/(12508:12508): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
+[INFO] 16:55:06:996 server/(12938:12938): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 16:55:06:996 server/(12938:12938): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 16:55:06:996 server/(12938:12938): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 16:55:06:996 server/(12938:12938): [1m[33mSe esta esperando por conexiones o mensajes de los clientes...[0m
