@@ -9,7 +9,7 @@
 #include <signal.h>
 #include "../../Colores.h"
 
-#define PUERTO "6666"
+#define PUERTO "6667"
 #define NUMEROCLIENTES 10
 
 t_log* logger;

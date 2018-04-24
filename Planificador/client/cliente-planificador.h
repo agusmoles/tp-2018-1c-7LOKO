@@ -11,7 +11,7 @@
 #include "../../Colores.h"
 
 #define IP "127.0.0.1"
-#define PUERTO "6666"
+#define PUERTO "6667"
 
 t_log* logger;
 
