@@ -40,7 +40,7 @@ int cantidad_commands() {
   return sizeof(command_nombre) / sizeof(char *);
 }
 
-void main(){
+int main(){
   char * linea;
   char** args;
 
@@ -62,6 +62,8 @@ void main(){
 	free(args);
     free(linea);
   }
+
+  return EXIT_SUCCESS;
 }
 
 void liberar_parametros(char **args){

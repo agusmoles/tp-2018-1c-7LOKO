@@ -129,11 +129,11 @@ void aceptarCliente(int socket, int* socketCliente) {
 			switch(reciboIdentificacion(socketCliente[i])) {
 				case 0: _exit_with_error(socket, socketCliente, "No se pudo recibir el mensaje del protocolo de conexion"); //FALLO EL RECV
 						break;
-				case 1: // SOY EL PLANIFICADOR
+				case 1: log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto el planificador"ANSI_COLOR_RESET);
 						break;
-				case 2: // SOY UNA INSTANCIA
+				case 2: log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto una instancia"ANSI_COLOR_RESET);
 						break;
-				case 3: // SOY UN ESI
+				case 3: log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un ESI"ANSI_COLOR_RESET);
 						break;
 				default: _exit_with_error(socket, socketCliente, ANSI_COLOR_RED"No estas cumpliendo con el protocolo de conexion"ANSI_COLOR_RESET);
 						break;
