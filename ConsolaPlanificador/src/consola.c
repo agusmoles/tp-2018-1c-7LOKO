@@ -129,7 +129,7 @@ int com_bloquear(char **args){
 	}
 
 	for(int k=3; args[k]; k++){
-		if(args[3] != NULL)
+		if(args[k] != NULL)
 			return error_sobran_parametros(args);
 	}
 
@@ -139,49 +139,69 @@ int com_bloquear(char **args){
 }
 
 int com_desbloquear(char **args){
-	if(args[1] == NULL || args[2] == NULL){
-		return error_no_lleva_parametros(args);
-	}else{
-		puts("Estas en desbloquear");
-		return 1;
+	if(args[1] == NULL){
+		return error_faltan_parametros(args);
 	}
+
+	for(int k=2; args[k]; k++){
+		if(args[k] != NULL)
+			return error_sobran_parametros(args);
+	}
+
+	puts("Estas en desbloquear");
+	return 1;
+
 }
 
 int com_listar(char **args){
 	if(args[1] == NULL){
 		return error_faltan_parametros(args);
-	}else{
-		puts("Estas en listar");
-		return 1;
 	}
+
+	for(int k=2; args[k]; k++){
+		if(args[k] != NULL)
+			return error_sobran_parametros(args);
+	}
+
+	puts("Estas en listar");
+	return 1;
 }
 
 int com_kill(char **args){
 	if(args[1] == NULL){
 		return error_faltan_parametros(args);
-	}else{
-		puts("Estas en kill");
-		return 1;
 	}
+
+	for(int k=2; args[k]; k++){
+		if(args[k] != NULL)
+			return error_sobran_parametros(args);
+	}
+
+	puts("Estas en kill");
+	return 1;
 }
 
 int com_status(char **args){
 	if(args[1] == NULL){
 		return error_faltan_parametros(args);
-	}else{
-		//Hacer lo que hace el command
-		puts("Estas en status");
-		return 1;
 	}
+
+	for(int k=2; args[k]; k++){
+		if(args[k] != NULL)
+			return error_sobran_parametros(args);
+	}
+
+	puts("Estas en status");
+	return 1;
 }
 
 int com_deadlock(char **args){
 	if(args[1] != NULL){
 		return error_no_lleva_parametros(args);
-	}else{
-		puts("Estas en deadlock");
-		return 1;
 	}
+
+	puts("Estas en deadlock");
+	return 1;
 }
 
 int com_man(char **args){
