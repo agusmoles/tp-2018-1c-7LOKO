@@ -1,6 +1,6 @@
-/******** CLIENTE INSTANCIAS *********/
+/******** CLIENTE PLANIFICADOR *********/
 
-#include "main.h"
+#include "cliente-planificador.h"
 
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
@@ -78,7 +78,7 @@ void reciboHandshake(int socket) {
 }
 
 void envioIdentificador(int socket) {
-	char* identificador = "2";			//INSTANCIA ES 2
+	char* identificador = "1";			//PLANIFICADOR ES 1
 
 	if (send(socket, identificador, strlen(identificador)+1, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);

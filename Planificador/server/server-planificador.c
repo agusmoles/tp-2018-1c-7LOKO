@@ -1,6 +1,6 @@
-/******** SERVIDOR COORDINADOR *********/
+/******** SERVIDOR PLANIFICADOR *********/
 
-#include "main.h"
+#include "server-planificador.h"
 
 void _exit_with_error(int socket, int* socketCliente, char* mensaje) {
 	close(socket);
@@ -126,20 +126,7 @@ void aceptarCliente(int socket, int* socketCliente) {
 					break;
 			}
 
-			switch(reciboIdentificacion(socketCliente[i])) {
-				case 0: _exit_with_error(socket, socketCliente, "No se pudo recibir el mensaje del protocolo de conexion"); //FALLO EL RECV
-						break;
-				case 1: log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto el planificador"ANSI_COLOR_RESET);
-						break;
-				case 2: log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto una instancia"ANSI_COLOR_RESET);
-						break;
-				case 3: log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un ESI"ANSI_COLOR_RESET);
-						break;
-				default: _exit_with_error(socket, socketCliente, ANSI_COLOR_RED"No estas cumpliendo con el protocolo de conexion"ANSI_COLOR_RESET);
-						break;
-			}
-
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar un cliente (FD %d) y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i], i);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar un cliente %d y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i], i);
 
 			break;
 		}
@@ -170,7 +157,7 @@ void recibirMensaje(int socket, int* socketCliente, int posicion) {
 }
 
 int envioHandshake(int socketCliente) {
-	char* handshake = "******COORDINADOR HANDSHAKE******";
+	char* handshake = "******PLANIFICADOR HANDSHAKE******";
 
 	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
 
@@ -180,28 +167,6 @@ int envioHandshake(int socketCliente) {
 		default: return 0;
 				break;
 	}
-}
-
-int reciboIdentificacion(int socketCliente) {
-	char* identificador = malloc(sizeof(char));
-
-	if(recv(socketCliente, identificador, sizeof(char)+1, MSG_WAITALL) < 0) {
-		return 0;									//MANEJO EL ERROR EN ACEPTAR CLIENTE
-	}
-
-	if (strcmp(identificador, "1") == 0) {
-		free(identificador);
-		return 1;				//PLANIFICADOR
-	} else if(strcmp(identificador, "2") == 0) {
-		free(identificador);
-		return 2;				//INSTANCIA
-	} else if(strcmp(identificador, "3") == 0) {
-		free(identificador);
-		return 3;				//ESI
-	}
-
-	free(identificador);
-	return -1;
 }
 
 void intHandler() {
@@ -216,12 +181,6 @@ int main(void) {
 
 	configurarLogger();
 	int socketCliente[NUMEROCLIENTES];
-
-//	struct cliente {
-//		char* nombre = malloc(20);				//SERIA ASI PARA IDENTIFICAR SI ES UNA INSTANCIA, PLANIFICADOR O ESI????
-//		int socket;
-//	}Cliente;
-
 	int listenSocket = conectarSocketYReservarPuerto();
 
 	escuchar(listenSocket);

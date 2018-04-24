@@ -48,7 +48,7 @@ void _exit_with_error(int socket, char* mensaje) {
 }
 
 void configurarLogger() {
-	logger = log_create("cliente.log", "cliente", 1, LOG_LEVEL_INFO);
+	logger = log_create("consola.log", "cliente", 1, LOG_LEVEL_INFO);
 }
 
 int conectarSocket() {
@@ -93,17 +93,6 @@ void reciboHandshake(int socket) {
 	free(buffer);
 }
 
-void envioHandshake(int socket) {
-	char* handshake = "******CONSOLA HANDSHAKE******";
-
-	if (send(socket, handshake, strlen(handshake)+1, 0) < 0) {
-		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el handshake"ANSI_COLOR_RESET);
-	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el handshake"ANSI_COLOR_RESET);
-}
-
-
 int main(){
   char * linea;
   char** args;
@@ -112,7 +101,6 @@ int main(){
   int socket = conectarSocket();
 
   reciboHandshake(socket);
-  envioHandshake(socket);	
 	
   while(1){
 

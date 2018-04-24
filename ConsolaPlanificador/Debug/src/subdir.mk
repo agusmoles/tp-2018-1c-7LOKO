@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/ReadLine.c 
+../src/consola.c 
+
+O_SRCS += \
+../src/consola.o 
 
 OBJS += \
-./src/ReadLine.o 
+./src/consola.o 
 
 C_DEPS += \
-./src/ReadLine.d 
+./src/consola.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
