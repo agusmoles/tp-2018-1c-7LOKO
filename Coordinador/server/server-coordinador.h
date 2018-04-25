@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <commons/log.h>
 #include <signal.h>
+#include <pthread.h>
 #include "../../Colores.h"
 
 #define PUERTO "6666"

@@ -1,14 +1,19 @@
 /******** SERVIDOR PLANIFICADOR *********/
 
+struct Cliente{
+	char* nombre;
+	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
+};
+
 #include "server-planificador.h"
 
-void _exit_with_error(int socket, int* socketCliente, char* mensaje) {
+void _exit_with_error(int socket, struct Cliente* socketCliente, char* mensaje) {
 	close(socket);
 
 	if (socketCliente != NULL) {
 		for(int i=0; i<NUMEROCLIENTES; i++) {
-			if (socketCliente[i] != 0) {
-				close(socketCliente[i]);					// CIERRO TODOS LOS SOCKETS DE CLIENTES QUE ESTABAN ABIERTOS EN EL ARRAY
+			if (socketCliente[i].fd != 0) {
+				close(socketCliente[i].fd);					// CIERRO TODOS LOS SOCKETS DE CLIENTES QUE ESTABAN ABIERTOS EN EL ARRAY
 			}
 		}
 	}
@@ -63,13 +68,13 @@ void escuchar(int socket) {
 
 }
 
-void manejoDeClientes(int socket, int* socketCliente) {
+void manejoDeClientes(int socket, struct Cliente* socketCliente) {
 	FD_ZERO(&descriptoresLectura);			//VACIO EL SET DE DESCRIPTORES
 	FD_SET(socket, &descriptoresLectura); //ASIGNO EL SOCKET DE SERVIDOR AL SET
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {
-		if(socketCliente[i] != -1) {
-			FD_SET(socketCliente[i], &descriptoresLectura);  //SI EL FD ES DISTINTO DE -1 LO AGREGO AL SET
+		if(socketCliente[i].fd != -1) {
+			FD_SET(socketCliente[i].fd, &descriptoresLectura);  //SI EL FD ES DISTINTO DE -1 LO AGREGO AL SET
 		}
 	}
 
@@ -83,7 +88,7 @@ void manejoDeClientes(int socket, int* socketCliente) {
 				break;
 
 		default: for (int i=0; i<NUMEROCLIENTES; i++) {
-					if (FD_ISSET(socketCliente[i], &descriptoresLectura)) {
+					if (FD_ISSET(socketCliente[i].fd, &descriptoresLectura)) {
 						recibirMensaje(socket, socketCliente, i); //RECIBO EL MENSAJE, DENTRO DE LA FUNCION MANEJO ERRORES
 					}
 				}
@@ -98,26 +103,26 @@ void manejoDeClientes(int socket, int* socketCliente) {
 	}
 }
 
-void aceptarCliente(int socket, int* socketCliente) {
+void aceptarCliente(int socket, struct Cliente* socketCliente) {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
 
 	log_info(logger, ANSI_COLOR_BOLDYELLOW"Un nuevo cliente requiere acceso al servidor. Procediendo a aceptar.."ANSI_COLOR_RESET);
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO TODO EL ARRAY DE CLIENTES
-		if (socketCliente[i] == -1) {				//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
+		if (socketCliente[i].fd == -1) {				//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
 
-			socketCliente[i] = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
+			socketCliente[i].fd = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
 
-			if (socketCliente[i] < 0) {
+			if (socketCliente[i].fd < 0) {
 				_exit_with_error(socket, socketCliente, "No se pudo conectar el cliente");		// MANEJO DE ERRORES
 			}
 
-			if (socketCliente[i] > fdmax) {
-				fdmax = socketCliente[i];
+			if (socketCliente[i].fd > fdmax) {
+				fdmax = socketCliente[i].fd;				//SI EL FD ASIGNADO ES MAYOR AL FDMAX (QUE NECESITA EL SELECT() ), LO ASIGNO AL FDMAX
 			}
 
-			switch(envioHandshake(socketCliente[i])) {
+			switch(envioHandshake(socketCliente[i].fd)) {
 			case -1: _exit_with_error(socket, socketCliente, "No se pudo enviar el handshake");
 					break;
 			case -2: _exit_with_error(socket, socketCliente, "No se pudo recibir el handshake");
@@ -126,7 +131,7 @@ void aceptarCliente(int socket, int* socketCliente) {
 					break;
 			}
 
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar un cliente %d y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i], i);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar un cliente %d y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i].fd, i);
 
 			break;
 		}
@@ -134,18 +139,18 @@ void aceptarCliente(int socket, int* socketCliente) {
 
 }
 
-void recibirMensaje(int socket, int* socketCliente, int posicion) {
+void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 	void* buffer = malloc(1024);
 	int resultado_recv;
 
-	switch(resultado_recv = recv(socketCliente[posicion], buffer, 1024, MSG_DONTWAIT)) {
+	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, MSG_DONTWAIT)) {
 
 		case -1: _exit_with_error(socket, socketCliente, "No se pudo recibir el mensaje del cliente");
 				break;
 
 		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %d"ANSI_COLOR_RESET, posicion);
-				close(socketCliente[posicion]); 		//CIERRO EL SOCKET
-				socketCliente[posicion] = -1;			//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
+				close(socketCliente[posicion].fd); 		//CIERRO EL SOCKET
+				socketCliente[posicion].fd = -1;			//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
 				break;
 
 		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, posicion, resultado_recv, (char*) buffer);
@@ -180,13 +185,15 @@ int main(void) {
 	sigaction(SIGINT, &finalizacion, NULL);
 
 	configurarLogger();
-	int socketCliente[NUMEROCLIENTES];
+
+	struct Cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
+
 	int listenSocket = conectarSocketYReservarPuerto();
 
 	escuchar(listenSocket);
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {
-		socketCliente[i] = -1;				//INICIALIZO EL ARRAY EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
+		socketCliente[i].fd = -1;				//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
 	}
 
 	manejoDeClientes(listenSocket, socketCliente);

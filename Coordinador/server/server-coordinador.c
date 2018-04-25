@@ -186,6 +186,7 @@ int reciboIdentificacion(int socketCliente) {
 	char* identificador = malloc(sizeof(char));
 
 	if(recv(socketCliente, identificador, sizeof(char)+1, MSG_WAITALL) < 0) {
+		free(identificador);
 		return 0;									//MANEJO EL ERROR EN ACEPTAR CLIENTE
 	}
 
