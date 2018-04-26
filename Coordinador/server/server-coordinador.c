@@ -104,7 +104,7 @@ void aceptarCliente(int socket, int* socketCliente) {
 
 	log_info(logger, ANSI_COLOR_BOLDYELLOW"Un nuevo cliente requiere acceso al servidor. Procediendo a aceptar.."ANSI_COLOR_RESET);
 
-	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO TODO EL ARRAY DE CLIENTES
+	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO EL ARRAY DE CLIENTES
 		if (socketCliente[i] == -1) {				//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
 
 			socketCliente[i] = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
@@ -218,10 +218,10 @@ int main(void) {
 	configurarLogger();
 	int socketCliente[NUMEROCLIENTES];
 
-//	struct cliente {
+//	struct Cliente {
 //		char* nombre = malloc(20);				//SERIA ASI PARA IDENTIFICAR SI ES UNA INSTANCIA, PLANIFICADOR O ESI????
-//		int socket;
-//	}Cliente;
+//		int fd;
+//	};
 
 	int listenSocket = conectarSocketYReservarPuerto();
 

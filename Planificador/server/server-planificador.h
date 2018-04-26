@@ -12,6 +12,11 @@
 #define PUERTO "6666"
 #define NUMEROCLIENTES 10
 
+struct Cliente{
+	char* nombre = malloc(4);
+	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
+};
+
 t_log* logger;
 fd_set descriptoresLectura;
 int fdmax = NUMEROCLIENTES;

@@ -1,10 +1,5 @@
 /******** SERVIDOR PLANIFICADOR *********/
 
-struct Cliente{
-	char* nombre;
-	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
-};
-
 #include "server-planificador.h"
 
 void _exit_with_error(int socket, struct Cliente* socketCliente, char* mensaje) {
@@ -109,10 +104,12 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 
 	log_info(logger, ANSI_COLOR_BOLDYELLOW"Un nuevo cliente requiere acceso al servidor. Procediendo a aceptar.."ANSI_COLOR_RESET);
 
-	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO TODO EL ARRAY DE CLIENTES
+	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO EL ARRAY DE CLIENTES
 		if (socketCliente[i].fd == -1) {				//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
 
 			socketCliente[i].fd = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
+			strcpy(socketCliente[i].nombre, "ESI");
+
 
 			if (socketCliente[i].fd < 0) {
 				_exit_with_error(socket, socketCliente, "No se pudo conectar el cliente");		// MANEJO DE ERRORES
@@ -150,7 +147,8 @@ void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 
 		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %d"ANSI_COLOR_RESET, posicion);
 				close(socketCliente[posicion].fd); 		//CIERRO EL SOCKET
-				socketCliente[posicion].fd = -1;			//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
+				free(socketCliente[posicion].nombre);		//LO LIBERO SOLO PORQUE SUPONGO QUE NO VUELVE AL SISTEMA
+				socketCliente[posicion].fd = -1;			//LO VUELVO A SETEAR EN -1 POR SI HAY QUE VOLVER A ASIGNARLO
 				break;
 
 		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, posicion, resultado_recv, (char*) buffer);
