@@ -1,20 +1,32 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
-#include "commons/log.h"
-#include "../Colores.h"
+#include "ESIs.h"
 
-#define IPPLANIFICADOR "127.0.0.1"
-#define PUERTOPLANIFICADOR "6667"
-#define IPCOORDINADOR "127.0.0.1"
-#define PUERTOCOORDINADOR "6666"
-#define PACKAGESIZE 1024
 
-t_log * logger;
+int main(){
+	configure_logger();
+	int socketPlanificador,socketCoordinador;
+	FILE* script = fopen("script.txt","r");
+	char* leer = malloc(PACKAGESIZE);
+	char* instruccion = malloc(PACKAGESIZE);
+
+	socketPlanificador = conect_to_server(IPPLANIFICADOR,PUERTOPLANIFICADOR);
+	recibirHandshake(socketPlanificador,"******PLANIFICADOR HANDSHAKE******");
+	socketCoordinador = conect_to_server(IPCOORDINADOR,PUERTOCOORDINADOR);
+	recibirHandshake(socketCoordinador,"******COORDINADOR HANDSHAKE******");
+
+	envioIdentificador(socketCoordinador);
+
+	do{
+		recibirOrdenDeEjecucion(socketPlanificador);
+		leer = fgets(instruccion,PACKAGESIZE,script);
+		pedirRecursos(socketCoordinador,instruccion);
+	}while(leer);
+
+	close(socketPlanificador);
+	close(socketCoordinador);
+
+
+}
+
 
 void configure_logger(){
 	logger = log_create("esi.log","esi",1,LOG_LEVEL_INFO);
@@ -31,6 +43,19 @@ void exitErrorBuffer(int socket, char* error_msg, char* buffer){
 		free(buffer);
 	}
 	exitError(socket,error_msg);
+}
+
+void verificarResultado(int socketServidor,int resultado){
+	switch(resultado){
+		case 0:
+			exitError(socketServidor,"Conexion perdida");
+			break;
+		case -1:
+			exitError(socketServidor,"Error al recibir/enviar el mensaje");
+			break;
+		default:
+			break;
+	}
 }
 
 int conect_to_server(char *ip,char*puerto){
@@ -62,19 +87,12 @@ void recibirHandshake(int socketServidor, char* handshake){
 
 	int resultado = recv(socketServidor,buffer,size,0);
 
-	switch(resultado){
-	case 0:
-		exitError(socketServidor,"Conexion perdida");
-		break;
-	case -1:
-		exitError(socketServidor,"Error al recibir el handshake");
-		break;
-	default:
-		if(strcmp(buffer,handshake)!=0){
-			exitErrorBuffer(socketServidor,"Handshake erroneo",buffer);
-		}
-		log_info(logger,ANSI_COLOR_BOLDGREEN"Handshake recibido correctamente"ANSI_COLOR_RESET);
+	verificarResultado(socketServidor,resultado);
+
+	if(strcmp(buffer,handshake)!=0){
+		exitErrorBuffer(socketServidor,"Handshake erroneo",buffer);
 	}
+	log_info(logger,ANSI_COLOR_BOLDGREEN"Handshake recibido correctamente"ANSI_COLOR_RESET);
 }
 
 void envioIdentificador(int socket) {
@@ -87,28 +105,19 @@ void envioIdentificador(int socket) {
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el identificador"ANSI_COLOR_RESET);
 }
 
-int recibirOrdenDeEjecutar(int socketServidor){
-
-	return 1;
+void recibirOrdenDeEjecucion(int socketServidor){
+	char* ejecutar = malloc(1);
+	int resultado;
+	resultado = recv(socketServidor, ejecutar, 1,MSG_WAITALL);
+	verificarResultado(socketServidor,resultado);
+	if(strcmp(ejecutar,"1")!=0){
+			exitErrorBuffer(socketServidor,"Mensaje erroneo",ejecutar);
+		}
+	log_info(logger,"Orden de ejecucion linea de script recibida");
 }
 
-int enviarInstruccion(int socketServidor){
-	return 1;
-}
-
-
-int main(){
-	configure_logger();
-	int socketPlanificador,socketCoordinador;
-//	socketPlanificador = conect_to_server(IPPLANIFICADOR,PUERTOPLANIFICADOR);
-	//recibirHandshake(socketPlanificador,"******PLANIFICADOR HANDSHAKE******");
-	socketCoordinador = conect_to_server(IPCOORDINADOR,PUERTOCOORDINADOR);
-	recibirHandshake(socketCoordinador,"******COORDINADOR HANDSHAKE******");
-
-	envioIdentificador(socketCoordinador);
-
-	//close(socketPlanificador);
-	close(socketCoordinador);
-
-
+void pedirRecursos(int socketServidor, char* instruccion){
+	int resultado;
+	resultado = send(socketServidor,instruccion, strlen(instruccion),0);
+	verificarResultado(socketServidor, resultado);
 }
