@@ -1,0 +1,23 @@
+IP Coordinador=127.0.0.1
+
+Puerto Coordinador=8000
+
+IP Planificador=127.0.0.1
+
+Puerto Planificador=8001
+
+Algoritmo de planificación=HRRN
+
+Alfa planificación=30
+
+Estimación inicial=5
+
+Claves inicialmente bloqueadas=materias:K3002, materias:K3001
+
+Algoritmo de Distribución=EL
+
+Cantidad de Entradas=20
+
+Tamaño de Entrada=100
+
+Retardo=300

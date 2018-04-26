@@ -9,17 +9,21 @@
 #include <netdb.h>
 #include <unistd.h>
 #include "commons/log.h"
+#include <commons/config.h>
 #include "../Colores.h"
 
-#define IPPLANIFICADOR "127.0.0.1"
-#define PUERTOPLANIFICADOR "6666"
-#define IPCOORDINADOR "127.0.0.1"
-#define PUERTOCOORDINADOR "6667"
+char* IPPLANIFICADOR;
+char* PUERTOPLANIFICADOR;
+char* IPCOORDINADOR;
+char* PUERTOCOORDINADOR;
 #define PACKAGESIZE 1024
 
 t_log * logger;
+t_config* config;
 
 void configure_logger();
+void crearConfig();
+void setearConfigEnVariables();
 void exitError(int socket,char* error_msg);
 void exitErrorBuffer(int socket, char* error_msg, char* buffer);
 

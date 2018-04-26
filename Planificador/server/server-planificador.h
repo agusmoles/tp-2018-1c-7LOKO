@@ -6,22 +6,26 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <commons/log.h>
+#include <commons/config.h>
 #include <signal.h>
 #include "../../Colores.h"
 
-#define PUERTO "6666"
+char* PUERTO;
 #define NUMEROCLIENTES 10
 
 struct Cliente{
-	char* nombre = malloc(4);
+	char* nombre;
 	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
 };
 
 t_log* logger;
+t_config* config;
 fd_set descriptoresLectura;
 int fdmax = NUMEROCLIENTES;
 
 void configurarLogger();
+void crearConfig();
+void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 void escuchar(int socket);
 void manejoDeClientes(int socket, struct Cliente* socketCliente);

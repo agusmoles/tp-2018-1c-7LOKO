@@ -23,6 +23,14 @@ void configurarLogger() {
 	logger = log_create("server.log", "server", 1, LOG_LEVEL_INFO);
 }
 
+void crearConfig() {
+	config = config_create("../../cfg");
+}
+
+void setearConfigEnVariables() {
+	PUERTO = config_get_string_value(config, "Puerto Coordinador");
+}
+
 int conectarSocketYReservarPuerto() {
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;
@@ -216,6 +224,8 @@ int main(void) {
 	sigaction(SIGINT, &finalizacion, NULL);
 
 	configurarLogger();
+	crearConfig();
+	setearConfigEnVariables();
 	int socketCliente[NUMEROCLIENTES];
 
 //	struct Cliente {

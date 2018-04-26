@@ -3,6 +3,8 @@
 
 int main(){
 	configure_logger();
+	crearConfig();
+	setearConfigEnVariables();
 	int socketPlanificador,socketCoordinador;
 	FILE* script = fopen("script.txt","r");
 	char* leer = malloc(PACKAGESIZE);
@@ -30,6 +32,17 @@ int main(){
 
 void configure_logger(){
 	logger = log_create("esi.log","esi",1,LOG_LEVEL_INFO);
+}
+
+void crearConfig() {
+	config = config_create("../cfg");
+}
+
+void setearConfigEnVariables() {
+	PUERTOCOORDINADOR = config_get_string_value(config, "Puerto Coordinador");
+	IPCOORDINADOR = config_get_string_value(config, "IP Coordinador");
+	PUERTOPLANIFICADOR = config_get_string_value(config, "Puerto Planificador");
+	IPPLANIFICADOR = config_get_string_value(config, "IP Planificador");;
 }
 
 void exitError(int socket,char* error_msg){

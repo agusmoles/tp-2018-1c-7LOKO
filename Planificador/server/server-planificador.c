@@ -23,6 +23,14 @@ void configurarLogger() {
 	logger = log_create("server.log", "server", 1, LOG_LEVEL_INFO);
 }
 
+void crearConfig() {
+	config = config_create("../../cfg");
+}
+
+void setearConfigEnVariables() {
+	PUERTO = config_get_string_value(config, "Puerto Planificador");
+}
+
 int conectarSocketYReservarPuerto() {
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;
@@ -108,8 +116,6 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 		if (socketCliente[i].fd == -1) {				//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
 
 			socketCliente[i].fd = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
-			strcpy(socketCliente[i].nombre, "ESI");
-
 
 			if (socketCliente[i].fd < 0) {
 				_exit_with_error(socket, socketCliente, "No se pudo conectar el cliente");		// MANEJO DE ERRORES
@@ -183,6 +189,8 @@ int main(void) {
 	sigaction(SIGINT, &finalizacion, NULL);
 
 	configurarLogger();
+	crearConfig();
+	setearConfigEnVariables();
 
 	struct Cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
 

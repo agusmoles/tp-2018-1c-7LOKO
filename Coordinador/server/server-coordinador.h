@@ -6,18 +6,22 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <commons/log.h>
+#include <commons/config.h>
 #include <signal.h>
 #include <pthread.h>
 #include "../../Colores.h"
 
-#define PUERTO "6667"
+char* PUERTO;
 #define NUMEROCLIENTES 10
 
 t_log* logger;
+t_config* config;
 fd_set descriptoresLectura;
 int fdmax = NUMEROCLIENTES;
 
 void configurarLogger();
+void crearConfig();
+void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 void escuchar(int socket);
 void manejoDeClientes(int socket, int* socketCliente);
