@@ -12,6 +12,15 @@ void configurarLogger() {
 	logger = log_create("cliente.log", "cliente", 1, LOG_LEVEL_INFO);
 }
 
+void crearConfig() {
+	config = config_create("../../cfg");
+}
+
+void setearConfigEnVariables() {
+	PUERTO = config_get_string_value(config, "Puerto Coordinador");
+	IP = config_get_string_value(config, "IP Coordinador");
+}
+
 int conectarSocket() {
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;
@@ -99,6 +108,8 @@ int main(void) {
 
 
 	configurarLogger();
+	crearConfig();
+	setearConfigEnVariables();
 	int socket = conectarSocket();
 
 	reciboHandshake(socket);

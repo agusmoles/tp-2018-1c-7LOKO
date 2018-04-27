@@ -6,17 +6,21 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <commons/log.h>
+#include <commons/config.h>
 #include <readline/readline.h> // Para usar readline
 #include <signal.h>
 #include "../../Colores.h"
 
-#define IP "127.0.0.1"
-#define PUERTO "6666"
+char* IP;
+char* PUERTO;
 
 t_log* logger;
+t_config* config;
 
 void _exit_with_error(int socket, char* mensaje);
 void configurarLogger();
+void crearConfig();
+void setearConfigEnVariables();
 int conectarSocket();
 void enviarMensajes(int socket);
 void reciboHandshake(int socket);
