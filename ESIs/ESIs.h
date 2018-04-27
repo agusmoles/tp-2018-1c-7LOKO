@@ -8,9 +8,10 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
-#include "commons/log.h"
+#include <commons/log.h>
 #include <commons/config.h>
 #include "../Colores.h"
+#include "parser.h"
 
 char* IPPLANIFICADOR;
 char* PUERTOPLANIFICADOR;
@@ -38,6 +39,8 @@ void envioIdentificador(int socket);
 void recibirOrdenDeEjecucion(int socketServidor);
 void enviarMensaje(int socketServidor, char* instruccion);
 
+
+void ejecutarInstruccion(char*);
 
 
 #endif /* ESIS_ESIS_H_ */

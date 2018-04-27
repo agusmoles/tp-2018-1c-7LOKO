@@ -6,9 +6,9 @@ int main(){
 	crearConfig();
 	setearConfigEnVariables();
 	int socketPlanificador,socketCoordinador;
-	FILE* script = fopen("script.txt","r");
-	char* leer = malloc(PACKAGESIZE);
-	char* instruccion = malloc(PACKAGESIZE);
+	FILE* script = fopen("script.esi","r");
+	char* instruccion = malloc(PACKAGESIZE);;
+	size_t len = 0;
 
 	socketPlanificador = conect_to_server(IPPLANIFICADOR,PUERTOPLANIFICADOR);
 	recibirHandshake(socketPlanificador,"******PLANIFICADOR HANDSHAKE******");
@@ -17,20 +17,42 @@ int main(){
 
 	envioIdentificador(socketCoordinador);
 
-	do{
+	while(getline(&instruccion,&len,script) != -1){
 		enviarMensaje(socketPlanificador,"Execution_Request");
-		printf("Solicitud de ejecucion enviada");
-		recibirOrdenDeEjecucion(socketPlanificador);
-		leer = fgets(instruccion,PACKAGESIZE,script);
-		enviarMensaje(socketCoordinador,instruccion);
-	}while(leer);
+		//recibirOrdenDeEjecucion(socketPlanificador);
 
+		ejecutarInstruccion(instruccion);
+
+		enviarMensaje(socketCoordinador,instruccion);
+	}
 	close(socketPlanificador);
 	close(socketCoordinador);
-
-
 }
 
+void ejecutarInstruccion(char* instruccion){
+	t_esi_operacion parsed = parse(instruccion);
+	if(parsed.valido){
+		switch(parsed.keyword){
+			case GET:
+				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+				break;
+			case SET:
+				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+				break;
+			case STORE:
+				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+				break;
+			default:
+				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);
+				exit(EXIT_FAILURE);
+		}
+
+		destruir_operacion(parsed);
+	} else {
+		fprintf(stderr, "La linea <%s> no es valida\n", instruccion);
+		exit(EXIT_FAILURE);
+	}
+}
 
 void configure_logger(){
 	logger = log_create("esi.log","esi",1,LOG_LEVEL_INFO);
@@ -131,8 +153,8 @@ void recibirOrdenDeEjecucion(int socketServidor){
 	log_info(logger,"Orden de ejecucion linea de script recibida");
 }
 
-void enviarMensaje(int socketServidor, char* instruccion){
+void enviarMensaje(int socketServidor, char* msg){
 	int resultado;
-	resultado = send(socketServidor,instruccion, strlen(instruccion),0);
+	resultado = send(socketServidor,msg, strlen(msg),0);
 	verificarResultado(socketServidor, resultado);
 }
