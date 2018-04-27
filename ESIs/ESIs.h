@@ -18,6 +18,7 @@ char* IPCOORDINADOR;
 char* PUERTOCOORDINADOR;
 #define PACKAGESIZE 1024
 
+
 t_log * logger;
 t_config* config;
 
@@ -35,7 +36,7 @@ void envioIdentificador(int socket);
 
 
 void recibirOrdenDeEjecucion(int socketServidor);
-void pedirRecursos(int socketServidor, char* instruccion);
+void enviarMensaje(int socketServidor, char* instruccion);
 
 
 

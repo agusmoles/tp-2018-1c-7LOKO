@@ -18,9 +18,11 @@ int main(){
 	envioIdentificador(socketCoordinador);
 
 	do{
+		enviarMensaje(socketPlanificador,"Execution_Request");
+		printf("Solicitud de ejecucion enviada");
 		recibirOrdenDeEjecucion(socketPlanificador);
 		leer = fgets(instruccion,PACKAGESIZE,script);
-		pedirRecursos(socketCoordinador,instruccion);
+		enviarMensaje(socketCoordinador,instruccion);
 	}while(leer);
 
 	close(socketPlanificador);
@@ -129,7 +131,7 @@ void recibirOrdenDeEjecucion(int socketServidor){
 	log_info(logger,"Orden de ejecucion linea de script recibida");
 }
 
-void pedirRecursos(int socketServidor, char* instruccion){
+void enviarMensaje(int socketServidor, char* instruccion){
 	int resultado;
 	resultado = send(socketServidor,instruccion, strlen(instruccion),0);
 	verificarResultado(socketServidor, resultado);
