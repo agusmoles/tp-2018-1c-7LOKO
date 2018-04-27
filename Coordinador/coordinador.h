@@ -8,15 +8,11 @@
 #include <commons/log.h>
 #include <commons/config.h>
 #include <signal.h>
-#include "../../Colores.h"
+#include <pthread.h>
+#include "../Colores.h"
 
 char* PUERTO;
 #define NUMEROCLIENTES 10
-
-struct Cliente{
-	char* nombre;
-	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
-};
 
 t_log* logger;
 t_config* config;
@@ -28,8 +24,8 @@ void crearConfig();
 void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 void escuchar(int socket);
-void manejoDeClientes(int socket, struct Cliente* socketCliente);
-void aceptarCliente(int socket, struct Cliente* socketCliente);
-void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion);
+void manejoDeClientes(int socket, int* socketCliente);
+void aceptarCliente(int socket, int* socketCliente);
+void recibirMensaje(int socket, int* socketCliente, int posicion);
 int envioHandshake(int socketCliente);
-void _exit_with_error(int socket, struct Cliente* socketCliente, char* mensaje);
+int reciboIdentificacion(int socketCliente);

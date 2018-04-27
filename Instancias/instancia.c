@@ -1,6 +1,6 @@
 /******** CLIENTE INSTANCIAS *********/
 
-#include "cliente-instancia.h"
+#include "instancia.h"
 
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
@@ -9,11 +9,11 @@ void _exit_with_error(int socket, char* mensaje) {
 }
 
 void configurarLogger() {
-	logger = log_create("cliente.log", "cliente", 1, LOG_LEVEL_INFO);
+	logger = log_create("instancia.log", "cliente", 1, LOG_LEVEL_INFO);
 }
 
 void crearConfig() {
-	config = config_create("../../cfg");
+	config = config_create("../cfg");
 }
 
 void setearConfigEnVariables() {

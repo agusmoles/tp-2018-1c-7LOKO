@@ -13,7 +13,7 @@ void configurarLogger() {
 }
 
 void crearConfig() {
-	config = config_create("../../cfg");
+	config = config_create("../cfg");
 }
 
 void setearConfigEnVariables() {

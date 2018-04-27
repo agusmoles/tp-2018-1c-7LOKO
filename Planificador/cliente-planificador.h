@@ -9,7 +9,7 @@
 #include <commons/config.h>
 #include <readline/readline.h> // Para usar readline
 #include <signal.h>
-#include "../../Colores.h"
+#include "../Colores.h"
 
 char* IP;
 char* PUERTO;
