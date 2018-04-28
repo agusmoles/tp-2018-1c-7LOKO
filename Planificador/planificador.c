@@ -1,6 +1,6 @@
 /******** SERVIDOR PLANIFICADOR *********/
 
-#include "server-planificador.h"
+#include "planificador.h"
 
 void _exit_with_error(int socket, struct Cliente* socketCliente, char* mensaje) {
 	close(socket);
@@ -20,7 +20,7 @@ void _exit_with_error(int socket, struct Cliente* socketCliente, char* mensaje) 
 }
 
 void configurarLogger() {
-	logger = log_create("server.log", "server", 1, LOG_LEVEL_INFO);
+	logger = log_create("planificador.log", "server", 1, LOG_LEVEL_INFO);
 }
 
 void crearConfig() {
@@ -28,7 +28,9 @@ void crearConfig() {
 }
 
 void setearConfigEnVariables() {
-	PUERTO = config_get_string_value(config, "Puerto Planificador");
+	PUERTOPLANIFICADOR = config_get_string_value(config, "Puerto Planificador");
+	PUERTOCOORDINADOR = config_get_string_value(config, "Puerto Coordinador");
+	IPCOORDINADOR = config_get_string_value(config, "IP Coordinador");
 }
 
 int conectarSocketYReservarPuerto() {
@@ -40,7 +42,7 @@ int conectarSocketYReservarPuerto() {
 	hints.ai_flags = AI_PASSIVE;		// Asigna el address del localhost: 127.0.0.1
 	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
 
-	getaddrinfo(NULL, PUERTO, &hints, &serverInfo); // Notar que le pasamos NULL como IP, ya que le indicamos que use localhost en AI_PASSIVE
+	getaddrinfo(NULL, PUERTOPLANIFICADOR, &hints, &serverInfo); // Notar que le pasamos NULL como IP, ya que le indicamos que use localhost en AI_PASSIVE
 
 	int listenSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
 
@@ -61,6 +63,68 @@ int conectarSocketYReservarPuerto() {
 	return listenSocket;
 }
 
+/******************************************************** CLIENTE PLANIFICADOR INICIO *****************************************************/
+
+int conectarSocketCoordinador() {
+	struct addrinfo hints;
+	struct addrinfo *serverInfo;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;		// Permite que la maquina se encargue de verificar si usamos IPv4 o IPv6
+	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
+
+	getaddrinfo(IPCOORDINADOR, PUERTOCOORDINADOR, &hints, &serverInfo);	// Carga en serverInfo los datos de la conexion
+
+	int server_socket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+
+	if (connect(server_socket, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
+		_exit_with_error(server_socket, NULL, "No se pudo conectar con el servidor");
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar con el servidor"ANSI_COLOR_RESET);
+
+	freeaddrinfo(serverInfo);
+
+	return server_socket;
+}
+
+void reciboHandshake(int socket) {
+	char* handshake = "******COORDINADOR HANDSHAKE******";
+	char* buffer = malloc(strlen(handshake)+1);
+
+
+	switch (recv(socket, buffer, strlen(handshake)+1, MSG_WAITALL)) {
+		case -1: _exit_with_error(socket, NULL, ANSI_COLOR_BOLDRED"No se pudo recibir el handshake"ANSI_COLOR_RESET);
+				break;
+		case 0:  _exit_with_error(socket, NULL, ANSI_COLOR_BOLDRED"Se desconecto el servidor forzosamente"ANSI_COLOR_RESET);
+				break;
+		default: if (strcmp(handshake, buffer) == 0) {
+					log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el handshake correctamente"ANSI_COLOR_RESET);
+				}
+				break;
+	}
+
+	free(buffer);
+}
+
+void envioIdentificador(int socket) {
+	char* identificador = "1";			//PLANIFICADOR ES 1
+
+	if (send(socket, identificador, strlen(identificador)+1, 0) < 0) {
+		_exit_with_error(socket, NULL, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el identificador"ANSI_COLOR_RESET);
+}
+
+void conectarConCoordinador() {
+	int socket = conectarSocketCoordinador();
+
+	reciboHandshake(socket);
+	envioIdentificador(socket);
+}
+
+/******************************************************** CLIENTE PLANIFICADOR FIN *****************************************************/
 
 void escuchar(int socket) {
 	if(listen(socket, NUMEROCLIENTES)) {
@@ -161,7 +225,6 @@ void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 				break;
 
 	}
-
 	free(buffer);
 }
 
@@ -187,6 +250,12 @@ int main(void) {
 	struct sigaction finalizacion;
 	finalizacion.sa_handler = intHandler;
 	sigaction(SIGINT, &finalizacion, NULL);
+
+	pthread_t threadCliente;
+
+	pthread_create(&threadCliente, NULL, (void *)conectarConCoordinador, NULL);
+
+	pthread_detach(threadCliente);
 
 	configurarLogger();
 	crearConfig();

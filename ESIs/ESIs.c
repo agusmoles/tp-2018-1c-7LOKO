@@ -155,6 +155,6 @@ void recibirOrdenDeEjecucion(int socketServidor){
 
 void enviarMensaje(int socketServidor, char* msg){
 	int resultado;
-	resultado = send(socketServidor,msg, strlen(msg),0);
+	resultado = send(socketServidor,msg, strlen(msg)+1,0);
 	verificarResultado(socketServidor, resultado);
 }

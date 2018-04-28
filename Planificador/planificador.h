@@ -8,9 +8,12 @@
 #include <commons/log.h>
 #include <commons/config.h>
 #include <signal.h>
+#include <pthread.h>
 #include "../Colores.h"
 
-char* PUERTO;
+char* PUERTOPLANIFICADOR;
+char* PUERTOCOORDINADOR;
+char* IPCOORDINADOR;
 #define NUMEROCLIENTES 10
 
 struct Cliente{

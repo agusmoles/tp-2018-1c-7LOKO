@@ -21,3 +21,11 @@ Cantidad de Entradas=20
 Tamaño de Entrada=100
 
 Retardo=300
+
+Algoritmo de Reemplazo=BSU
+
+Punto de montaje=/home/utnso/instancia1/
+
+Nombre de la Instancia=Instancia1
+
+Intervalo de dump=10
