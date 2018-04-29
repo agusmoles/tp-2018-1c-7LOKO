@@ -81,7 +81,7 @@ int conectarSocketCoordinador() {
 		_exit_with_error(server_socket, NULL, "No se pudo conectar con el servidor");
 	}
 
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar con el servidor"ANSI_COLOR_RESET);
+	log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se pudo conectar con el Coordinador"ANSI_COLOR_RESET);
 
 	freeaddrinfo(serverInfo);
 
@@ -99,7 +99,7 @@ void reciboHandshake(int socket) {
 		case 0:  _exit_with_error(socket, NULL, ANSI_COLOR_BOLDRED"Se desconecto el servidor forzosamente"ANSI_COLOR_RESET);
 				break;
 		default: if (strcmp(handshake, buffer) == 0) {
-					log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el handshake correctamente"ANSI_COLOR_RESET);
+					log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se recibio el handshake correctamente"ANSI_COLOR_RESET);
 				}
 				break;
 	}
@@ -114,7 +114,7 @@ void envioIdentificador(int socket) {
 		_exit_with_error(socket, NULL, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
 	}
 
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el identificador"ANSI_COLOR_RESET);
+	log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio correctamente el identificador"ANSI_COLOR_RESET);
 }
 
 void conectarConCoordinador() {
