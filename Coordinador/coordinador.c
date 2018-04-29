@@ -119,9 +119,9 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 						break;
 			}
 
-			crearHiloParaCliente(socket,socketCliente[i]);
-
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar un/a %s (FD %d) y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i].nombre, socketCliente[i].fd, i);
+
+			crearHiloParaCliente(socket,socketCliente[i]);
 
 			break;
 		}
@@ -131,8 +131,7 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 }
 
 void recibirMensaje(void* argumentos) {
-	struct arg_struct* args;
-	args = argumentos;
+	struct arg_struct* args = argumentos;
 	fd_set descriptoresLectura;
 	int fdmax = args->socketCliente.fd + 1;
 	int flag = 1;
@@ -143,8 +142,6 @@ void recibirMensaje(void* argumentos) {
 	while(flag) {
 		FD_ZERO(&descriptoresLectura);
 		FD_SET(args->socketCliente.fd, &descriptoresLectura);
-
-		printf("NOMBRE: %s FD: %d \n", args->socketCliente.nombre, args->socketCliente.fd);
 
 		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
 		printf(ANSI_COLOR_BOLDCYAN"Pase el select\n"ANSI_COLOR_RESET);
@@ -174,12 +171,12 @@ void recibirMensaje(void* argumentos) {
 void crearHiloParaCliente(int socket, struct Cliente socketCliente) {
 	pthread_t threadCliente;
 
-	struct arg_struct args;
-	args.socket=socket;
-	args.socketCliente.fd=socketCliente.fd;
-	args.socketCliente.nombre = socketCliente.nombre;
+	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));			//NOTA: SUPONGO QUE EL SIZEOF SOCKET TOMA EL MALLOC DEL NOMBRE
+	args->socket=socket;
+	args->socketCliente.fd=socketCliente.fd;
+	args->socketCliente.nombre = socketCliente.nombre;
 
-	pthread_create(&threadCliente, NULL, (void *) recibirMensaje, &args);
+	pthread_create(&threadCliente, NULL, (void *) recibirMensaje, args);
 
 	pthread_detach(threadCliente);
 }

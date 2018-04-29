@@ -36,6 +36,7 @@ void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 void escuchar(int socket);
 void aceptarCliente(int socket, struct Cliente* socketCliente);
+void recibirMensaje(void* argumentos);
 void crearHiloParaCliente(int socket, struct Cliente socketCliente);
 int envioHandshake(int socketCliente);
 int reciboIdentificacion(int socketCliente);
