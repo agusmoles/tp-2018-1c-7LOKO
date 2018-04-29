@@ -144,7 +144,6 @@ void recibirMensaje(void* argumentos) {
 		FD_SET(args->socketCliente.fd, &descriptoresLectura);
 
 		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
-		printf(ANSI_COLOR_BOLDCYAN"Pase el select\n"ANSI_COLOR_RESET);
 
 		if (FD_ISSET(args->socketCliente.fd, &descriptoresLectura)) {
 		switch(resultado_recv = recv(args->socketCliente.fd, buffer, 1024, 0)) {
