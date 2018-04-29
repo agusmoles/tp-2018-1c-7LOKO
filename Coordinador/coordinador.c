@@ -75,12 +75,19 @@ void asignarEspacioYNombreAlSocketCliente(struct Cliente* socketCliente, char* n
 void aceptarCliente(int socket, struct Cliente* socketCliente) {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
+	fd_set descriptores;
+
+	FD_ZERO(&descriptores);
+	FD_SET(socket, &descriptores);
 
 	log_info(logger, ANSI_COLOR_BOLDYELLOW"Se esta esperando por nuevas conexiones..."ANSI_COLOR_RESET);
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO EL ARRAY DE CLIENTES
 		if (socketCliente[i].fd == -1) {				//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
 
+			select(12, &descriptores, NULL, NULL, NULL);
+
+			if (FD_ISSET(socket, &descriptores)) {
 			socketCliente[i].fd = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
 
 			if (socketCliente[i].fd < 0) {
@@ -118,12 +125,14 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 
 			break;
 		}
+		}
 	}
 
 }
 
 void recibirMensaje(void* argumentos) {
-	struct arg_struct* args = argumentos;
+	struct arg_struct* args;
+	args = argumentos;
 	fd_set descriptoresLectura;
 	int fdmax = args->socketCliente.fd + 1;
 	int flag = 1;
@@ -135,9 +144,12 @@ void recibirMensaje(void* argumentos) {
 		FD_ZERO(&descriptoresLectura);
 		FD_SET(args->socketCliente.fd, &descriptoresLectura);
 
+		printf("NOMBRE: %s FD: %d \n", args->socketCliente.nombre, args->socketCliente.fd);
+
 		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
 		printf(ANSI_COLOR_BOLDCYAN"Pase el select\n"ANSI_COLOR_RESET);
 
+		if (FD_ISSET(args->socketCliente.fd, &descriptoresLectura)) {
 		switch(resultado_recv = recv(args->socketCliente.fd, buffer, 1024, 0)) {
 				case -1: _exit_with_error(args->socket, "No se pudo recibir el mensaje del cliente");
 						break;
@@ -152,6 +164,7 @@ void recibirMensaje(void* argumentos) {
 						break;
 
 			}
+		}
 	}
 
 	free(buffer);
@@ -163,9 +176,10 @@ void crearHiloParaCliente(int socket, struct Cliente socketCliente) {
 
 	struct arg_struct args;
 	args.socket=socket;
-	args.socketCliente=socketCliente;
+	args.socketCliente.fd=socketCliente.fd;
+	args.socketCliente.nombre = socketCliente.nombre;
 
-	pthread_create(&threadCliente, NULL, (void *) recibirMensaje, (void*) &args);
+	pthread_create(&threadCliente, NULL, (void *) recibirMensaje, &args);
 
 	pthread_detach(threadCliente);
 }
