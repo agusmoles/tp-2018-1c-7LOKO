@@ -40,7 +40,12 @@ void recibirOrdenDeEjecucion(int socketServidor);
 void enviarMensaje(int socketServidor, char* instruccion);
 
 
-void ejecutarInstruccion(char*);
+void ejecutarInstruccion(char*,int,int);
+
+void instruccionGet(t_esi_operacion*,int,int);
+void instruccionSet(t_esi_operacion*,int,int);
+void instruccionStore(t_esi_operacion*,int,int);
+
 
 
 #endif /* ESIS_ESIS_H_ */
