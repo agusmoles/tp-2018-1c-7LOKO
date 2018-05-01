@@ -19,9 +19,9 @@ int main(){
 
 	while(getline(&instruccion,&len,script) != -1){
 		enviarMensaje(socketPlanificador,"Execution_Request");
-		//recibirOrdenDeEjecucion(socketPlanificador);
+		recibirOrdenDeEjecucion(socketPlanificador);
 
-		ejecutarInstruccion(instruccion);
+		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);
 
 		enviarMensaje(socketCoordinador,instruccion);
 	}
@@ -29,17 +29,20 @@ int main(){
 	close(socketCoordinador);
 }
 
-void ejecutarInstruccion(char* instruccion){
+void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
 	t_esi_operacion parsed = parse(instruccion);
 	if(parsed.valido){
 		switch(parsed.keyword){
 			case GET:
+				instruccionGet(&parsed, socketCoordinador,socketPlanificador);
 				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
 				break;
 			case SET:
+				instruccionSet(&parsed, socketCoordinador, socketPlanificador);
 				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
 				break;
 			case STORE:
+				instruccionStore(&parsed,socketCoordinador,socketPlanificador);
 				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
 				break;
 			default:
@@ -157,4 +160,30 @@ void enviarMensaje(int socketServidor, char* msg){
 	int resultado;
 	resultado = send(socketServidor,msg, strlen(msg)+1,0);
 	verificarResultado(socketServidor, resultado);
+}
+
+void instruccionGet(t_esi_operacion* operacion,int coordinador,int planificador){
+	int size = strlen("GET_") + strlen(operacion->argumentos.GET.clave) +1;
+	char* instruccion = malloc(size);
+	strcpy(instruccion,"GET_");
+	strcat(instruccion,operacion->argumentos.GET.clave);
+	enviarMensaje(coordinador,instruccion);
+}
+
+void instruccionSet(t_esi_operacion* operacion,int coordinador,int planificador){
+	int size = strlen("SET_") + strlen(operacion->argumentos.SET.clave) + strlen(operacion->argumentos.SET.valor)+2;
+	char* instruccion = malloc(size);
+	strcpy(instruccion,"SET_");
+	strcat(instruccion,operacion->argumentos.SET.clave);
+	strcat(instruccion,"_");
+	strcat(instruccion,operacion->argumentos.SET.valor);
+	enviarMensaje(coordinador,instruccion);
+}
+
+void instruccionStore(t_esi_operacion* operacion,int coordinador,int planificador){
+	int size = strlen("STR_") + strlen(operacion->argumentos.STORE.clave) +1;
+	char* instruccion = malloc(size);
+	strcpy(instruccion,"STR_");
+	strcat(instruccion,operacion->argumentos.STORE.clave);
+	enviarMensaje(coordinador,instruccion);
 }

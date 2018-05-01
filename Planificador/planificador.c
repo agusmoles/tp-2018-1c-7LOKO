@@ -209,6 +209,7 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 	void* buffer = malloc(1024);
 	int resultado_recv;
+	char* consola = malloc(1024);
 
 	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, MSG_DONTWAIT)) {
 
@@ -224,6 +225,10 @@ void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, posicion, resultado_recv, (char*) buffer);
 				break;
 
+	}
+	if (!strcmp(buffer,"EXERQ")){
+		scanf("%s",consola);
+		send(socketCliente[posicion].fd,"EXEOR",strlen("EXEOR")+1,0);
 	}
 	free(buffer);
 }
