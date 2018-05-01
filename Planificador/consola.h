@@ -21,13 +21,14 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <signal.h>
-#include "../../Colores.h"
+#include "../Colores.h"
 
 #define IP "127.0.0.1"
 #define PUERTO "6666"
 
 t_log* logger;
 
+int ejecutar_consola();
 int com_pausar(char **args);
 int com_continuar(char **args);
 int com_bloquear(char **args);

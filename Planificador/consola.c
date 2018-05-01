@@ -40,67 +40,9 @@ int cantidad_commands() {
   return sizeof(command_nombre) / sizeof(char *);
 }
 
-//CONEXION AL PLANIFICADOR
-void _exit_with_error(int socket, char* mensaje) {
-	close(socket);
-	log_error(logger, mensaje);
-	exit(1);
-}
-
-void configurarLogger() {
-	logger = log_create("consola.log", "cliente", 1, LOG_LEVEL_INFO);
-}
-
-int conectarSocket() {
-	struct addrinfo hints;
-	struct addrinfo *serverInfo;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;		// Permite que la maquina se encargue de verificar si usamos IPv4 o IPv6
-	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
-
-	getaddrinfo(IP, PUERTO, &hints, &serverInfo);	// Carga en serverInfo los datos de la conexion
-
-	int server_socket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
-
-	if (connect(server_socket, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
-		_exit_with_error(server_socket, "No se pudo conectar con el servidor");
-	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar con el planificador"ANSI_COLOR_RESET);
-
-	freeaddrinfo(serverInfo);
-
-	return server_socket;
-}
-
-void reciboHandshake(int socket) {
-	char* handshake = "******PLANIFICADOR HANDSHAKE******";
-	char* buffer = malloc(strlen(handshake)+1);
-
-
-	switch (recv(socket, buffer, strlen(handshake)+1, MSG_WAITALL)) {
-		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el handshake"ANSI_COLOR_RESET);
-				break;
-		case 0:  _exit_with_error(socket, ANSI_COLOR_BOLDRED"Se desconecto el servidor forzosamente"ANSI_COLOR_RESET);
-				break;
-		default: if (strcmp(handshake, buffer) == 0) {
-					log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el handshake correctamente"ANSI_COLOR_RESET);
-				}
-				break;
-	}
-
-	free(buffer);
-}
-
-int main(){
+int ejecutar_consola(){
   char * linea;
   char** args;
-
-  configurarLogger();
-  int socket = conectarSocket();
-
-  reciboHandshake(socket);
 	
   while(1){
 

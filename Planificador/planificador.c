@@ -1,6 +1,7 @@
 /******** SERVIDOR PLANIFICADOR *********/
 
 #include "planificador.h"
+#include "consola.h"
 
 void _exit_with_error(int socket, struct Cliente* socketCliente, char* mensaje) {
 	close(socket);
@@ -251,15 +252,30 @@ int main(void) {
 	finalizacion.sa_handler = intHandler;
 	sigaction(SIGINT, &finalizacion, NULL);
 
-	pthread_t threadCliente;
-
-	pthread_create(&threadCliente, NULL, (void *)conectarConCoordinador, NULL);
-
-	pthread_detach(threadCliente);
-
 	configurarLogger();
 	crearConfig();
 	setearConfigEnVariables();
+
+	pthread_t threadCliente;
+
+	if(pthread_create(&threadCliente, NULL, (void *)conectarConCoordinador, NULL) != 0) {
+		log_error(logger, "No se pudo crear el hilo coordinador");
+		exit(-1);
+	}else{
+		log_info(logger, "Se creo el hilo coordinador");
+	}
+
+	pthread_t threadConsola;
+
+	if(pthread_create(&threadConsola, NULL, (void *)ejecutar_consola, NULL) != 0) {
+		log_error(logger, "No se pudo crear el hilo coordinador");
+		exit(-1);
+	}else{
+		log_info(logger, "Se creo el hilo consola");
+	}
+
+	pthread_detach(threadCliente);
+	pthread_detach(threadConsola);
 
 	struct Cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
 
