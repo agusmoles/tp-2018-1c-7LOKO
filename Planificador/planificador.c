@@ -3,14 +3,12 @@
 #include "planificador.h"
 #include "consola.h"
 
-void _exit_with_error(int socket, struct Cliente* socketCliente, char* mensaje) {
+void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 
-	if (socketCliente != NULL) {
-		for(int i=0; i<NUMEROCLIENTES; i++) {
-			if (socketCliente[i].fd != 0) {
-				close(socketCliente[i].fd);					// CIERRO TODOS LOS SOCKETS DE CLIENTES QUE ESTABAN ABIERTOS EN EL ARRAY
-			}
+	for(int i=0; i<NUMEROCLIENTES; i++) {
+		if (socketCliente[i].fd != -1) {
+			close(socketCliente[i].fd);					// CIERRO TODOS LOS SOCKETS DE CLIENTES QUE ESTABAN ABIERTOS EN EL ARRAY
 		}
 	}
 
@@ -21,7 +19,7 @@ void _exit_with_error(int socket, struct Cliente* socketCliente, char* mensaje) 
 }
 
 void configurarLogger() {
-	logger = log_create("planificador.log", "server", 1, LOG_LEVEL_INFO);
+	logger = log_create("planificador.log", "planificador", 1, LOG_LEVEL_INFO);
 }
 
 void crearConfig() {
@@ -32,6 +30,22 @@ void setearConfigEnVariables() {
 	PUERTOPLANIFICADOR = config_get_string_value(config, "Puerto Planificador");
 	PUERTOCOORDINADOR = config_get_string_value(config, "Puerto Coordinador");
 	IPCOORDINADOR = config_get_string_value(config, "IP Coordinador");
+	algoritmoPlanificacion = config_get_string_value(config, "Algoritmo de planificación");
+	alfaPlanificacion = config_get_double_value(config, "Alfa planificación");
+	estimacionInicial = config_get_int_value(config, "Estimación inicial");
+}
+
+void setearListaDeEstados() {
+	estado = list_create();
+	listos = list_create();
+	finalizados = list_create();
+	ejecutando = list_create();
+	bloqueados = list_create();
+
+	list_add(estado, listos);
+	list_add(estado, ejecutando);
+	list_add(estado, bloqueados);
+	list_add(estado, finalizados);
 }
 
 int conectarSocketYReservarPuerto() {
@@ -48,13 +62,13 @@ int conectarSocketYReservarPuerto() {
 	int listenSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
 
 	if (listenSocket <= 0) {
-		_exit_with_error(listenSocket, NULL, "No se pudo conectar el socket");
+		_exit_with_error(listenSocket, "No se pudo conectar el socket");
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar el socket con éxito"ANSI_COLOR_RESET);
 
 	if(bind(listenSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
-		_exit_with_error(listenSocket, NULL,"No se pudo reservar correctamente el puerto de escucha");
+		_exit_with_error(listenSocket,"No se pudo reservar correctamente el puerto de escucha");
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo reservar correctamente el puerto de escucha del servidor"ANSI_COLOR_RESET);
@@ -79,7 +93,7 @@ int conectarSocketCoordinador() {
 	int server_socket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
 
 	if (connect(server_socket, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
-		_exit_with_error(server_socket, NULL, "No se pudo conectar con el servidor");
+		_exit_with_error(server_socket, "No se pudo conectar con el servidor");
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se pudo conectar con el Coordinador"ANSI_COLOR_RESET);
@@ -95,9 +109,9 @@ void reciboHandshake(int socket) {
 
 
 	switch (recv(socket, buffer, strlen(handshake)+1, MSG_WAITALL)) {
-		case -1: _exit_with_error(socket, NULL, ANSI_COLOR_BOLDRED"No se pudo recibir el handshake"ANSI_COLOR_RESET);
+		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el handshake"ANSI_COLOR_RESET);
 				break;
-		case 0:  _exit_with_error(socket, NULL, ANSI_COLOR_BOLDRED"Se desconecto el servidor forzosamente"ANSI_COLOR_RESET);
+		case 0:  _exit_with_error(socket, ANSI_COLOR_BOLDRED"Se desconecto el servidor forzosamente"ANSI_COLOR_RESET);
 				break;
 		default: if (strcmp(handshake, buffer) == 0) {
 					log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se recibio el handshake correctamente"ANSI_COLOR_RESET);
@@ -112,7 +126,7 @@ void envioIdentificador(int socket) {
 	char* identificador = "1";			//PLANIFICADOR ES 1
 
 	if (send(socket, identificador, strlen(identificador)+1, 0) < 0) {
-		_exit_with_error(socket, NULL, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio correctamente el identificador"ANSI_COLOR_RESET);
@@ -129,7 +143,7 @@ void conectarConCoordinador() {
 
 void escuchar(int socket) {
 	if(listen(socket, NUMEROCLIENTES)) {
-		_exit_with_error(socket, NULL, "No se puede esperar por conexiones");
+		_exit_with_error(socket, "No se puede esperar por conexiones");
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se esta escuchando correctamente en el puerto"ANSI_COLOR_RESET);
@@ -141,7 +155,8 @@ void manejoDeClientes(int socket, struct Cliente* socketCliente) {
 	FD_SET(socket, &descriptoresLectura); //ASIGNO EL SOCKET DE SERVIDOR AL SET
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {
-		if(socketCliente[i].fd != -1) {
+		if(socketCliente[i].fd != -1 && socketCliente[i].nombre[0] != '\0') {
+			printf(ANSI_COLOR_BOLDCYAN"AÑADI EL SOCKET %i \n"ANSI_COLOR_RESET, i);
 			FD_SET(socketCliente[i].fd, &descriptoresLectura);  //SI EL FD ES DISTINTO DE -1 LO AGREGO AL SET
 		}
 	}
@@ -152,7 +167,7 @@ void manejoDeClientes(int socket, struct Cliente* socketCliente) {
 		case 0: log_info(logger, "Expiro el tiempo de espera de conexion o mensaje de los clientes");
 				break;
 
-		case -1: _exit_with_error(socket, socketCliente, "Fallo el manejo de clientes");
+		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el manejo de clientes"ANSI_COLOR_RESET);
 				break;
 
 		default: for (int i=0; i<NUMEROCLIENTES; i++) {
@@ -178,12 +193,13 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 	log_info(logger, ANSI_COLOR_BOLDYELLOW"Un nuevo cliente requiere acceso al servidor. Procediendo a aceptar.."ANSI_COLOR_RESET);
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO EL ARRAY DE CLIENTES
-		if (socketCliente[i].fd == -1) {				//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
+		if (socketCliente[i].fd == -1 && socketCliente[i].nombre[0] == '\0') {	//SI FD ES IGUAL A -1 Y NO TIENE
+																				//NOMBRE ES PORQUE PUEDE OCUPAR ESE ESPACIO DEL ARRAY
 
 			socketCliente[i].fd = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
 
 			if (socketCliente[i].fd < 0) {
-				_exit_with_error(socket, socketCliente, "No se pudo conectar el cliente");		// MANEJO DE ERRORES
+				_exit_with_error(socket, "No se pudo conectar el cliente");		// MANEJO DE ERRORES
 			}
 
 			if (socketCliente[i].fd > fdmax) {
@@ -191,15 +207,19 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 			}
 
 			switch(envioHandshake(socketCliente[i].fd)) {
-			case -1: _exit_with_error(socket, socketCliente, "No se pudo enviar el handshake");
+			case -1: _exit_with_error(socket, "No se pudo enviar el handshake");
 					break;
-			case -2: _exit_with_error(socket, socketCliente, "No se pudo recibir el handshake");
+			case -2: _exit_with_error(socket, "No se pudo recibir el handshake");
 					break;
 			case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el handshake correctamente"ANSI_COLOR_RESET);
 					break;
 			}
 
-			log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un ESI %d"ANSI_COLOR_RESET, i);
+			strcpy(socketCliente[i].nombre, "ESI ");
+			socketCliente[i].nombre[4] = i + '0';			//LE ASIGNO EL NOMBRE SEGUN LA POSICION DEL ARRAY, YA QUE SOLO SE CONECTAN ESIS AL PLANIF
+			socketCliente[i].nombre[5] = '\0';
+
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un %s"ANSI_COLOR_RESET, socketCliente[i].nombre);
 
 			break;
 		}
@@ -214,23 +234,29 @@ void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 
 	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, MSG_DONTWAIT)) {
 
-		case -1: _exit_with_error(socket, socketCliente, "No se pudo recibir el mensaje del cliente");
+		case -1: _exit_with_error(socket, "No se pudo recibir el mensaje del cliente");
 				break;
 
 		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %d"ANSI_COLOR_RESET, posicion);
 				close(socketCliente[posicion].fd); 		//CIERRO EL SOCKET
-				free(socketCliente[posicion].nombre);		//LO LIBERO SOLO PORQUE SUPONGO QUE NO VUELVE AL SISTEMA
 				socketCliente[posicion].fd = -1;			//LO VUELVO A SETEAR EN -1 POR SI HAY QUE VOLVER A ASIGNARLO
 				break;
 
 		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, posicion, resultado_recv, (char*) buffer);
+
+				if(strcmp(buffer, "EXERQ") == 0) {				// SI EL ESI PIDE SOLICITUD DE EJECUCION, ES PORQUE ESTA LISTO
+					list_add(listos, &socketCliente[posicion]);	// SE LO AÑADE A LA LISTA
+				}
+
+				printf(ANSI_COLOR_BOLDWHITE"Se añadio el ESI a la lista de Listos %d \n"ANSI_COLOR_RESET, list_size(listos));
+
 				break;
 
 	}
-	if (!strcmp(buffer,"EXERQ")){
-		scanf("%s",consola);
-		send(socketCliente[posicion].fd,"EXEOR",strlen("EXEOR")+1,0);
-	}
+//	if (!strcmp(buffer,"EXERQ")){
+//		scanf("%s",consola);
+//		send(socketCliente[posicion].fd,"EXEOR",strlen("EXEOR")+1,0);
+//	}
 	free(buffer);
 }
 
@@ -260,15 +286,22 @@ int main(void) {
 	configurarLogger();
 	crearConfig();
 	setearConfigEnVariables();
+	setearListaDeEstados();
+
+	/************************************** CONEXION CON COORDINADOR **********************************/
 
 	pthread_t threadCliente;
 
 	if(pthread_create(&threadCliente, NULL, (void *)conectarConCoordinador, NULL) != 0) {
-		log_error(logger, "No se pudo crear el hilo coordinador");
+		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo coordinador"ANSI_COLOR_RESET);
 		exit(-1);
 	}else{
-		log_info(logger, "Se creo el hilo coordinador");
+		log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo coordinador"ANSI_COLOR_RESET);
 	}
+
+	sleep(1);
+
+	/************************************** CONEXION CON CONSOLA **********************************/
 
 	pthread_t threadConsola;
 
@@ -276,13 +309,11 @@ int main(void) {
 		log_error(logger, "No se pudo crear el hilo coordinador");
 		exit(-1);
 	}else{
-		log_info(logger, "Se creo el hilo consola");
+		log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo consola"ANSI_COLOR_RESET);
 	}
 
 	pthread_detach(threadCliente);
 	pthread_detach(threadConsola);
-
-	struct Cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
 
 	int listenSocket = conectarSocketYReservarPuerto();
 

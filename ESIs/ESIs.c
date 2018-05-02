@@ -18,7 +18,7 @@ int main(){
 	envioIdentificador(socketCoordinador);
 
 	while(getline(&instruccion,&len,script) != -1){
-		enviarMensaje(socketPlanificador,"Execution_Request");
+		enviarMensaje(socketPlanificador,"EXERQ");
 		recibirOrdenDeEjecucion(socketPlanificador);
 
 		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);

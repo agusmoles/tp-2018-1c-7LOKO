@@ -9,7 +9,7 @@ void _exit_with_error(int socket, char* mensaje) {
 }
 
 void configurarLogger() {
-	logger = log_create("instancia.log", "cliente", 1, LOG_LEVEL_INFO);
+	logger = log_create("instancia.log", "instancia", 1, LOG_LEVEL_INFO);
 }
 
 void crearConfig() {

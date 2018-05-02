@@ -16,7 +16,7 @@ void _exit_with_error(int socket, char* mensaje) {
 }
 
 void configurarLogger() {
-	logger = log_create("coordinador.log", "server", 1, LOG_LEVEL_INFO);
+	logger = log_create("coordinador.log", "coordinador", 1, LOG_LEVEL_INFO);
 }
 
 void crearConfig() {
@@ -66,9 +66,7 @@ void escuchar(int socket) {
 
 }
 
-void asignarEspacioYNombreAlSocketCliente(struct Cliente* socketCliente, char* nombre) {
-	int size = strlen(nombre) + 1;
-	socketCliente->nombre = malloc(size);
+void asignarNombreAlSocketCliente(struct Cliente* socketCliente, char* nombre) {
 	strcpy(socketCliente->nombre, nombre);
 }
 
@@ -85,7 +83,7 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO EL ARRAY DE CLIENTES
 		if (socketCliente[i].fd == -1) {				//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
 
-			select(12, &descriptores, NULL, NULL, NULL);
+			select(5, &descriptores, NULL, NULL, NULL);
 
 			if (FD_ISSET(socket, &descriptores)) {
 			socketCliente[i].fd = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
@@ -106,20 +104,17 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 			switch(reciboIdentificacion(socketCliente[i].fd)) {
 				case 0: _exit_with_error(socket, "No se pudo recibir el mensaje del protocolo de conexion"); //FALLO EL RECV
 						break;
-				case 1: log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto el planificador"ANSI_COLOR_RESET);
-						asignarEspacioYNombreAlSocketCliente(&socketCliente[i], "Planificador");
+				case 1: asignarNombreAlSocketCliente(&socketCliente[i], "Planificador");
 						break;
-				case 2: log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto una instancia"ANSI_COLOR_RESET);
-				asignarEspacioYNombreAlSocketCliente(&socketCliente[i], "Instancia");
+				case 2: asignarNombreAlSocketCliente(&socketCliente[i], "Instancia");
 						break;
-				case 3: log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un ESI"ANSI_COLOR_RESET);
-						asignarEspacioYNombreAlSocketCliente(&socketCliente[i], "ESI");
+				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
 						break;
 				default: _exit_with_error(socket, ANSI_COLOR_RED"No estas cumpliendo con el protocolo de conexion"ANSI_COLOR_RESET);
 						break;
 			}
 
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar un/a %s (FD %d) y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i].nombre, socketCliente[i].fd, i);
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se pudo conectar el/la %s (FD %d) y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i].nombre, socketCliente[i].fd, i);
 
 			crearHiloParaCliente(socket,socketCliente[i]);
 
@@ -152,6 +147,7 @@ void recibirMensaje(void* argumentos) {
 
 				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %s"ANSI_COLOR_RESET, args->socketCliente.nombre);
 						close(args->socketCliente.fd); 		//CIERRO EL SOCKET
+						free(args);							//LIBERO MEMORIA CUANDO SE DESCONECTA
 						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
 		//				args->socketCliente.fd = -1;			//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
 						break;
@@ -170,10 +166,10 @@ void recibirMensaje(void* argumentos) {
 void crearHiloParaCliente(int socket, struct Cliente socketCliente) {
 	pthread_t threadCliente;
 
-	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));			//NOTA: SUPONGO QUE EL SIZEOF SOCKET TOMA EL MALLOC DEL NOMBRE
+	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
 	args->socket=socket;
 	args->socketCliente.fd=socketCliente.fd;
-	args->socketCliente.nombre = socketCliente.nombre;
+	strcpy(args->socketCliente.nombre, socketCliente.nombre);
 
 	pthread_create(&threadCliente, NULL, (void *) recibirMensaje, args);
 

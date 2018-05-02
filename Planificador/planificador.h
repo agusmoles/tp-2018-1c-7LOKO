@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <commons/log.h>
 #include <commons/config.h>
+#include <commons/collections/list.h>
 #include <signal.h>
 #include <pthread.h>
 #include "../Colores.h"
@@ -14,16 +15,25 @@
 char* PUERTOPLANIFICADOR;
 char* PUERTOCOORDINADOR;
 char* IPCOORDINADOR;
-#define NUMEROCLIENTES 10
+char* algoritmoPlanificacion;
+double alfaPlanificacion;
+int estimacionInicial;
+#define NUMEROCLIENTES 20
 
 struct Cliente{
-	char* nombre;
+	char nombre[14];
 	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
 };
 
 t_log* logger;
 t_config* config;
+t_list* estado;
+t_list* listos;
+t_list* ejecutando;
+t_list* finalizados;
+t_list* bloqueados;
 fd_set descriptoresLectura;
+struct Cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
 int fdmax = NUMEROCLIENTES;
 
 void configurarLogger();
@@ -39,4 +49,4 @@ void manejoDeClientes(int socket, struct Cliente* socketCliente);
 void aceptarCliente(int socket, struct Cliente* socketCliente);
 void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion);
 int envioHandshake(int socketCliente);
-void _exit_with_error(int socket, struct Cliente* socketCliente, char* mensaje);
+void _exit_with_error(int socket, char* mensaje);

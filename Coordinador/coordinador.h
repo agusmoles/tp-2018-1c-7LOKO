@@ -13,10 +13,10 @@
 #include "../Colores.h"
 
 char* PUERTO;
-#define NUMEROCLIENTES 10
+#define NUMEROCLIENTES 20
 
 struct Cliente{
-	char* nombre;
+	char nombre[14];
 	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
 };
 
@@ -35,6 +35,7 @@ void crearConfig();
 void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 void escuchar(int socket);
+void asignarNombreAlSocketCliente(struct Cliente* socketCliente, char* nombre);
 void aceptarCliente(int socket, struct Cliente* socketCliente);
 void recibirMensaje(void* argumentos);
 void crearHiloParaCliente(int socket, struct Cliente socketCliente);
