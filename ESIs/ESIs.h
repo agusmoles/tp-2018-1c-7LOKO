@@ -36,7 +36,7 @@ void recibirHandshake(int socketServidor, char* handshake);
 void envioIdentificador(int socket);
 
 
-void recibirOrdenDeEjecucion(int socketServidor);
+void recibirMensaje(int socketServidor,char* mensaje);
 void enviarMensaje(int socketServidor, char* instruccion);
 
 

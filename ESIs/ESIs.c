@@ -19,9 +19,10 @@ int main(){
 
 	while(getline(&instruccion,&len,script) != -1){
 		enviarMensaje(socketPlanificador,"EXERQ");
-		//recibirOrdenDeEjecucion(socketPlanificador);
+		recibirMensaje(socketPlanificador,"EXEOR");
 
 		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);
+		recibirMensaje(socketCoordinador,"OPOK");
 	}
 	close(socketPlanificador);
 	close(socketCoordinador);
@@ -115,15 +116,18 @@ void envioIdentificador(int socket) {
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el identificador"ANSI_COLOR_RESET);
 }
 
-void recibirOrdenDeEjecucion(int socketServidor){
-	char* ejecutar = malloc(1);
+void recibirMensaje(int socketServidor, char* mensaje){
+	int size = strlen(mensaje)+1;
+	char* recibido = malloc(size) + 9;
 	int resultado;
-	resultado = recv(socketServidor, ejecutar, 1,MSG_WAITALL);
+	resultado = recv(socketServidor, recibido, 1,MSG_WAITALL);
 	verificarResultado(socketServidor,resultado);
-	if(strcmp(ejecutar,"1")!=0){
-			exitErrorBuffer(socketServidor,"Mensaje erroneo",ejecutar);
-		}
-	log_info(logger,"Orden de ejecucion linea de script recibida");
+	if(strcmp(recibido,mensaje)!=0){
+		exitErrorBuffer(socketServidor,"Mensaje erroneo",recibido);
+	}
+	strcat(recibido, " recibido");
+	log_info(logger,recibido);
+	free(recibido);
 }
 
 void enviarMensaje(int socketServidor, char* msg){
