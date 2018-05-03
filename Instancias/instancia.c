@@ -19,6 +19,12 @@ void crearConfig() {
 void setearConfigEnVariables() {
 	PUERTO = config_get_string_value(config, "Puerto Coordinador");
 	IP = config_get_string_value(config, "IP Coordinador");
+	ALGORITMOREEMPLAZO = config_get_string_value(config, "Algoritmo de Reemplazo");
+	PUNTOMONTAJE = config_get_string_value(config, "Punto de montaje");
+	NOMBREINSTANCIA = config_get_string_value(config, "Nombre de la Instancia");
+	INTERVALODUMP = config_get_string_value(config, "Intervalo de dump");
+	TAMANIOENTRADA = config_get_string_value(config, "Tamanio de Entrada");
+	CANTIDADENTRADAS = config_get_string_value(config, "Cantidad de Entradas");
 }
 
 int conectarSocket() {
