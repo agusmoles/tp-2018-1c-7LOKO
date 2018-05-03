@@ -25,4 +25,5 @@ GET_Recurso
 SET_Recurso_Valor
 STR_Recurso
 
-Si la operacion finalizo correctamente, el Coordinador envia OPOK.
+Si la operacion finalizo correctamente, el Coordinador envia OPOK y 
+el ESI envia lo mismo al planificador para indicar que termino de ejecutar dicha linea

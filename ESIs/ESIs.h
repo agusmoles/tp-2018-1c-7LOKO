@@ -34,6 +34,7 @@ void verificarResultado(int,int);
 int conect_to_server(char *ip,char*puerto);
 void recibirHandshake(int socketServidor, char* handshake);
 void envioIdentificador(int socket);
+void administrarID(int socketPlanificador, int socketCoordinador);
 
 
 void recibirMensaje(int socketServidor,char* mensaje);
