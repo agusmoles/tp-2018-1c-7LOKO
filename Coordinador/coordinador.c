@@ -116,8 +116,6 @@ void recibirSentenciaESI(int socketCliente){
 	int flag = 1;
 	fd_set descriptoresLectura;
 
-	enviarMensaje(socketCliente, "OPOK");
-
 	while(flag) {
 		FD_ZERO(&descriptoresLectura);
 		FD_SET(socketCliente, &descriptoresLectura);
@@ -135,20 +133,20 @@ void recibirSentenciaESI(int socketCliente){
 		//				args->socketCliente.fd = -1;			//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
 						break;
 
-				default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente y dice: %s\n"ANSI_COLOR_RESET, (char*) buffer);
+				default:
+						enviarMensaje(socketCliente, "OPOK");
+						printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente y dice: %s\n"ANSI_COLOR_RESET, (char*) buffer);
 						break;
 
 			}
 		}
 	}
-
 	free(buffer);
 	pthread_exit(NULL);
 }
 
 void crearHiloESI(struct Cliente socketCliente){
 	pthread_t threadESI;
-
 //	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
 //	args->socket=socket;
 //	args->socketCliente.fd=socketCliente.fd;
@@ -162,6 +160,19 @@ void crearHiloESI(struct Cliente socketCliente){
 	log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo ESI"ANSI_COLOR_RESET);
 
 	pthread_detach(threadESI);
+}
+
+void recibirIDdeESI(struct Cliente* cliente){
+	int *buffer = malloc(sizeof(int));
+
+	if(recv(cliente->fd, buffer, sizeof(int), MSG_WAITALL)<0){
+		_exit_with_error(cliente->fd, "No se pudo recibir el identificador ESI");
+	}
+
+	cliente->identificadorESI = *buffer;
+
+	free(buffer);
+	log_info(logger, ANSI_COLOR_BOLDCYAN "Se recibio el identificador del ESI %d"ANSI_COLOR_RESET, cliente->identificadorESI);
 }
 
 void aceptarCliente(int socket, struct Cliente* socketCliente) {
@@ -202,6 +213,7 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 						crearHiloInstancia(socketCliente[i]);
 						break;
 				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
+						recibirIDdeESI(&socketCliente[i]);
 						crearHiloESI(socketCliente[i]);
 						break;
 				default: _exit_with_error(socket, ANSI_COLOR_RED"No estas cumpliendo con el protocolo de conexion"ANSI_COLOR_RESET);
