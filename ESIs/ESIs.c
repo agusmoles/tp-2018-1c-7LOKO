@@ -127,10 +127,12 @@ void recibirMensaje(int socketServidor, char* mensaje){
 	int resultado;
 	resultado = recv(socketServidor, recibido, size,MSG_WAITALL);
 	verificarResultado(socketServidor,resultado);
+
 	if(strcmp(recibido,mensaje)!=0){
 		exitErrorBuffer(socketServidor,"Mensaje erroneo",recibido);
 	}
-	//strcat(recibido, " recibido");
+	strcat(recibido, " recibido");
+
 	log_info(logger,recibido);
 	free(recibido);
 }
