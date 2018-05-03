@@ -117,15 +117,17 @@ void envioIdentificador(int socket) {
 }
 
 void recibirMensaje(int socketServidor, char* mensaje){
-	int size = strlen(mensaje)+1;
-	char* recibido = malloc(size) + 9;
+	int size = strlen(mensaje) + 1;
+	char* recibido = malloc(size);
 	int resultado;
-	resultado = recv(socketServidor, recibido, 1,MSG_WAITALL);
+
+	resultado = recv(socketServidor, recibido, size, MSG_WAITALL);
 	verificarResultado(socketServidor,resultado);
+
 	if(strcmp(recibido,mensaje)!=0){
 		exitErrorBuffer(socketServidor,"Mensaje erroneo",recibido);
 	}
-	strcat(recibido, " recibido");
+
 	log_info(logger,recibido);
 	free(recibido);
 }
