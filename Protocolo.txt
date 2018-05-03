@@ -17,9 +17,12 @@ COORDINADOR RECIBE UN 3: ESI SE HA CONECTADO
 
 ------------------------	ESI	   ------------------------
 
-El ESI envia una solicitud de ejecución: EXERQ
-Cuando el Planificador lo decida, envia un EXEOR para indicarle al ESI que debe ejecutar
+El ESI envia una solicitud de ejecución: EXERQ. 
+Cuando el Planificador lo decida, envia un EXEOR para indicarle al ESI que debe ejecutar.
 
-El ESI envia un mensaje al Coordinador solicitando recurso con el siguiente mensaje: RECURSO_clave;
+El ESI envia un mensaje al Coordinador solicitando recurso, segun instruccion:
+GET_Recurso
+SET_Recurso_Valor
+STR_Recurso
 
- 
+Si la operacion finalizo correctamente, el Coordinador envia OPOK.

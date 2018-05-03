@@ -122,6 +122,19 @@ void reciboHandshake(int socket) {
 	free(buffer);
 }
 
+int envioHandshake(int socketCliente) {
+	char* handshake = "******PLANIFICADOR HANDSHAKE******";
+
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
+
+	switch(send(socketCliente, handshake, strlen(handshake)+1, 0)) {
+		case -1: return -1;
+				break;
+		default: return 0;
+				break;
+	}
+}
+
 void envioIdentificador(int socket) {
 	char* identificador = "1";			//PLANIFICADOR ES 1
 
@@ -173,6 +186,7 @@ void manejoDeClientes(int socket, struct Cliente* socketCliente) {
 		default: for (int i=0; i<NUMEROCLIENTES; i++) {
 					if (FD_ISSET(socketCliente[i].fd, &descriptoresLectura)) {
 						recibirMensaje(socket, socketCliente, i); //RECIBO EL MENSAJE, DENTRO DE LA FUNCION MANEJO ERRORES
+						ordenarProximoAEjecutar(socket, socketCliente);
 					}
 				}
 
@@ -209,14 +223,12 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 			switch(envioHandshake(socketCliente[i].fd)) {
 			case -1: _exit_with_error(socket, "No se pudo enviar el handshake");
 					break;
-			case -2: _exit_with_error(socket, "No se pudo recibir el handshake");
-					break;
 			case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el handshake correctamente"ANSI_COLOR_RESET);
 					break;
 			}
 
 			strcpy(socketCliente[i].nombre, "ESI ");
-			socketCliente[i].nombre[4] = i + '0';			//LE ASIGNO EL NOMBRE SEGUN LA POSICION DEL ARRAY, YA QUE SOLO SE CONECTAN ESIS AL PLANIF
+			socketCliente[i].nombre[4] = i + '0';		//LE ASIGNO EL NOMBRE SEGUN LA POSICION DEL ARRAY, YA QUE SOLO SE CONECTAN ESIS AL PLANIF
 			socketCliente[i].nombre[5] = '\0';
 
 			log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un %s"ANSI_COLOR_RESET, socketCliente[i].nombre);
@@ -260,18 +272,42 @@ void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 	free(buffer);
 }
 
-int envioHandshake(int socketCliente) {
-	char* handshake = "******PLANIFICADOR HANDSHAKE******";
+void ordenarProximoAEjecutar(int socket, struct Cliente* socketCliente) {
+	char* ordenEjecucion = "EXEOR";
 
-	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
+	if(list_is_empty(listos)) {
+		printf(ANSI_COLOR_BOLDRED"No hay ESIs para ejecutar\n"ANSI_COLOR_RESET);
+	} else {
+		int socketProximoAEjecutar = getDescriptorProximoAEjecutar();
 
-	switch(send(socketCliente, handshake, strlen(handshake)+1, 0)) {
-		case -1: return -1;
-				break;
-		default: return 0;
-				break;
+		if(socketProximoAEjecutar < 0) {
+			_exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el get del descriptor del proximo ESI a ejecutar"ANSI_COLOR_RESET);
+		}
+
+		send(socketProximoAEjecutar, ordenEjecucion, strlen(ordenEjecucion)+1, 0);
 	}
 }
+
+int getDescriptorProximoAEjecutar() {
+	struct Cliente* cliente;
+
+	if(strcmp(algoritmoPlanificacion, "FIFO") == 0) {
+		cliente = list_get(listos, 0);					//TOMO EL PRIMERO DE LA LISTA DE LISTOS
+		list_remove(listos, 0);							//LO SACO PORQUE PASA A EJECUTAR
+		list_add(ejecutando, cliente);					//LO AGREGO A LA LISTA DE EJECUTANDO
+		return cliente->fd;
+	} else {
+		return -1;
+	}
+}
+
+//void organizarColaDeListos() {
+//	if (strcmp(algoritmoPlanificacion, "SJF-SD") == 0) {
+//		double siguienteRafaga;
+//
+//		siguienteRafaga =
+//	}
+//}
 
 void intHandler() {
 	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);

@@ -36,16 +36,13 @@ void recibirHandshake(int socketServidor, char* handshake);
 void envioIdentificador(int socket);
 
 
-void recibirOrdenDeEjecucion(int socketServidor);
+void recibirMensaje(int socketServidor,char* mensaje);
 void enviarMensaje(int socketServidor, char* instruccion);
 
 
 void ejecutarInstruccion(char*,int,int);
 
-void instruccionGet(t_esi_operacion*,int,int);
-void instruccionSet(t_esi_operacion*,int,int);
-void instruccionStore(t_esi_operacion*,int,int);
-
+char* prepararMensaje(char*,char*,char*);
 
 
 #endif /* ESIS_ESIS_H_ */
