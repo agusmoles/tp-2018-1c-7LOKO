@@ -122,19 +122,6 @@ void reciboHandshake(int socket) {
 	free(buffer);
 }
 
-int envioHandshake(int socketCliente) {
-	char* handshake = "******PLANIFICADOR HANDSHAKE******";
-
-	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
-
-	switch(send(socketCliente, handshake, strlen(handshake)+1, 0)) {
-		case -1: return -1;
-				break;
-		default: return 0;
-				break;
-	}
-}
-
 void envioIdentificador(int socket) {
 	char* identificador = "1";			//PLANIFICADOR ES 1
 
@@ -169,7 +156,6 @@ void manejoDeClientes(int socket, struct Cliente* socketCliente) {
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {
 		if(socketCliente[i].fd != -1 && socketCliente[i].nombre[0] != '\0') {
-			printf(ANSI_COLOR_BOLDCYAN"AÑADI EL SOCKET %i \n"ANSI_COLOR_RESET, i);
 			FD_SET(socketCliente[i].fd, &descriptoresLectura);  //SI EL FD ES DISTINTO DE -1 LO AGREGO AL SET
 		}
 	}
@@ -200,6 +186,36 @@ void manejoDeClientes(int socket, struct Cliente* socketCliente) {
 	}
 }
 
+int envioHandshake(int socketCliente) {
+	char* handshake = "******PLANIFICADOR HANDSHAKE******";
+
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
+
+	switch(send(socketCliente, handshake, strlen(handshake)+1, 0)) {
+		case -1: return -1;
+				break;
+		default: return 0;
+				break;
+	}
+}
+
+int envioIDDeESI(int socketCliente, int identificador) {
+	int* identificadorESI = malloc(sizeof(int));
+
+	*identificadorESI = identificador;
+
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
+
+	switch(send(socketCliente, identificadorESI, sizeof(int), 0)) {
+		case -1: free(identificadorESI);
+				return -1;
+				break;
+		default: free(identificadorESI);
+				return 0;
+				break;
+	}
+}
+
 void aceptarCliente(int socket, struct Cliente* socketCliente) {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
@@ -221,17 +237,24 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 			}
 
 			switch(envioHandshake(socketCliente[i].fd)) {
-			case -1: _exit_with_error(socket, "No se pudo enviar el handshake");
-					break;
-			case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el handshake correctamente"ANSI_COLOR_RESET);
-					break;
+				case -1: _exit_with_error(socket, "No se pudo enviar el handshake");
+						break;
+				case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el handshake correctamente"ANSI_COLOR_RESET);
+						break;
 			}
 
-			strcpy(socketCliente[i].nombre, "ESI ");
-			socketCliente[i].nombre[4] = i + '0';		//LE ASIGNO EL NOMBRE SEGUN LA POSICION DEL ARRAY, YA QUE SOLO SE CONECTAN ESIS AL PLANIF
-			socketCliente[i].nombre[5] = '\0';
+			switch(envioIDDeESI(socketCliente[i].fd, i)) {
+				case -1: _exit_with_error(socket, "No se pudo enviar el ID del ESI");
+						break;
+				case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el ID del ESI correctamente"ANSI_COLOR_RESET);
+						break;
+			}
 
-			log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un %s"ANSI_COLOR_RESET, socketCliente[i].nombre);
+			strcpy(socketCliente[i].nombre, "ESI");		//TODOS LOS QUE SE LE CONECTAN SON ESI
+
+			socketCliente[i].identificadorESI = i;		//LE ASIGNO EL IDENTIFICADOR AL ESI
+
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un %s %d"ANSI_COLOR_RESET, socketCliente[i].nombre, socketCliente[i].identificadorESI);
 
 			break;
 		}
@@ -242,7 +265,6 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 	void* buffer = malloc(1024);
 	int resultado_recv;
-	char* consola = malloc(1024);
 
 	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, MSG_DONTWAIT)) {
 
@@ -260,15 +282,18 @@ void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 					list_add(listos, &socketCliente[posicion]);	// SE LO AÑADE A LA LISTA
 				}
 
-				printf(ANSI_COLOR_BOLDWHITE"Se añadio el ESI a la lista de Listos %d \n"ANSI_COLOR_RESET, list_size(listos));
+				if (strcmp(buffer, "OPOK") == 0) {
+					list_remove(ejecutando, 0);
+				}
+
+				if (strcmp(buffer, "EXEEND") == 0) {
+					list_add(finalizados, &socketCliente[posicion]);
+				}
 
 				break;
 
 	}
-//	if (!strcmp(buffer,"EXERQ")){
-//		scanf("%s",consola);
-//		send(socketCliente[posicion].fd,"EXEOR",strlen("EXEOR")+1,0);
-//	}
+
 	free(buffer);
 }
 
@@ -295,6 +320,7 @@ int getDescriptorProximoAEjecutar() {
 		cliente = list_get(listos, 0);					//TOMO EL PRIMERO DE LA LISTA DE LISTOS
 		list_remove(listos, 0);							//LO SACO PORQUE PASA A EJECUTAR
 		list_add(ejecutando, cliente);					//LO AGREGO A LA LISTA DE EJECUTANDO
+		printf(ANSI_COLOR_BOLDCYAN"El FD del proximo a ejecutar es: %d\n"ANSI_COLOR_RESET, cliente->fd);
 		return cliente->fd;
 	} else {
 		return -1;

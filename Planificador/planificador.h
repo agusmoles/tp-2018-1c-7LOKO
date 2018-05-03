@@ -23,6 +23,7 @@ int estimacionInicial;
 struct Cliente{
 	char nombre[14];
 	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
+	int identificadorESI;
 };
 
 t_log* logger;
@@ -45,8 +46,11 @@ void reciboHandshake(int socket);
 void envioIdentificador(int socket);
 void conectarConCoordinador();
 void escuchar(int socket);
+int envioHandshake(int socketCliente);
+int envioIDDeESI(int socketCliente, int identificador);
 void manejoDeClientes(int socket, struct Cliente* socketCliente);
 void aceptarCliente(int socket, struct Cliente* socketCliente);
 void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion);
-int envioHandshake(int socketCliente);
+void ordenarProximoAEjecutar(int socket, struct Cliente* socketCliente);
+int getDescriptorProximoAEjecutar();
 void _exit_with_error(int socket, char* mensaje);
