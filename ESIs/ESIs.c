@@ -19,42 +19,13 @@ int main(){
 
 	while(getline(&instruccion,&len,script) != -1){
 		enviarMensaje(socketPlanificador,"EXERQ");
-		recibirOrdenDeEjecucion(socketPlanificador);
+		recibirMensaje(socketPlanificador,"EXEOR");
 
 		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);
-
-		enviarMensaje(socketCoordinador,instruccion);
+		recibirMensaje(socketCoordinador,"OPOK");
 	}
 	close(socketPlanificador);
 	close(socketCoordinador);
-}
-
-void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
-	t_esi_operacion parsed = parse(instruccion);
-	if(parsed.valido){
-		switch(parsed.keyword){
-			case GET:
-				instruccionGet(&parsed, socketCoordinador,socketPlanificador);
-				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
-				break;
-			case SET:
-				instruccionSet(&parsed, socketCoordinador, socketPlanificador);
-				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
-				break;
-			case STORE:
-				instruccionStore(&parsed,socketCoordinador,socketPlanificador);
-				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
-				break;
-			default:
-				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);
-				exit(EXIT_FAILURE);
-		}
-
-		destruir_operacion(parsed);
-	} else {
-		fprintf(stderr, "La linea <%s> no es valida\n", instruccion);
-		exit(EXIT_FAILURE);
-	}
 }
 
 void configure_logger(){
@@ -145,15 +116,18 @@ void envioIdentificador(int socket) {
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el identificador"ANSI_COLOR_RESET);
 }
 
-void recibirOrdenDeEjecucion(int socketServidor){
-	char* ejecutar = malloc(1);
+void recibirMensaje(int socketServidor, char* mensaje){
+	int size = strlen(mensaje)+1;
+	char* recibido = malloc(size) + 9;
 	int resultado;
-	resultado = recv(socketServidor, ejecutar, 1,MSG_WAITALL);
+	resultado = recv(socketServidor, recibido, 1,MSG_WAITALL);
 	verificarResultado(socketServidor,resultado);
-	if(strcmp(ejecutar,"1")!=0){
-			exitErrorBuffer(socketServidor,"Mensaje erroneo",ejecutar);
-		}
-	log_info(logger,"Orden de ejecucion linea de script recibida");
+	if(strcmp(recibido,mensaje)!=0){
+		exitErrorBuffer(socketServidor,"Mensaje erroneo",recibido);
+	}
+	strcat(recibido, " recibido");
+	log_info(logger,recibido);
+	free(recibido);
 }
 
 void enviarMensaje(int socketServidor, char* msg){
@@ -162,28 +136,45 @@ void enviarMensaje(int socketServidor, char* msg){
 	verificarResultado(socketServidor, resultado);
 }
 
-void instruccionGet(t_esi_operacion* operacion,int coordinador,int planificador){
-	int size = strlen("GET_") + strlen(operacion->argumentos.GET.clave) +1;
-	char* instruccion = malloc(size);
-	strcpy(instruccion,"GET_");
-	strcat(instruccion,operacion->argumentos.GET.clave);
-	enviarMensaje(coordinador,instruccion);
+char* prepararMensaje(char* operacion, char* clave, char* valor){
+	int size = strlen(operacion) + strlen(clave) + 1;
+	if(valor!=NULL){
+		size = size + strlen(valor) + 1;
+	}
+	char* mensaje = malloc(size);
+	strcpy(mensaje,operacion);
+	strcat(mensaje,clave);
+	if(valor!=NULL){
+		strcat(mensaje,"_");
+		strcat(mensaje,valor);
+	}
+	return mensaje;
 }
 
-void instruccionSet(t_esi_operacion* operacion,int coordinador,int planificador){
-	int size = strlen("SET_") + strlen(operacion->argumentos.SET.clave) + strlen(operacion->argumentos.SET.valor)+2;
-	char* instruccion = malloc(size);
-	strcpy(instruccion,"SET_");
-	strcat(instruccion,operacion->argumentos.SET.clave);
-	strcat(instruccion,"_");
-	strcat(instruccion,operacion->argumentos.SET.valor);
-	enviarMensaje(coordinador,instruccion);
-}
+void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
+	t_esi_operacion parsed = parse(instruccion);
+	if(parsed.valido){
+		switch(parsed.keyword){
+			case GET:
+				enviarMensaje(socketCoordinador,prepararMensaje("GET_",parsed.argumentos.GET.clave,NULL));
+				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+				break;
+			case SET:
+				enviarMensaje(socketCoordinador,prepararMensaje("SET_",parsed.argumentos.SET.clave,parsed.argumentos.SET.valor));
+				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+				break;
+			case STORE:
+				enviarMensaje(socketCoordinador,prepararMensaje("STR_",parsed.argumentos.STORE.clave,NULL));
+				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+				break;
+			default:
+				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);
+				exit(EXIT_FAILURE);
+		}
 
-void instruccionStore(t_esi_operacion* operacion,int coordinador,int planificador){
-	int size = strlen("STR_") + strlen(operacion->argumentos.STORE.clave) +1;
-	char* instruccion = malloc(size);
-	strcpy(instruccion,"STR_");
-	strcat(instruccion,operacion->argumentos.STORE.clave);
-	enviarMensaje(coordinador,instruccion);
+		destruir_operacion(parsed);
+	} else {
+		fprintf(stderr, "La linea <%s> no es valida\n", instruccion);
+		exit(EXIT_FAILURE);
+	}
 }
