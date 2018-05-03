@@ -95,8 +95,6 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 			switch(envioHandshake(socketCliente[i].fd)) {
 			case -1: _exit_with_error(socket, "No se pudo enviar el handshake");
 					break;
-			case -2: _exit_with_error(socket, "No se pudo recibir el handshake");
-					break;
 			case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el handshake correctamente"ANSI_COLOR_RESET);
 					break;
 			}
