@@ -81,7 +81,7 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 	log_info(logger, ANSI_COLOR_BOLDYELLOW"Se esta esperando por nuevas conexiones..."ANSI_COLOR_RESET);
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO EL ARRAY DE CLIENTES
-		if (socketCliente[i].fd == -1) {				//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
+		if (socketCliente[i].fd == -1) {			//SI ES IGUAL A -1, ES PORQUE TODAVIA NINGUN FILEDESCRIPTOR ESTA EN ESA POSICION
 
 			select(5, &descriptores, NULL, NULL, NULL);
 
@@ -92,14 +92,11 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 				_exit_with_error(socket, "No se pudo conectar el cliente");		// MANEJO DE ERRORES
 			}
 
-			switch(envioHandshake(socketCliente[i].fd)) {
-			case -1: _exit_with_error(socket, "No se pudo enviar el handshake");
-					break;
-			case -2: _exit_with_error(socket, "No se pudo recibir el handshake");
-					break;
-			case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el handshake correctamente"ANSI_COLOR_RESET);
-					break;
+			if(envioHandshake(socketCliente[i].fd) < 0) {
+				_exit_with_error(socket, "No se pudo enviar el handshake");
 			}
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el handshake correctamente"ANSI_COLOR_RESET);
 
 			switch(reciboIdentificacion(socketCliente[i].fd)) {
 				case 0: _exit_with_error(socket, "No se pudo recibir el mensaje del protocolo de conexion"); //FALLO EL RECV
@@ -181,11 +178,10 @@ int envioHandshake(int socketCliente) {
 
 	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
 
-	switch(send(socketCliente, handshake, strlen(handshake)+1, 0)) {
-		case -1: return -1;
-				break;
-		default: return 0;
-				break;
+	if(send(socketCliente, handshake, strlen(handshake)+1, 0) < 0) {
+		return -1;
+	}else{
+		return 0;
 	}
 }
 
@@ -194,7 +190,7 @@ int reciboIdentificacion(int socketCliente) {
 
 	if(recv(socketCliente, identificador, sizeof(char)+1, MSG_WAITALL) < 0) {
 		free(identificador);
-		return 0;									//MANEJO EL ERROR EN ACEPTAR CLIENTE
+		return 0;				//MANEJO EL ERROR EN ACEPTAR CLIENTE
 	}
 
 	if (strcmp(identificador, "1") == 0) {
