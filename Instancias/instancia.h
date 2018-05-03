@@ -20,8 +20,6 @@ int INTERVALODUMP;
 int TAMANIOENTRADA;
 int CANTIDADENTRADAS;
 
-
-
 t_log* logger;
 t_config* config;
 

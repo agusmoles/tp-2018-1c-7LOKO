@@ -107,11 +107,60 @@ void pipeHandler() {
 	exit(1);
 }
 
+struct Entrada{
+	char* clave;
+	int numero;
+	int tamanio;
+};
+
+void procesarInstruccion(int socket){ // aca se reciben los SETS del coordinador
+
+	char* buffer = malloc(1024);
+	if (recv(socket,buffer,1024,MSG_WAITALL)>0){
+
+	compararEnTabla(buffer); // en el buffer hay algo como "SET_11:00_jugador"
+	free(buffer);
+}
+
+int compararEnTabla(char* instruccion, struct Entrada* tablaDeEntradas){
+
+	char** args;
+	args = string_split(instruccion, "_"); // separo la instruccion para obtener la clave
+
+	char* clave = malloc(strlen(args[1]));
+	strcpy(clave,args[1]);
+
+	for(int i=0; i<CANTIDADENTRADAS; i++){
+		if(strcmp(clave,tablaDeEntradas[i]->clave) == 0)
+			free(clave);
+			return 0; // retorna 0 cuando encuentra instancia con esa clave
+	}
+
+	return asignarInstancia(clave); // en caso de no encontrar una entrada con esa clave, procedemos a crear una nueva instancia
+}
+
+int asignarInstancia(char* clave, struct Entrada* tablaDeEntradas){
+
+	struct Entrada nuevaEntrada;
+	strcpy(nuevaEntrada->clave, clave);
+
+	for(int i=0; i<CANTIDADENTRADAS; i++){ // recorro la tabla y meto la entrada en la primer instancia libre
+		if(tablaDeEntradas[i] != NULL){
+			nuevaEntrada.numero = i;
+			tablaDeEntradas[i] = nuevaEntrada;
+			return 1; // retorna 1 cuando puede asignarle una instancia a la entrada en la tabla
+		}
+	}
+
+	return -1; // retorna -1 cuando la tabla esta llena y no puede asignar una nueva instancia
+}
+
 int main(void) {
 	struct sigaction finalizacion;
 	finalizacion.sa_handler = pipeHandler;
 	sigaction(SIGPIPE, &finalizacion, NULL);
 
+	struct Entrada tablaDeEntradas[CANTIDADENTRADAS];
 
 	configurarLogger();
 	crearConfig();
