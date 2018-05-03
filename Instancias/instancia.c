@@ -113,46 +113,82 @@ struct Entrada{
 	int tamanio;
 };
 
+struct Storage {
+	int numeroEntrada;
+	char* info;
+};
+
 void procesarInstruccion(int socket){ // aca se reciben los SETS del coordinador
 
 	char* buffer = malloc(1024);
-	if (recv(socket,buffer,1024,MSG_WAITALL)>0){
 
-	compararEnTabla(buffer); // en el buffer hay algo como "SET_11:00_jugador"
-	free(buffer);
+	if (recv(socket,buffer,1024,MSG_WAITALL)>0){
+		compararEnTabla(buffer); // en el buffer hay algo como "SET_11:00_jugador"
+		free(buffer);
+	}
 }
 
-int compararEnTabla(char* instruccion, struct Entrada* tablaDeEntradas){
+int compararEnTabla(char* instruccion, struct Entrada* tablaDeEntradas, struct Storage* almacenamiento){
 
 	char** args;
 	args = string_split(instruccion, "_"); // separo la instruccion para obtener la clave
 
 	char* clave = malloc(strlen(args[1]));
+	char* info = malloc(strlen(args[2]));
 	strcpy(clave,args[1]);
+	strcpy(info,args[2]);
+
+	int tamanio = sizeof(args[2]);
 
 	for(int i=0; i<CANTIDADENTRADAS; i++){
-		if(strcmp(clave,tablaDeEntradas[i]->clave) == 0)
+		if(strcmp(clave,tablaDeEntradas[i].clave) == 0)
+			guardarEnStorage(clave, info, tablaDeEntradas, almacenamiento);
+			free(info);
 			free(clave);
 			return 0; // retorna 0 cuando encuentra instancia con esa clave
 	}
 
-	return asignarInstancia(clave); // en caso de no encontrar una entrada con esa clave, procedemos a crear una nueva instancia
+
+	return asignarInstancia(clave, tamanio, info, tablaDeEntradas); // en caso de no encontrar una entrada con esa clave, procedemos a crear una nueva instancia
 }
 
-int asignarInstancia(char* clave, struct Entrada* tablaDeEntradas){
+int asignarInstancia(char* clave, int tamanio, char* info, struct Entrada* tablaDeEntradas, struct Storage* almacenamiento){
 
 	struct Entrada nuevaEntrada;
-	strcpy(nuevaEntrada->clave, clave);
+	strcpy(nuevaEntrada.clave, clave);
+	nuevaEntrada.tamanio = tamanio;
 
 	for(int i=0; i<CANTIDADENTRADAS; i++){ // recorro la tabla y meto la entrada en la primer instancia libre
-		if(tablaDeEntradas[i] != NULL){
+		if(tablaDeEntradas[i].clave != NULL){
 			nuevaEntrada.numero = i;
 			tablaDeEntradas[i] = nuevaEntrada;
+			guardarEnStorage(clave,tamanio, info, tablaDeEntradas, almacenamiento);
 			return 1; // retorna 1 cuando puede asignarle una instancia a la entrada en la tabla
 		}
 	}
 
 	return -1; // retorna -1 cuando la tabla esta llena y no puede asignar una nueva instancia
+}
+
+void guardarEnStorage(char* clave, int tamanio, char* info, struct Entrada* tablaDeEntradas, struct Storage* almacenamiento){
+
+	struct Storage storage;
+	int numeroEntrada;
+
+	for(int i=0; i<CANTIDADENTRADAS; i++){
+		if(strcmp(clave,tablaDeEntradas[i].clave) == 0){
+			numeroEntrada = tablaDeEntradas[i].numero;
+		}
+	}
+
+	strcpy(storage.info, info);
+	storage.numeroEntrada = numeroEntrada;
+
+	for(int j=0; j<CANTIDADENTRADAS; j++){
+		if(almacenamiento[j].numeroEntrada != NULL){
+			almacenamiento[j] = storage;
+		}
+	}
 }
 
 int main(void) {
@@ -161,6 +197,7 @@ int main(void) {
 	sigaction(SIGPIPE, &finalizacion, NULL);
 
 	struct Entrada tablaDeEntradas[CANTIDADENTRADAS];
+	struct Storage almacenamiento[CANTIDADENTRADAS];
 
 	configurarLogger();
 	crearConfig();
