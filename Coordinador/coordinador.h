@@ -18,6 +18,7 @@ char* PUERTO;
 struct Cliente{
 	char nombre[14];
 	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
+	int identificadorESI;
 };
 
 struct arg_struct {

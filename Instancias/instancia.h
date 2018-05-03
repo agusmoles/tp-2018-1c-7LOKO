@@ -13,6 +13,12 @@
 
 char* IP;
 char* PUERTO;
+char* ALGORITMOREEMPLAZO;
+char* PUNTOMONTAJE;
+char* NOMBREINSTANCIA;
+int INTERVALODUMP;
+int TAMANIOENTRADA;
+int CANTIDADENTRADAS;
 
 t_log* logger;
 t_config* config;

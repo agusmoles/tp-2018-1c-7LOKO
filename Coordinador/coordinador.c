@@ -7,7 +7,7 @@ void _exit_with_error(int socket, char* mensaje) {
 
 	for(int i=0; i<NUMEROCLIENTES; i++) {
 		if (socketCliente[i].fd != -1) {
-			close(socketCliente[i].fd);					// CIERRO TODOS LOS SOCKETS DE CLIENTES QUE ESTABAN ABIERTOS EN EL ARRAY
+			close(socketCliente[i].fd);	// CIERRO TODOS LOS SOCKETS DE CLIENTES QUE ESTABAN ABIERTOS EN EL ARRAY
 		}
 	}
 
@@ -70,6 +70,111 @@ void asignarNombreAlSocketCliente(struct Cliente* socketCliente, char* nombre) {
 	strcpy(socketCliente->nombre, nombre);
 }
 
+void crearHiloPlanificador(struct Cliente socketCliente){
+	pthread_t threadPlanificador;
+
+	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
+	args->socket=socket;
+	args->socketCliente.fd = socketCliente.fd;
+	strcpy(args->socketCliente.nombre, socketCliente.nombre);
+
+	if(pthread_create(&threadPlanificador, NULL, (void *) recibirMensaje, args)!=0){
+		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo planificador"ANSI_COLOR_RESET);
+		exit(-1);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo planificador"ANSI_COLOR_RESET);
+	pthread_detach(threadPlanificador);
+}
+
+void crearHiloInstancia(struct Cliente socketCliente){
+	pthread_t threadInstancia;
+
+	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
+	args->socket=socket;
+	args->socketCliente.fd = socketCliente.fd;
+	strcpy(args->socketCliente.nombre, socketCliente.nombre);
+
+	if(pthread_create(&threadInstancia, NULL, (void *) recibirMensaje, args)!=0){
+		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo instancia"ANSI_COLOR_RESET);
+		exit(-1);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo instancia"ANSI_COLOR_RESET);
+	pthread_detach(threadInstancia);
+}
+
+void enviarMensaje(int socketCliente, char* msg){
+	if(send(socketCliente,msg, strlen(msg)+1,0)<0){
+		_exit_with_error(socketCliente, "No se pudo recibir la sentencia");
+	}
+
+}
+
+void recibirSentenciaESI(int socketCliente){
+	char* buffer = malloc(1024);
+	int flag = 1;
+	fd_set descriptoresLectura;
+
+	while(flag) {
+		FD_ZERO(&descriptoresLectura);
+		FD_SET(socketCliente, &descriptoresLectura);
+
+		select(socketCliente + 1 , &descriptoresLectura, NULL, NULL, NULL);
+
+		if (FD_ISSET(socketCliente, &descriptoresLectura)) {
+		switch(recv(socketCliente, buffer, 1024, 0)) {
+				case -1: _exit_with_error(socketCliente, "No se pudo recibir la sentencia");
+						break;
+
+				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente"ANSI_COLOR_RESET);
+						close(socketCliente); 		//CIERRO EL SOCKET
+						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
+		//				args->socketCliente.fd = -1;			//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
+						break;
+
+				default:
+						enviarMensaje(socketCliente, "OPOK");
+						printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente y dice: %s\n"ANSI_COLOR_RESET, (char*) buffer);
+						break;
+
+			}
+		}
+	}
+	free(buffer);
+	pthread_exit(NULL);
+}
+
+void crearHiloESI(struct Cliente socketCliente){
+	pthread_t threadESI;
+//	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
+//	args->socket=socket;
+//	args->socketCliente.fd=socketCliente.fd;
+//	strcpy(args->socketCliente.nombre, socketCliente.nombre);
+
+	if( pthread_create(&threadESI, NULL, (void *) recibirSentenciaESI, (void *) socketCliente.fd )!= 0 ){
+		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo instancia"ANSI_COLOR_RESET);
+		exit(-1);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo ESI"ANSI_COLOR_RESET);
+
+	pthread_detach(threadESI);
+}
+
+void recibirIDdeESI(struct Cliente* cliente){
+	int *buffer = malloc(sizeof(int));
+
+	if(recv(cliente->fd, buffer, sizeof(int), MSG_WAITALL)<0){
+		_exit_with_error(cliente->fd, "No se pudo recibir el identificador ESI");
+	}
+
+	cliente->identificadorESI = *buffer;
+
+	free(buffer);
+	log_info(logger, ANSI_COLOR_BOLDCYAN "Se recibio el identificador del ESI %d"ANSI_COLOR_RESET, cliente->identificadorESI);
+}
+
 void aceptarCliente(int socket, struct Cliente* socketCliente) {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
@@ -102,19 +207,20 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 				case 0: _exit_with_error(socket, "No se pudo recibir el mensaje del protocolo de conexion"); //FALLO EL RECV
 						break;
 				case 1: asignarNombreAlSocketCliente(&socketCliente[i], "Planificador");
+						crearHiloPlanificador(socketCliente[i]);
 						break;
 				case 2: asignarNombreAlSocketCliente(&socketCliente[i], "Instancia");
+						crearHiloInstancia(socketCliente[i]);
 						break;
 				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
+						recibirIDdeESI(&socketCliente[i]);
+						crearHiloESI(socketCliente[i]);
 						break;
 				default: _exit_with_error(socket, ANSI_COLOR_RED"No estas cumpliendo con el protocolo de conexion"ANSI_COLOR_RESET);
 						break;
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDCYAN"Se pudo conectar el/la %s (FD %d) y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i].nombre, socketCliente[i].fd, i);
-
-			crearHiloParaCliente(socket,socketCliente[i]);
-
 			break;
 		}
 		}
@@ -160,18 +266,6 @@ void recibirMensaje(void* argumentos) {
 	pthread_exit(NULL);
 }
 
-void crearHiloParaCliente(int socket, struct Cliente socketCliente) {
-	pthread_t threadCliente;
-
-	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
-	args->socket=socket;
-	args->socketCliente.fd=socketCliente.fd;
-	strcpy(args->socketCliente.nombre, socketCliente.nombre);
-
-	pthread_create(&threadCliente, NULL, (void *) recibirMensaje, args);
-
-	pthread_detach(threadCliente);
-}
 
 int envioHandshake(int socketCliente) {
 	char* handshake = "******COORDINADOR HANDSHAKE******";
@@ -184,6 +278,7 @@ int envioHandshake(int socketCliente) {
 		return 0;
 	}
 }
+
 
 int reciboIdentificacion(int socketCliente) {
 	char* identificador = malloc(sizeof(char));
@@ -208,10 +303,12 @@ int reciboIdentificacion(int socketCliente) {
 	return -1;
 }
 
+
 void intHandler() {
 	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
 	exit(1);
 }
+
 
 int main(void) {
 	struct sigaction finalizacion;

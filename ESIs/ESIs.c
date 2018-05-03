@@ -7,7 +7,7 @@ int main(){
 	setearConfigEnVariables();
 	int socketPlanificador,socketCoordinador;
 	FILE* script = fopen("script.esi","r");
-	char* instruccion = malloc(PACKAGESIZE);;
+	char* instruccion = malloc(PACKAGESIZE);
 	size_t len = 0;
 
 	socketPlanificador = conect_to_server(IPPLANIFICADOR,PUERTOPLANIFICADOR);
@@ -17,13 +17,18 @@ int main(){
 
 	envioIdentificador(socketCoordinador);
 
+	administrarID(socketPlanificador,socketCoordinador);
+
+
 	while(getline(&instruccion,&len,script) != -1){
 		enviarMensaje(socketPlanificador,"EXERQ");
 		recibirMensaje(socketPlanificador,"EXEOR");
 
 		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);
 		recibirMensaje(socketCoordinador,"OPOK");
+		enviarMensaje(socketPlanificador,"OPOK");
 	}
+	enviarMensaje(socketPlanificador,"EXEEND");
 	close(socketPlanificador);
 	close(socketCoordinador);
 }
@@ -118,14 +123,16 @@ void envioIdentificador(int socket) {
 
 void recibirMensaje(int socketServidor, char* mensaje){
 	int size = strlen(mensaje)+1;
-	char* recibido = malloc(size) + 9;
+	char* recibido = malloc(size+9);
 	int resultado;
-	resultado = recv(socketServidor, recibido, 1,MSG_WAITALL);
+	resultado = recv(socketServidor, recibido, size,MSG_WAITALL);
 	verificarResultado(socketServidor,resultado);
+
 	if(strcmp(recibido,mensaje)!=0){
 		exitErrorBuffer(socketServidor,"Mensaje erroneo",recibido);
 	}
 	strcat(recibido, " recibido");
+
 	log_info(logger,recibido);
 	free(recibido);
 }
@@ -178,3 +185,17 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPla
 		exit(EXIT_FAILURE);
 	}
 }
+
+void administrarID(int socketPlanificador, int socketCoordinador){
+	int* recibido = malloc(sizeof(int));
+	int resultado;
+	resultado = recv(socketPlanificador, recibido, sizeof(int),MSG_WAITALL);
+	verificarResultado(socketPlanificador,resultado);
+	log_info(logger,"ID ESI Recibido");
+
+	resultado = send(socketCoordinador,recibido,sizeof(int),0);
+	verificarResultado(socketCoordinador,resultado);
+	log_info(logger,"ID ESI Enviado al Coordinador");
+	free(recibido);
+}
+

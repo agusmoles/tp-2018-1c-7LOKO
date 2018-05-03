@@ -1,8 +1,8 @@
-IP Coordinador=127.0.0.1
+IP Coordinador=192.168.0.60
 
 Puerto Coordinador=8000
 
-IP Planificador=127.0.0.1
+IP Planificador=192.168.0.74
 
 Puerto Planificador=8001
 
@@ -18,7 +18,7 @@ Algoritmo de Distribución=EL
 
 Cantidad de Entradas=20
 
-Tamaño de Entrada=100
+Tamanio de Entrada=100
 
 Retardo=300
 
