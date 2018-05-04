@@ -150,7 +150,7 @@ void escuchar(int socket) {
 
 }
 
-void manejoDeClientes(int socket, struct Cliente* socketCliente) {
+void manejoDeClientes(int socket, cliente* socketCliente) {
 	FD_ZERO(&descriptoresLectura);			//VACIO EL SET DE DESCRIPTORES
 	FD_SET(socket, &descriptoresLectura); //ASIGNO EL SOCKET DE SERVIDOR AL SET
 
@@ -216,7 +216,7 @@ int envioIDDeESI(int socketCliente, int identificador) {
 	}
 }
 
-void aceptarCliente(int socket, struct Cliente* socketCliente) {
+void aceptarCliente(int socket, cliente* socketCliente) {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
 
@@ -262,7 +262,7 @@ void aceptarCliente(int socket, struct Cliente* socketCliente) {
 
 }
 
-void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
+void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 	void* buffer = malloc(1024);
 	int resultado_recv;
 
@@ -271,23 +271,40 @@ void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 		case -1: _exit_with_error(socket, "No se pudo recibir el mensaje del cliente");
 				break;
 
-		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %d"ANSI_COLOR_RESET, posicion);
+		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el %s %d"ANSI_COLOR_RESET, socketCliente[posicion].nombre, socketCliente[posicion].identificadorESI);
 				close(socketCliente[posicion].fd); 		//CIERRO EL SOCKET
 				socketCliente[posicion].fd = -1;			//LO VUELVO A SETEAR EN -1 POR SI HAY QUE VOLVER A ASIGNARLO
 				break;
 
-		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, posicion, resultado_recv, (char*) buffer);
+		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del %s %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, socketCliente[posicion].nombre, socketCliente[posicion].identificadorESI, resultado_recv, (char*) buffer);
 
 				if(strcmp(buffer, "EXERQ") == 0) {				// SI EL ESI PIDE SOLICITUD DE EJECUCION, ES PORQUE ESTA LISTO
 					list_add(listos, &socketCliente[posicion]);	// SE LO AÑADE A LA LISTA
 				}
 
 				if (strcmp(buffer, "OPOK") == 0) {
+					socketCliente->rafagaActual++;
+
+					if (strcmp(algoritmoPlanificacion, "SJF-CD") == 0) {	//SI ES CON DESALOJO DEBO ORDENAR LA COLA CADA VEZ QUE EJECUTA UNA SENTENCIA
+						socketCliente->estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente->rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente->estimacionRafagaActual;
+						socketCliente->estimacionRafagaActual = socketCliente->estimacionProximaRafaga;
+
+						if(!ordenarColaDeListos(&socketCliente[posicion])) { //SI NO VUELVE A EJECUTAR EL MISMO ESI...
+							socketCliente->rafagaActual = 0;
+						}
+
+					}
+
 					list_remove(ejecutando, 0);
 				}
 
 				if (strcmp(buffer, "EXEEND") == 0) {
 					list_add(finalizados, &socketCliente[posicion]);
+
+					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
+						ordenarColaDeListos(&socketCliente[posicion]);
+					}
+
 				}
 
 				break;
@@ -297,7 +314,7 @@ void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion) {
 	free(buffer);
 }
 
-void ordenarProximoAEjecutar(int socket, struct Cliente* socketCliente) {
+void ordenarProximoAEjecutar(int socket, cliente* socketCliente) {
 	char* ordenEjecucion = "EXEOR";
 
 	if(list_is_empty(listos)) {
@@ -305,35 +322,45 @@ void ordenarProximoAEjecutar(int socket, struct Cliente* socketCliente) {
 	} else {
 		int socketProximoAEjecutar = getDescriptorProximoAEjecutar();
 
-		if(socketProximoAEjecutar < 0) {
-			_exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el get del descriptor del proximo ESI a ejecutar"ANSI_COLOR_RESET);
+		if(send(socketProximoAEjecutar, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
+			_exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
 		}
 
-		send(socketProximoAEjecutar, ordenEjecucion, strlen(ordenEjecucion)+1, 0);
+		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio orden de ejecucion al %s %d"ANSI_COLOR_RESET, socketCliente->nombre, socketCliente->identificadorESI);
 	}
 }
 
 int getDescriptorProximoAEjecutar() {
-	struct Cliente* cliente;
+	cliente* cliente;
 
-	if(strcmp(algoritmoPlanificacion, "FIFO") == 0) {
-		cliente = list_get(listos, 0);					//TOMO EL PRIMERO DE LA LISTA DE LISTOS
-		list_remove(listos, 0);							//LO SACO PORQUE PASA A EJECUTAR
-		list_add(ejecutando, cliente);					//LO AGREGO A LA LISTA DE EJECUTANDO
-		printf(ANSI_COLOR_BOLDCYAN"El FD del proximo a ejecutar es: %d\n"ANSI_COLOR_RESET, cliente->fd);
-		return cliente->fd;
+	cliente = list_get(listos, 0);					//TOMO EL PRIMERO DE LA LISTA DE LISTOS
+	list_remove(listos, 0);							//LO SACO PORQUE PASA A EJECUTAR
+	list_add(ejecutando, cliente);					//LO AGREGO A LA LISTA DE EJECUTANDO
+	return cliente->fd;
+}
+
+int ordenarColaDeListos(cliente* cliente) {
+	struct Cliente* cliente2;
+
+	list_sort(listos, (void*) comparador);
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se ordeno satisfactoriamente la cola de listos"ANSI_COLOR_RESET);
+
+	cliente2 = list_get(listos, 0);
+
+	if (cliente->identificadorESI == cliente2->identificadorESI) {
+		return 1;
 	} else {
-		return -1;
+		return 0;
 	}
 }
 
-//void organizarColaDeListos() {
-//	if (strcmp(algoritmoPlanificacion, "SJF-SD") == 0) {
-//		double siguienteRafaga;
-//
-//		siguienteRafaga =
-//	}
-//}
+int comparador(cliente* cliente, struct Cliente* cliente2) {
+	if(cliente->estimacionProximaRafaga < cliente2->estimacionProximaRafaga)
+		return 1;
+	else
+		return 0;
+}
 
 void intHandler() {
 	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
@@ -368,7 +395,7 @@ int main(void) {
 	pthread_t threadConsola;
 
 	if(pthread_create(&threadConsola, NULL, (void *)ejecutar_consola, NULL) != 0) {
-		log_error(logger, "No se pudo crear el hilo coordinador");
+		log_error(logger, "No se pudo crear el hilo consola");
 		exit(-1);
 	}else{
 		log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo consola"ANSI_COLOR_RESET);
@@ -383,6 +410,9 @@ int main(void) {
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {
 		socketCliente[i].fd = -1;				//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
+		socketCliente[i].estimacionProximaRafaga = estimacionInicial;	//ESTIMACION INICIAL POR DEFAULT
+		socketCliente[i].rafagaActual = 0;
+		socketCliente[i].estimacionRafagaActual = 0;
 	}
 
 	manejoDeClientes(listenSocket, socketCliente);

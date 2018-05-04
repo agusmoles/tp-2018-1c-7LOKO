@@ -20,11 +20,14 @@ double alfaPlanificacion;
 int estimacionInicial;
 #define NUMEROCLIENTES 20
 
-struct Cliente{
+typedef struct Cliente{
 	char nombre[14];
 	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
 	int identificadorESI;
-};
+	int rafagaActual;
+	float estimacionRafagaActual;
+	float estimacionProximaRafaga;
+}cliente;
 
 t_log* logger;
 t_config* config;
@@ -34,8 +37,8 @@ t_list* ejecutando;
 t_list* finalizados;
 t_list* bloqueados;
 fd_set descriptoresLectura;
-struct Cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
-int fdmax = NUMEROCLIENTES;
+cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
+int fdmax = 10;
 
 void configurarLogger();
 void crearConfig();
@@ -48,9 +51,11 @@ void conectarConCoordinador();
 void escuchar(int socket);
 int envioHandshake(int socketCliente);
 int envioIDDeESI(int socketCliente, int identificador);
-void manejoDeClientes(int socket, struct Cliente* socketCliente);
-void aceptarCliente(int socket, struct Cliente* socketCliente);
-void recibirMensaje(int socket, struct Cliente* socketCliente, int posicion);
-void ordenarProximoAEjecutar(int socket, struct Cliente* socketCliente);
+void manejoDeClientes(int socket, cliente* socketCliente);
+void aceptarCliente(int socket, cliente* socketCliente);
+void recibirMensaje(int socket, cliente* socketCliente, int posicion);
+void ordenarProximoAEjecutar(int socket, cliente* socketCliente);
 int getDescriptorProximoAEjecutar();
+int ordenarColaDeListos(cliente* cliente);
+int comparador(cliente* cliente, struct Cliente* cliente2);
 void _exit_with_error(int socket, char* mensaje);
