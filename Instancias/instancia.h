@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <commons/log.h>
 #include <commons/config.h>
+#include <commons/string.h>
 #include <readline/readline.h> // Para usar readline
 #include <signal.h>
 #include "../Colores.h"
@@ -23,6 +24,20 @@ int CANTIDADENTRADAS;
 t_log* logger;
 t_config* config;
 
+struct Entrada{
+	char* clave;
+	int numero;
+	int tamanio;
+};
+
+struct Data{
+	int numeroEntrada;
+	char* info;
+};
+
+struct Entrada typedef Entrada;
+struct Data typedef Data;
+
 void _exit_with_error(int socket, char* mensaje);
 void configurarLogger();
 void crearConfig();
@@ -32,3 +47,19 @@ void enviarMensajes(int socket);
 void reciboHandshake(int socket);
 void envioIdentificador(int socket);
 void pipeHandler();
+void recibirInstruccion(int socket);
+int procesarInstruccion(char*);
+int asignarInstancia(Entrada, Data);
+void guardarEnStorage(Data);
+
+
+
+
+
+
+
+
+
+
+
+

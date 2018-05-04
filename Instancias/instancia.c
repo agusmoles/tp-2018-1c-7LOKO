@@ -2,6 +2,11 @@
 
 #include "instancia.h"
 
+#define CANTIDADENTRADAS 20
+
+static Entrada TABLAENTRADAS[CANTIDADENTRADAS];
+static Data STORAGE[CANTIDADENTRADAS];
+
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 	log_error(logger, mensaje);
@@ -22,9 +27,8 @@ void setearConfigEnVariables() {
 	ALGORITMOREEMPLAZO = config_get_string_value(config, "Algoritmo de Reemplazo");
 	PUNTOMONTAJE = config_get_string_value(config, "Punto de montaje");
 	NOMBREINSTANCIA = config_get_string_value(config, "Nombre de la Instancia");
-	INTERVALODUMP = config_get_string_value(config, "Intervalo de dump");
-	TAMANIOENTRADA = config_get_string_value(config, "Tamanio de Entrada");
-	CANTIDADENTRADAS = config_get_string_value(config, "Cantidad de Entradas");
+	INTERVALODUMP = config_get_int_value(config, "Intervalo de dump");
+	TAMANIOENTRADA = config_get_int_value(config, "Tamanio de Entrada");
 }
 
 int conectarSocket() {
@@ -107,60 +111,70 @@ void pipeHandler() {
 	exit(1);
 }
 
-struct Entrada{
-	char* clave;
-	int numero;
-	int tamanio;
-};
-
-void procesarInstruccion(int socket){ // aca se reciben los SETS del coordinador
+void recibirInstruccion(int socket){ // aca se reciben los SETS del coordinador
 
 	char* buffer = malloc(1024);
-	if (recv(socket,buffer,1024,MSG_WAITALL)>0){
 
-	compararEnTabla(buffer); // en el buffer hay algo como "SET_11:00_jugador"
-	free(buffer);
+	if (recv(socket,buffer,1024,MSG_WAITALL)>0){
+		procesarInstruccion(buffer); // en el buffer hay algo como "SET_11:00_jugador"
+		free(buffer);
+	}
 }
 
-int compararEnTabla(char* instruccion, struct Entrada* tablaDeEntradas){
+int procesarInstruccion(char* instruccion){
 
 	char** args;
 	args = string_split(instruccion, "_"); // separo la instruccion para obtener la clave
 
-	char* clave = malloc(strlen(args[1]));
-	strcpy(clave,args[1]);
+	Entrada entrada;
+	strcpy(entrada.clave, args[1]);
+	entrada.tamanio = sizeof(args[2]);
 
-	for(int i=0; i<CANTIDADENTRADAS; i++){
-		if(strcmp(clave,tablaDeEntradas[i]->clave) == 0)
-			free(clave);
-			return 0; // retorna 0 cuando encuentra instancia con esa clave
-	}
+	Data data;
+	strcpy(data.info, args[2]);
 
-	return asignarInstancia(clave); // en caso de no encontrar una entrada con esa clave, procedemos a crear una nueva instancia
-}
-
-int asignarInstancia(char* clave, struct Entrada* tablaDeEntradas){
-
-	struct Entrada nuevaEntrada;
-	strcpy(nuevaEntrada->clave, clave);
-
-	for(int i=0; i<CANTIDADENTRADAS; i++){ // recorro la tabla y meto la entrada en la primer instancia libre
-		if(tablaDeEntradas[i] != NULL){
-			nuevaEntrada.numero = i;
-			tablaDeEntradas[i] = nuevaEntrada;
-			return 1; // retorna 1 cuando puede asignarle una instancia a la entrada en la tabla
+	for(int i=0; i<CANTIDADENTRADAS; i++){	// me fijo si ya existe una instancia con esa clave
+		if(strcmp(entrada.clave, TABLAENTRADAS[i].clave) == 0){
+			data.numeroEntrada = TABLAENTRADAS[i].numero;
+			guardarEnStorage(data);
+			return 0; // encuentra instancia con esa clave y guarda la info en storage
 		}
 	}
 
-	return -1; // retorna -1 cuando la tabla esta llena y no puede asignar una nueva instancia
+	return asignarInstancia(entrada, data); // no encuentra una entrada con esa clave, procedemos a crear una nueva instancia
+}
+
+int asignarInstancia(Entrada nuevaEntrada, Data data){
+
+	for(int i=0; i<CANTIDADENTRADAS; i++){ // recorro la tabla y meto la entrada en la primer instancia libre
+		if(TABLAENTRADAS[i].clave != NULL){
+
+			nuevaEntrada.numero = i;
+			data.numeroEntrada = i;
+
+			TABLAENTRADAS[i] = nuevaEntrada;
+			guardarEnStorage(data);
+
+			return 1; // asigna una instancia en la tabla de entradas
+		}
+	}
+
+	return -1; // la tabla esta llena y no puede asignar una nueva instancia
+}
+
+void guardarEnStorage(Data data){
+
+	for(int i=0; i<CANTIDADENTRADAS; i++){
+		if(STORAGE[i].numeroEntrada == data.numeroEntrada){
+			STORAGE[i] = data;
+		}
+	}
 }
 
 int main(void) {
 	struct sigaction finalizacion;
 	finalizacion.sa_handler = pipeHandler;
 	sigaction(SIGPIPE, &finalizacion, NULL);
-
-	struct Entrada tablaDeEntradas[CANTIDADENTRADAS];
 
 	configurarLogger();
 	crearConfig();
