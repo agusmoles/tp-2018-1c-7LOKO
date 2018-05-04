@@ -15,20 +15,20 @@
 char* PUERTO;
 #define NUMEROCLIENTES 20
 
-struct Cliente{
+typedef struct Cliente{
 	char nombre[14];
 	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
 	int identificadorESI;
-};
+}cliente;
 
 struct arg_struct {
 	int socket;
-	struct Cliente socketCliente;
+	cliente socketCliente;
 };
 
 t_log* logger;
 t_config* config;
-struct Cliente socketCliente[NUMEROCLIENTES];
+cliente socketCliente[NUMEROCLIENTES];
 
 void _exit_with_error(int socket, char* mensaje);
 void configurarLogger();
@@ -36,10 +36,15 @@ void crearConfig();
 void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 void escuchar(int socket);
-void asignarNombreAlSocketCliente(struct Cliente* socketCliente, char* nombre);
-void aceptarCliente(int socket, struct Cliente* socketCliente);
+void asignarNombreAlSocketCliente(cliente* socketCliente, char* nombre);
+void enviarMensaje(int socketCliente, char* msg);
+void recibirSentenciaESI(int socketCliente);
+void recibirIDdeESI(cliente* cliente);
+void aceptarCliente(int socket, cliente* socketCliente);
 void recibirMensaje(void* argumentos);
-void crearHiloParaCliente(int socket, struct Cliente socketCliente);
+void crearHiloPlanificador(cliente socketCliente);
+void crearHiloInstancia(cliente socketCliente);
+void crearHiloESI(cliente socketCliente);
 int envioHandshake(int socketCliente);
 int reciboIdentificacion(int socketCliente);
 void intHandler();

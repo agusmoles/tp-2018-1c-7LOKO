@@ -1,8 +1,8 @@
-IP Coordinador=192.168.0.60
+IP Coordinador=127.0.0.1
 
 Puerto Coordinador=8000
 
-IP Planificador=192.168.0.74
+IP Planificador=127.0.0.1
 
 Puerto Planificador=8001
 
