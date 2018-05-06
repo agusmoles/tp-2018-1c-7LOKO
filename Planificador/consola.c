@@ -111,7 +111,15 @@ int com_pausar(char **args){
 	if(args[1] != NULL){
 		return error_no_lleva_parametros(args);
 	}else{
-		puts("Estas en pausar");
+		switch(pausado) {
+			case 0: pausado = 1;
+					printf(ANSI_COLOR_BOLDWHITE"Planificador pausado\n"ANSI_COLOR_RESET);
+					break;
+			case 1: pausado = 0;
+					printf(ANSI_COLOR_BOLDWHITE"Planificador despausado\n"ANSI_COLOR_RESET);
+					break;
+			default: break;
+		}
 		return 1;
 	}
 }

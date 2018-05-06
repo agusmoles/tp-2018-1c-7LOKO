@@ -31,7 +31,6 @@ typedef struct Cliente{
 
 t_log* logger;
 t_config* config;
-t_list* estado;
 t_list* listos;
 t_list* ejecutando;
 t_list* finalizados;
@@ -55,7 +54,7 @@ void manejoDeClientes(int socket, cliente* socketCliente);
 void aceptarCliente(int socket, cliente* socketCliente);
 void recibirMensaje(int socket, cliente* socketCliente, int posicion);
 void ordenarProximoAEjecutar(int socket, cliente* socketCliente);
-int getDescriptorProximoAEjecutar();
+cliente* getESIProximoAEJecutar();
 int ordenarColaDeListos(cliente* cliente);
 int comparador(cliente* cliente, struct Cliente* cliente2);
 void _exit_with_error(int socket, char* mensaje);

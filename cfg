@@ -6,7 +6,7 @@ IP Planificador=127.0.0.1
 
 Puerto Planificador=8001
 
-Algoritmo de planificación=FIFO
+Algoritmo de planificación=SJF-CD
 
 Alfa planificación=30
 

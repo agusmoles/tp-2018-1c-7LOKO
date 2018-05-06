@@ -3,6 +3,7 @@
 #include "planificador.h"
 #include "consola.h"
 
+
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 
@@ -33,19 +34,14 @@ void setearConfigEnVariables() {
 	algoritmoPlanificacion = config_get_string_value(config, "Algoritmo de planificación");
 	alfaPlanificacion = config_get_double_value(config, "Alfa planificación");
 	estimacionInicial = config_get_int_value(config, "Estimación inicial");
+	pausado = 0;
 }
 
 void setearListaDeEstados() {
-	estado = list_create();
 	listos = list_create();
 	finalizados = list_create();
 	ejecutando = list_create();
 	bloqueados = list_create();
-
-	list_add(estado, listos);
-	list_add(estado, ejecutando);
-	list_add(estado, bloqueados);
-	list_add(estado, finalizados);
 }
 
 int conectarSocketYReservarPuerto() {
@@ -171,6 +167,9 @@ void manejoDeClientes(int socket, cliente* socketCliente) {
 
 		default: for (int i=0; i<NUMEROCLIENTES; i++) {
 					if (FD_ISSET(socketCliente[i].fd, &descriptoresLectura)) {
+						if (pausado) {
+							break;
+						}
 						recibirMensaje(socket, socketCliente, i); //RECIBO EL MENSAJE, DENTRO DE LA FUNCION MANEJO ERRORES
 						ordenarProximoAEjecutar(socket, socketCliente);
 					}
@@ -320,23 +319,23 @@ void ordenarProximoAEjecutar(int socket, cliente* socketCliente) {
 	if(list_is_empty(listos)) {
 		printf(ANSI_COLOR_BOLDRED"No hay ESIs para ejecutar\n"ANSI_COLOR_RESET);
 	} else {
-		int socketProximoAEjecutar = getDescriptorProximoAEjecutar();
+		cliente* esiProximoAEjecutar = getESIProximoAEJecutar();
 
-		if(send(socketProximoAEjecutar, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
+		if(send(esiProximoAEjecutar->fd, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
 			_exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
 		}
 
-		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio orden de ejecucion al %s %d"ANSI_COLOR_RESET, socketCliente->nombre, socketCliente->identificadorESI);
+		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio orden de ejecucion al %s %d"ANSI_COLOR_RESET, esiProximoAEjecutar->nombre, esiProximoAEjecutar->identificadorESI);
 	}
 }
 
-int getDescriptorProximoAEjecutar() {
+cliente* getESIProximoAEJecutar() {
 	cliente* cliente;
 
 	cliente = list_get(listos, 0);					//TOMO EL PRIMERO DE LA LISTA DE LISTOS
 	list_remove(listos, 0);							//LO SACO PORQUE PASA A EJECUTAR
 	list_add(ejecutando, cliente);					//LO AGREGO A LA LISTA DE EJECUTANDO
-	return cliente->fd;
+	return cliente;
 }
 
 int ordenarColaDeListos(cliente* cliente) {
@@ -375,6 +374,7 @@ int main(void) {
 	configurarLogger();
 	crearConfig();
 	setearConfigEnVariables();
+	printf(ANSI_COLOR_BOLDWHITE"AL PLANIF: %s"ANSI_COLOR_RESET, algoritmoPlanificacion);
 	setearListaDeEstados();
 
 	/************************************** CONEXION CON COORDINADOR **********************************/

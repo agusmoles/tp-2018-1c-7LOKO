@@ -27,6 +27,7 @@
 #define PUERTO "6666"
 
 t_log* logger;
+int pausado;
 
 int ejecutar_consola();
 int com_pausar(char **args);
