@@ -167,11 +167,11 @@ void manejoDeClientes(int socket, cliente* socketCliente) {
 
 		default: for (int i=0; i<NUMEROCLIENTES; i++) {
 					if (FD_ISSET(socketCliente[i].fd, &descriptoresLectura)) {
-						if (pausado) {
-							break;
+						while (pausado) {
+
 						}
 						recibirMensaje(socket, socketCliente, i); //RECIBO EL MENSAJE, DENTRO DE LA FUNCION MANEJO ERRORES
-						ordenarProximoAEjecutar(socket, socketCliente);
+						ordenarProximoAEjecutar(socket, socketCliente);	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
 					}
 				}
 
@@ -282,14 +282,14 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 				}
 
 				if (strcmp(buffer, "OPOK") == 0) {
-					socketCliente->rafagaActual++;
+					socketCliente[posicion].rafagaActual++;
 
 					if (strcmp(algoritmoPlanificacion, "SJF-CD") == 0) {	//SI ES CON DESALOJO DEBO ORDENAR LA COLA CADA VEZ QUE EJECUTA UNA SENTENCIA
-						socketCliente->estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente->rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente->estimacionRafagaActual;
-						socketCliente->estimacionRafagaActual = socketCliente->estimacionProximaRafaga;
+						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
+						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
 
 						if(!ordenarColaDeListos(&socketCliente[posicion])) { //SI NO VUELVE A EJECUTAR EL MISMO ESI...
-							socketCliente->rafagaActual = 0;
+							socketCliente[posicion].rafagaActual = 0;
 						}
 
 					}
@@ -345,12 +345,12 @@ int ordenarColaDeListos(cliente* cliente) {
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se ordeno satisfactoriamente la cola de listos"ANSI_COLOR_RESET);
 
-	cliente2 = list_get(listos, 0);
+	cliente2 = list_get(ejecutando, 0);			//AGARRO EL QUE AHORA ESTA PRIMERO EN LA LISTA DE EJECUTANDO
 
 	if (cliente->identificadorESI == cliente2->identificadorESI) {
-		return 1;
+		return 1;					//DEVUELVO 1 SI EL ESI ACTUALMENTE PRIMERO EN LA COLA DE EJECUTANDO ERA EL MISMO QUE EL ANTERIOR
 	} else {
-		return 0;
+		return 0;					//DEVUELVO 0 SI ES LO CONTRARIO
 	}
 }
 
@@ -374,7 +374,6 @@ int main(void) {
 	configurarLogger();
 	crearConfig();
 	setearConfigEnVariables();
-	printf(ANSI_COLOR_BOLDWHITE"AL PLANIF: %s"ANSI_COLOR_RESET, algoritmoPlanificacion);
 	setearListaDeEstados();
 
 	/************************************** CONEXION CON COORDINADOR **********************************/
