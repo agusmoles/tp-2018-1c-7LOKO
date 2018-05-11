@@ -165,19 +165,19 @@ void manejoDeClientes(int socket, cliente* socketCliente) {
 		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el manejo de clientes"ANSI_COLOR_RESET);
 				break;
 
-		default: for (int i=0; i<NUMEROCLIENTES; i++) {
+		default: if (FD_ISSET(socket, &descriptoresLectura)) { //ACA SE TRATA AL SOCKET SERVIDOR, SI DA TRUE ES PORQUE TIENE UN CLIENTE ESPERANDO EN COLA
+					aceptarCliente(socket, socketCliente);
+				}
+
+				for (int i=0; i<NUMEROCLIENTES; i++) {
 					if (FD_ISSET(socketCliente[i].fd, &descriptoresLectura)) {
 						while (pausado) {
 
 						}
 						recibirMensaje(socket, socketCliente, i); //RECIBO EL MENSAJE, DENTRO DE LA FUNCION MANEJO ERRORES
-						ordenarProximoAEjecutar(socket, socketCliente);	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
+						ordenarProximoAEjecutar(socket);	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
 					}
 				}
-
-					if (FD_ISSET(socket, &descriptoresLectura)) { //ACA SE TRATA AL SOCKET SERVIDOR, SI DA TRUE ES PORQUE TIENE UN CLIENTE ESPERANDO EN COLA
-						aceptarCliente(socket, socketCliente);
-					}
 
 				manejoDeClientes(socket, socketCliente);
 
@@ -288,13 +288,10 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
 						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
 
-						if(!ordenarColaDeListos(&socketCliente[posicion])) { //SI NO VUELVE A EJECUTAR EL MISMO ESI...
-							socketCliente[posicion].rafagaActual = 0;
-						}
-
+						ordenarColaDeListos(&socketCliente[posicion]);
 					}
 
-					list_remove(ejecutando, 0);
+
 				}
 
 				if (strcmp(buffer, "EXEEND") == 0) {
@@ -313,7 +310,7 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 	free(buffer);
 }
 
-void ordenarProximoAEjecutar(int socket, cliente* socketCliente) {
+void ordenarProximoAEjecutar(int socket) {
 	char* ordenEjecucion = "EXEOR";
 
 	if(list_is_empty(listos)) {
@@ -338,23 +335,28 @@ cliente* getESIProximoAEJecutar() {
 	return cliente;
 }
 
-int ordenarColaDeListos(cliente* cliente) {
-	struct Cliente* cliente2;
+void ordenarColaDeListos(cliente* ESIEjecutando) {
+	struct Cliente* primerESIListo;
 
-	list_sort(listos, (void*) comparador);
+	list_sort(listos, (void*) comparadorRafaga);
+
+	if(!list_is_empty(listos)) {
+		primerESIListo = list_get(listos, 0);			//AGARRO EL QUE AHORA ESTA PRIMERO EN LA LISTA DE LISTOS
+
+		if (primerESIListo->estimacionProximaRafaga < ESIEjecutando->estimacionProximaRafaga) {	// SI LA RAFAGA ESTIMADA DEL ESI LISTO ES MENOR AL QUE EJECUTA
+			list_remove(ejecutando, 0);			// DESALOJO AL ESI EJECUTANDO
+			list_add(listos, ESIEjecutando);	// LO AGREGO AL FINAL DE LA LISTA DE LISTOS
+			ESIEjecutando->rafagaActual = 0;	// SE RESETEA LA RAFAGA ACTUAL (PORQUE FUE DESALOJADO)
+		} else {							// SINO...
+			list_remove(ejecutando, 0);			// SACO AL ESI EJECUTANDO Y LO PONGO PRIMERO EN LA COLA DE LISTOS
+			list_add_in_index(listos, 0, ESIEjecutando);
+		}
+	}
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se ordeno satisfactoriamente la cola de listos"ANSI_COLOR_RESET);
-
-	cliente2 = list_get(ejecutando, 0);			//AGARRO EL QUE AHORA ESTA PRIMERO EN LA LISTA DE EJECUTANDO
-
-	if (cliente->identificadorESI == cliente2->identificadorESI) {
-		return 1;					//DEVUELVO 1 SI EL ESI ACTUALMENTE PRIMERO EN LA COLA DE EJECUTANDO ERA EL MISMO QUE EL ANTERIOR
-	} else {
-		return 0;					//DEVUELVO 0 SI ES LO CONTRARIO
-	}
 }
 
-int comparador(cliente* cliente, struct Cliente* cliente2) {
+int comparadorRafaga(cliente* cliente, struct Cliente* cliente2) {
 	if(cliente->estimacionProximaRafaga < cliente2->estimacionProximaRafaga)
 		return 1;
 	else
