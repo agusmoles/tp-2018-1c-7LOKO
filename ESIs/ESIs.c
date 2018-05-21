@@ -191,11 +191,11 @@ void administrarID(int socketPlanificador, int socketCoordinador){
 	int resultado;
 	resultado = recv(socketPlanificador, recibido, sizeof(int),MSG_WAITALL);
 	verificarResultado(socketPlanificador,resultado);
-	log_info(logger,"ID ESI Recibido");
+	log_info(logger,ANSI_COLOR_BOLDWHITE"ID ESI %d Recibido"ANSI_COLOR_RESET, *recibido);
 
 	resultado = send(socketCoordinador,recibido,sizeof(int),0);
 	verificarResultado(socketCoordinador,resultado);
-	log_info(logger,"ID ESI Enviado al Coordinador");
+	log_info(logger,ANSI_COLOR_BOLDWHITE"ID ESI %d Enviado al Coordinador"ANSI_COLOR_RESET, *recibido);
 	free(recibido);
 }
 
