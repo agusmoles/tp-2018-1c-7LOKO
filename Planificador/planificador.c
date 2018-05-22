@@ -34,7 +34,7 @@ void setearConfigEnVariables() {
 	algoritmoPlanificacion = config_get_string_value(config, "Algoritmo de planificación");
 	alfaPlanificacion = config_get_double_value(config, "Alfa planificación");
 	estimacionInicial = config_get_int_value(config, "Estimación inicial");
-	pausado = 0;
+	sem_init(&pausado, 0, 1);
 }
 
 void setearListaDeEstados() {
@@ -165,12 +165,12 @@ void manejoDeClientes(int socket, cliente* socketCliente) {
 		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el manejo de clientes"ANSI_COLOR_RESET);
 				break;
 
-		default: while (pausado) {			// SI EL PLANIFICADOR ESTA PAUSADO, NO HACE NADA...
-
-				}
+		default: sem_wait(&pausado);			// SI EL PLANIFICADOR ESTA PAUSADO, NO HACE NADA...
+				sem_post(&pausado);				// SI PASO, LO LIBERO...
 
 				if (FD_ISSET(socket, &descriptoresLectura)) { //ACA SE TRATA AL SOCKET SERVIDOR, SI DA TRUE ES PORQUE TIENE UN CLIENTE ESPERANDO EN COLA
 					aceptarCliente(socket, socketCliente);
+					ordenarProximoAEjecutar(socket);
 				}
 
 				for (int i=0; i<NUMEROCLIENTES; i++) {
@@ -268,7 +268,7 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 
 	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, MSG_DONTWAIT)) {
 
-		case -1: _exit_with_error(socket, "No se pudo recibir el mensaje del cliente");
+		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el mensaje del cliente"ANSI_COLOR_RESET);
 				break;
 
 		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el %s %d"ANSI_COLOR_RESET, socketCliente[posicion].nombre, socketCliente[posicion].identificadorESI);
@@ -277,10 +277,6 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 				break;
 
 		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del %s %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, socketCliente[posicion].nombre, socketCliente[posicion].identificadorESI, resultado_recv, (char*) buffer);
-
-				if (strcmp(buffer, "EXERQ") == 0) {
-					ordenarProximoAEjecutar(socket);	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
-				}
 
 				if (strcmp(buffer, "OPOK") == 0) {
 					socketCliente[posicion].rafagaActual++;
@@ -291,16 +287,19 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 
 						ordenarColaDeListos(&socketCliente[posicion]);
 					}
+
+					ordenarProximoAEjecutar(socket);
 				}
 
 				if (strcmp(buffer, "EXEEND") == 0) {
 					list_remove(ejecutando, 0);
 					list_add(finalizados, &socketCliente[posicion]);
 
-					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
-						ordenarColaDeListos(&socketCliente[posicion]);
-					}
+//					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
+//						ordenarColaDeListos(&socketCliente[posicion]);
+//					}
 
+					ordenarProximoAEjecutar(socket);	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
 				}
 				break;
 

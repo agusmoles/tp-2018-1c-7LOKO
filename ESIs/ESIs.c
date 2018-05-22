@@ -19,16 +19,16 @@ int main(){
 
 	administrarID(socketPlanificador,socketCoordinador);
 
-
 	while(getline(&instruccion,&len,script) != -1){
-		enviarMensaje(socketPlanificador,"EXERQ");
 		recibirMensaje(socketPlanificador,"EXEOR");
 
 		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);
 		recibirMensaje(socketCoordinador,"OPOK");
 		enviarMensaje(socketPlanificador,"OPOK");
 	}
+	recibirMensaje(socketPlanificador, "EXEOR");
 	enviarMensaje(socketPlanificador,"EXEEND");
+
 	close(socketPlanificador);
 	close(socketCoordinador);
 }
