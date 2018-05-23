@@ -134,7 +134,7 @@ void recibirMensaje(int socketServidor, char* mensaje){
 	int size = strlen(mensaje)+1;
 	char* recibido = malloc(size+9);
 	int resultado;
-	resultado = recv(socketServidor, recibido, size,MSG_WAITALL);
+	resultado = recv(socketServidor, recibido, size, MSG_WAITALL);
 	verificarResultado(socketServidor,resultado);
 
 	if(strcmp(recibido,mensaje)!=0){
@@ -142,7 +142,7 @@ void recibirMensaje(int socketServidor, char* mensaje){
 	}
 	strcat(recibido, " recibido");
 
-	log_info(logger,recibido);
+	log_info(logger,ANSI_COLOR_BOLDCYAN"%s"ANSI_COLOR_RESET, recibido);
 	free(recibido);
 }
 
@@ -173,15 +173,15 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPla
 		switch(parsed.keyword){
 			case GET:
 				enviarMensaje(socketCoordinador,prepararMensaje("GET_",parsed.argumentos.GET.clave,NULL));
-				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+				printf(ANSI_COLOR_BOLDWHITE"GET\tclave: <%s>\n"ANSI_COLOR_RESET, parsed.argumentos.GET.clave);
 				break;
 			case SET:
 				enviarMensaje(socketCoordinador,prepararMensaje("SET_",parsed.argumentos.SET.clave,parsed.argumentos.SET.valor));
-				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+				printf(ANSI_COLOR_BOLDWHITE"SET\tclave: <%s>\tvalor: <%s>\n"ANSI_COLOR_RESET, parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
 				break;
 			case STORE:
 				enviarMensaje(socketCoordinador,prepararMensaje("STR_",parsed.argumentos.STORE.clave,NULL));
-				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+				printf(ANSI_COLOR_BOLDWHITE"STORE\tclave: <%s>\n"ANSI_COLOR_RESET, parsed.argumentos.STORE.clave);
 				break;
 			default:
 				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);

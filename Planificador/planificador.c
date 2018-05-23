@@ -266,7 +266,7 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 	void* buffer = malloc(1024);
 	int resultado_recv;
 
-	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, MSG_DONTWAIT)) {
+	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, 0)) {
 
 		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el mensaje del cliente"ANSI_COLOR_RESET);
 				break;
