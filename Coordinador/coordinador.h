@@ -17,8 +17,9 @@ char* PUERTO;
 
 typedef struct Cliente{
 	char nombre[14];
-	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
+	int fd; 				//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
 	int identificadorESI;
+	int identificadorInstancia;
 }cliente;
 
 struct arg_struct {
@@ -30,6 +31,8 @@ t_log* logger;
 t_config* config;
 cliente socketCliente[NUMEROCLIENTES];
 
+
+/*FUNCIONES DE CONEXION */
 void _exit_with_error(int socket, char* mensaje);
 void configurarLogger();
 void crearConfig();
@@ -37,15 +40,27 @@ void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 void escuchar(int socket);
 void asignarNombreAlSocketCliente(cliente* socketCliente, char* nombre);
+
 void enviarMensaje(int socketCliente, char* msg);
+
 void recibirSentenciaESI(int socketCliente);
 void recibirIDdeESI(cliente* cliente);
+
+/* Maneja los clientes */
 void aceptarCliente(int socket, cliente* socketCliente);
+
 void recibirMensaje(void* argumentos);
+
+/*Crea un hilo para cada conexion*/
 void crearHiloPlanificador(cliente socketCliente);
 void crearHiloInstancia(cliente socketCliente);
 void crearHiloESI(cliente socketCliente);
+
 int envioHandshake(int socketCliente);
+
+/*Identifica si es Planificador, ESI o Instancia*/
 int reciboIdentificacion(int socketCliente);
+
 void intHandler();
 
+int seleccionEquitativeLoad();

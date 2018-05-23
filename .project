@@ -3,6 +3,7 @@
 	<name>TP_SISTEMASOPERATIVOS</name>
 	<comment></comment>
 	<projects>
+		<project>Shared-Library-7LOKO</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

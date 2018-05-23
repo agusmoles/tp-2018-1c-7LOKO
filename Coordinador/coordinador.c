@@ -1,6 +1,14 @@
 /******** SERVIDOR COORDINADOR *********/
 #include "coordinador.h"
 
+cliente v_instanciasConectadas[NUMEROCLIENTES];
+
+int instanciaSiguiente = 0;
+int cantidadInstanciasConectadas = 0;
+int identificadorInstancia = 0;
+
+/* FUNCIONES DE SOCKET */
+
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 
@@ -65,6 +73,7 @@ void escuchar(int socket) {
 
 }
 
+/* Asigna nombre a cada cliente particular:  Instancia, ESI, Planificador */
 void asignarNombreAlSocketCliente(struct Cliente* socketCliente, char* nombre) {
 	strcpy(socketCliente->nombre, nombre);
 }
@@ -73,12 +82,13 @@ void enviarMensaje(int socketCliente, char* msg){
 	if(send(socketCliente,msg, strlen(msg)+1,0)<0){
 		_exit_with_error(socketCliente, "No se pudo recibir la sentencia");
 	}
-
 }
 
+/* Recibe sentencia del ESI */
 void recibirSentenciaESI(int socketCliente){
 	char* buffer = malloc(1024);
 	int flag = 1;
+	int instanciaEncargada;
 	fd_set descriptoresLectura;
 
 	while(flag) {
@@ -94,18 +104,25 @@ void recibirSentenciaESI(int socketCliente){
 
 				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente"ANSI_COLOR_RESET);
 						close(socketCliente); 		//CIERRO EL SOCKET
-						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
-		//				args->socketCliente.fd = -1;			//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
+						flag = 0; 					//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
+		//				args->socketCliente.fd = -1;	//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
 						break;
 
 				default:
-						enviarMensaje(socketCliente, "OPOK");
-						printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente y dice: %s\n"ANSI_COLOR_RESET, (char*) buffer);
-						break;
+							printf(ANSI_COLOR_BOLDGREEN"Se recibio la sentencia del ESI y dice: %s\n"ANSI_COLOR_RESET, (char*) buffer);
 
+							instanciaEncargada = seleccionEquitativeLoad();
+							printf("La sentencia sera tratada por la Instancia %d \n", instanciaEncargada);
+
+							enviarSentenciaESIaInstancia(v_instanciasConectadas[instanciaEncargada].fd, buffer);
+							printf(ANSI_COLOR_BOLDGREEN"Se envio la sentencia %s a la Instancia %d \n"ANSI_COLOR_RESET, (char*) buffer, instanciaEncargada);
+
+							enviarMensaje(socketCliente, "OPOK");
+							break;
 			}
 		}
 	}
+
 	free(buffer);
 	pthread_exit(NULL);
 }
@@ -121,6 +138,12 @@ void recibirIDdeESI(cliente* cliente){
 
 	free(buffer);
 	log_info(logger, ANSI_COLOR_BOLDCYAN "Se recibio el identificador del ESI %d"ANSI_COLOR_RESET, cliente->identificadorESI);
+}
+
+/* Asigna ID a cada Instancia para identificarlas */
+void asignarIDdeInstancia(struct Cliente* socketCliente, int id){
+	socketCliente->identificadorInstancia = id;
+	log_info(logger, ANSI_COLOR_BOLDCYAN "Se recibio el identificador de la Instancia %d"ANSI_COLOR_RESET, socketCliente->identificadorInstancia);
 }
 
 void recibirMensaje(void* argumentos) {
@@ -144,6 +167,10 @@ void recibirMensaje(void* argumentos) {
 						break;
 
 				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %s"ANSI_COLOR_RESET, args->socketCliente.nombre);
+						if(strcmp(args->socketCliente.nombre, "Instancia") == 0){
+							cantidadInstanciasConectadas--;
+							instanciasConectadas();
+						}
 						close(args->socketCliente.fd); 		//CIERRO EL SOCKET
 						free(args);							//LIBERO MEMORIA CUANDO SE DESCONECTA
 						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
@@ -162,6 +189,7 @@ void recibirMensaje(void* argumentos) {
 }
 
 /* CREACION DE HILOS PARA CADA CLIENTE */
+
 void crearHiloPlanificador(cliente socketCliente){
 	pthread_t threadPlanificador;
 
@@ -213,6 +241,65 @@ void crearHiloESI(cliente socketCliente){
 	pthread_detach(threadESI);
 }
 
+/* Crea un array con las instancias que se encuentran conectadas y muestra la cantidad*/
+void instanciasConectadas(){
+	printf("Cantidad de instancias conectadas: %d \n", cantidadInstanciasConectadas);
+}
+
+/* Si no hay instancias conectadas logea el error */
+int verificarSiExistenInstanciasConectadas(){
+	if(cantidadInstanciasConectadas == 0){
+		log_error(logger,ANSI_COLOR_RED"No hay instancias conectadas: no se puede tratar al ESI"ANSI_COLOR_RESET);
+		return -1;
+	}
+	return 1;
+}
+
+/* Distribuye las sentencias a las disitintas instancias */
+int seleccionEquitativeLoad(){
+	if (verificarSiExistenInstanciasConectadas() > 0){
+
+		if(instanciaSiguiente < cantidadInstanciasConectadas){
+			instanciaSiguiente++;
+		return (instanciaSiguiente-1);
+		}else {
+			instanciaSiguiente = 0;
+		return instanciaSiguiente;
+		}
+
+	} else {
+		return -1;
+	}
+}
+
+/*Envia la sentencia a la instancia correspondiente*/
+void enviarSentenciaESIaInstancia(int socket, char* sentencia){
+	int h=0;
+
+	for(int i=0; i< NUMEROCLIENTES; i++){
+		if(strcmp(socketCliente[i].nombre, "Instancia") == 0){
+			v_instanciasConectadas[h] = socketCliente[i];
+			h++;
+		}
+	}
+
+	if(send(socket, sentencia, sizeof(sentencia),0) < 0){
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la sentencia a la Instancia"ANSI_COLOR_RESET);
+	}
+
+	//
+//	for(int j=0; j<cantidadInstanciasConectadas; j++){
+//		if(v_instanciasConectadas[j].identificadorInstancia == id_instancia){
+//			if( send(socket, sentencia, sizeof(sentencia),0) < 0){
+//				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la sentencia a la Instancia"ANSI_COLOR_RESET);
+//			}
+//		}else{
+//			log_error(logger, "La Instancia %d no esta conectada\n", id_instancia);
+//		}
+//	}
+}
+
+/* Maneja todos los clientes que se pueden conectar */
 void aceptarCliente(int socket, cliente* socketCliente) {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
@@ -244,21 +331,30 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 			switch(reciboIdentificacion(socketCliente[i].fd)) {
 				case 0: _exit_with_error(socket, "No se pudo recibir el mensaje del protocolo de conexion"); //FALLO EL RECV
 						break;
+
 				case 1: asignarNombreAlSocketCliente(&socketCliente[i], "Planificador");
 						crearHiloPlanificador(socketCliente[i]);
 						break;
+
 				case 2: asignarNombreAlSocketCliente(&socketCliente[i], "Instancia");
+						asignarIDdeInstancia(&socketCliente[i], identificadorInstancia);
 						crearHiloInstancia(socketCliente[i]);
+						identificadorInstancia++;
+						cantidadInstanciasConectadas++;
 						break;
+
 				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
 						recibirIDdeESI(&socketCliente[i]);
 						crearHiloESI(socketCliente[i]);
 						break;
+
 				default: _exit_with_error(socket, ANSI_COLOR_RED"No estas cumpliendo con el protocolo de conexion"ANSI_COLOR_RESET);
 						break;
 			}
 
+			instanciasConectadas();
 			log_info(logger, ANSI_COLOR_BOLDCYAN"Se pudo conectar el/la %s (FD %d) y esta en la posicion %d del array"ANSI_COLOR_RESET, socketCliente[i].nombre, socketCliente[i].fd, i);
+
 			break;
 		}
 		}
@@ -278,7 +374,7 @@ int envioHandshake(int socketCliente) {
 	}
 }
 
-// IDENTIFICA SI SE CONECTO PLANIFICADOR, INSTANCIA O ESI
+/* Identifica si se conecto ESI, PLANIFICADOR o INSTANCIA */
 int reciboIdentificacion(int socketCliente) {
 	char* identificador = malloc(sizeof(char));
 
@@ -320,13 +416,16 @@ int main(void) {
 
 	escuchar(listenSocket);
 
+	//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
 	for (int i=0; i<NUMEROCLIENTES; i++) {
-		socketCliente[i].fd = -1;				//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
+		socketCliente[i].fd = -1;
 	}
 
 	while(1) {
 		aceptarCliente(listenSocket, socketCliente);
 	}
+
+
 
 	close(listenSocket);
 
