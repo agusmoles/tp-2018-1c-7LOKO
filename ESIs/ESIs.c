@@ -143,48 +143,39 @@ void recibirMensaje(int socketServidor, char* mensaje){
 	free(recibido);
 }
 
-void enviarMensaje(int socketServidor, char* msg){
+void enviarMensaje(int socketServidor, void* msg){
 	int resultado;
 	resultado = send(socketServidor,msg, strlen(msg)+1,0);
 	verificarResultado(socketServidor, resultado);
 }
 
-char* prepararMensaje(char* operacion, char* clave, char* valor){
-	int size = strlen(operacion) + strlen(clave) + 1;
-	if(valor!=NULL){
-		size = size + strlen(valor) + 1;
-	}
-	char* mensaje = malloc(size);
-	strcpy(mensaje,operacion);
-	strcat(mensaje,clave);
-	if(valor!=NULL){
-		strcat(mensaje,"_");
-		strcat(mensaje,valor);
-	}
-	return mensaje;
-}
-
 void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
 	t_esi_operacion parsed = parse(instruccion);
+	header* encabezado;
+	char* paquete;
 	if(parsed.valido){
 		switch(parsed.keyword){
 			case GET:
-				enviarMensaje(socketCoordinador,prepararMensaje("GET_",parsed.argumentos.GET.clave,NULL));
+				prepararHeader(0,parsed.argumentos.GET.clave,NULL,encabezado);
+				empaquetar(parsed.argumentos.GET.clave,NULL,paquete);
 				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
 				break;
 			case SET:
-				enviarMensaje(socketCoordinador,prepararMensaje("SET_",parsed.argumentos.SET.clave,parsed.argumentos.SET.valor));
+				prepararHeader(1,parsed.argumentos.SET.clave,parsed.argumentos.SET.valor,encabezado);
+				empaquetar(parsed.argumentos.SET.clave,parsed.argumentos.SET.valor,paquete);
 				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
 				break;
 			case STORE:
-				enviarMensaje(socketCoordinador,prepararMensaje("STR_",parsed.argumentos.STORE.clave,NULL));
+				prepararHeader(2,parsed.argumentos.GET.clave,NULL,encabezado);
+				empaquetar(parsed.argumentos.STORE.clave,NULL,paquete);
 				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
 				break;
 			default:
 				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);
 				exit(EXIT_FAILURE);
 		}
-
+		enviarMensaje(socketCoordinador,(void*)encabezado);
+		enviarMensaje(socketCoordinador,(void*)paquete);
 		destruir_operacion(parsed);
 	} else {
 		fprintf(stderr, "La linea <%s> no es valida\n", instruccion);
@@ -204,24 +195,6 @@ void administrarID(int socketPlanificador, int socketCoordinador){
 	log_info(logger,"ID ESI Enviado al Coordinador");
 	free(recibido);
 }
-//
-//void recibirHeader(int socket, header_operacion header){
-//	int* buffer_id = sizeof(int);
-//	int* buffer_clavetam  = sizeof(int);
-//
-//	if(recv(socket,buffer_id ,sizeof(int),0)){
-//		switch(buffer_id){
-//		case 0:		//GET
-//			recv(socket, buffer_clavetam, sizeof(int), 0);
-//			break;
-//		case 1:		//SET
-//			break;
-//		case 2:		//STORE
-//			break;
-//		}
-//	}
-//
-//}
 
 int cantidadSentencias(FILE* script){
 	int sentencias = 0;

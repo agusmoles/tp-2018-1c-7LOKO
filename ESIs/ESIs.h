@@ -2,6 +2,7 @@
 #define ESIS_ESIS_H_
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -11,6 +12,7 @@
 #include <commons/log.h>
 #include <commons/config.h>
 #include "../Colores.h"
+#include "../sharedlib.h"
 #include "parser.h"
 
 char* IPPLANIFICADOR;
@@ -42,12 +44,10 @@ void administrarID(int socketPlanificador, int socketCoordinador);
 
 
 void recibirMensaje(int socketServidor,char* mensaje);
-void enviarMensaje(int socketServidor, char* instruccion);
+void enviarMensaje(int socketServidor, void* instruccion);
 
 
 void ejecutarInstruccion(char*,int,int);
-
-char* prepararMensaje(char*,char*,char*);
 
 int cantidadSentencias(FILE*);  //Cuenta cantidad de sentencias que tiene el script
 
