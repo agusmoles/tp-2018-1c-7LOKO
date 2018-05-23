@@ -9,6 +9,7 @@ int main(){
 	FILE* script = fopen("script.esi","r");
 	char* instruccion = malloc(PACKAGESIZE);
 	size_t len = 0;
+	int sentencias = 0;
 
 	socketPlanificador = conect_to_server(IPPLANIFICADOR,PUERTOPLANIFICADOR);
 	recibirHandshake(socketPlanificador,"******PLANIFICADOR HANDSHAKE******");
@@ -19,15 +20,23 @@ int main(){
 
 	administrarID(socketPlanificador,socketCoordinador);
 
-	while(getline(&instruccion,&len,script) != -1){
-		recibirMensaje(socketPlanificador,"EXEOR");
+	sentencias = cantidadSentencias(script);	// ASIGNO LA CANTIDAD DE SENTENCIAS (LINEAS) DEL ESI
 
-		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);
-		recibirMensaje(socketCoordinador,"OPOK");
-		enviarMensaje(socketPlanificador,"OPOK");
+	fseek(script,0,SEEK_SET);			// MUEVO EL PUNTERO AL INICIO PORQUE ESTABA AL FINAL POR LA FUNCION CANTIDADSENTENCIAS()
+
+	while(getline(&instruccion,&len,script) != -1){		// LEO LAS INSTURCCIONES
+		sentencias--;
+		recibirMensaje(socketPlanificador,"EXEOR");		// ESPERO ORDEN DE EJECUCION
+
+		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);	// EJECUTO
+		recibirMensaje(socketCoordinador,"OPOK");				// ESPERO QUE ME LLEGUE UN OPOK
+
+		if(sentencias){										//Consulto si es la ultima sentencia para enviar el EXEEND
+			enviarMensaje(socketPlanificador,"OPOK");		// SI NO ES LA ULTIMA, ENVIO OPOK
+		}else{
+			enviarMensaje(socketPlanificador,"EXEEND");		// SI LO ES, ENVIO EXEEND
+		}
 	}
-	recibirMensaje(socketPlanificador, "EXEOR");
-	enviarMensaje(socketPlanificador,"EXEEND");
 
 	close(socketPlanificador);
 	close(socketCoordinador);
@@ -197,5 +206,33 @@ void administrarID(int socketPlanificador, int socketCoordinador){
 	verificarResultado(socketCoordinador,resultado);
 	log_info(logger,ANSI_COLOR_BOLDWHITE"ID ESI %d Enviado al Coordinador"ANSI_COLOR_RESET, *recibido);
 	free(recibido);
+}
+//
+//void recibirHeader(int socket, header_operacion header){
+//	int* buffer_id = sizeof(int);
+//	int* buffer_clavetam  = sizeof(int);
+//
+//	if(recv(socket,buffer_id ,sizeof(int),0)){
+//		switch(buffer_id){
+//		case 0:		//GET
+//			recv(socket, buffer_clavetam, sizeof(int), 0);
+//			break;
+//		case 1:		//SET
+//			break;
+//		case 2:		//STORE
+//			break;
+//		}
+//	}
+//
+//}
+
+int cantidadSentencias(FILE* script){
+	int sentencias = 0;
+	size_t len = 0;
+	char* instruccion  = malloc(PACKAGESIZE);
+	while(getline(&instruccion,&len,script) != -1){
+		sentencias++;
+	}
+	return sentencias;
 }
 
