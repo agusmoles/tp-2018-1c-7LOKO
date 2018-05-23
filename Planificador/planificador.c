@@ -170,7 +170,10 @@ void manejoDeClientes(int socket, cliente* socketCliente) {
 
 				if (FD_ISSET(socket, &descriptoresLectura)) { //ACA SE TRATA AL SOCKET SERVIDOR, SI DA TRUE ES PORQUE TIENE UN CLIENTE ESPERANDO EN COLA
 					aceptarCliente(socket, socketCliente);
-					ordenarProximoAEjecutar(socket);
+
+					if(list_is_empty(ejecutando)) {			// SI LA LISTA DE EJECUTANDO ESTA VACIA, ENTONCES MANDO ORDEN DE EJECUTAR
+						ordenarProximoAEjecutar(socket);	// PORQUE SINO MANDABA DOS EXEOR AL MISMO ESI CUANDO ESTE NO LO ESPERA
+					}
 				}
 
 				for (int i=0; i<NUMEROCLIENTES; i++) {
