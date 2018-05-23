@@ -159,7 +159,6 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPla
 	if(parsed.valido){
 		switch(parsed.keyword){
 			case GET:
-<<<<<<< HEAD
 				prepararHeader(0,parsed.argumentos.GET.clave,NULL,encabezado);
 				empaquetar(parsed.argumentos.GET.clave,NULL,paquete);
 				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
@@ -173,18 +172,6 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPla
 				prepararHeader(2,parsed.argumentos.GET.clave,NULL,encabezado);
 				empaquetar(parsed.argumentos.STORE.clave,NULL,paquete);
 				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
-=======
-				enviarMensaje(socketCoordinador,prepararMensaje("GET_",parsed.argumentos.GET.clave,NULL));
-				printf(ANSI_COLOR_BOLDWHITE"GET\tclave: <%s>\n"ANSI_COLOR_RESET, parsed.argumentos.GET.clave);
-				break;
-			case SET:
-				enviarMensaje(socketCoordinador,prepararMensaje("SET_",parsed.argumentos.SET.clave,parsed.argumentos.SET.valor));
-				printf(ANSI_COLOR_BOLDWHITE"SET\tclave: <%s>\tvalor: <%s>\n"ANSI_COLOR_RESET, parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
-				break;
-			case STORE:
-				enviarMensaje(socketCoordinador,prepararMensaje("STR_",parsed.argumentos.STORE.clave,NULL));
-				printf(ANSI_COLOR_BOLDWHITE"STORE\tclave: <%s>\n"ANSI_COLOR_RESET, parsed.argumentos.STORE.clave);
->>>>>>> 7a81d26e121358b0d523a839e64a3421a7b44d40
 				break;
 			default:
 				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);
