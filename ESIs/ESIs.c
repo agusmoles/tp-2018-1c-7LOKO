@@ -9,6 +9,7 @@ int main(){
 	FILE* script = fopen("script.esi","r");
 	char* instruccion = malloc(PACKAGESIZE);
 	size_t len = 0;
+	int sentencias = 0;
 
 	socketPlanificador = conect_to_server(IPPLANIFICADOR,PUERTOPLANIFICADOR);
 	recibirHandshake(socketPlanificador,"******PLANIFICADOR HANDSHAKE******");
@@ -19,16 +20,24 @@ int main(){
 
 	administrarID(socketPlanificador,socketCoordinador);
 
+	sentencias = cantidadSentencias(script);	// ASIGNO LA CANTIDAD DE SENTENCIAS (LINEAS) DEL ESI
 
-	while(getline(&instruccion,&len,script) != -1){
-		enviarMensaje(socketPlanificador,"EXERQ");
-		recibirMensaje(socketPlanificador,"EXEOR");
+	fseek(script,0,SEEK_SET);			// MUEVO EL PUNTERO AL INICIO PORQUE ESTABA AL FINAL POR LA FUNCION CANTIDADSENTENCIAS()
 
-		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);
-		recibirMensaje(socketCoordinador,"OPOK");
-		enviarMensaje(socketPlanificador,"OPOK");
+	while(getline(&instruccion,&len,script) != -1){		// LEO LAS INSTURCCIONES
+		sentencias--;
+		recibirMensaje(socketPlanificador,"EXEOR");		// ESPERO ORDEN DE EJECUCION
+
+		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);	// EJECUTO
+		recibirMensaje(socketCoordinador,"OPOK");				// ESPERO QUE ME LLEGUE UN OPOK
+
+		if(sentencias){										//Consulto si es la ultima sentencia para enviar el EXEEND
+			enviarMensaje(socketPlanificador,"OPOK");		// SI NO ES LA ULTIMA, ENVIO OPOK
+		}else{
+			enviarMensaje(socketPlanificador,"EXEEND");		// SI LO ES, ENVIO EXEEND
+		}
 	}
-	enviarMensaje(socketPlanificador,"EXEEND");
+
 	close(socketPlanificador);
 	close(socketCoordinador);
 }
@@ -125,7 +134,7 @@ void recibirMensaje(int socketServidor, char* mensaje){
 	int size = strlen(mensaje)+1;
 	char* recibido = malloc(size+9);
 	int resultado;
-	resultado = recv(socketServidor, recibido, size,MSG_WAITALL);
+	resultado = recv(socketServidor, recibido, size, MSG_WAITALL);
 	verificarResultado(socketServidor,resultado);
 
 	if(strcmp(recibido,mensaje)!=0){
@@ -133,52 +142,43 @@ void recibirMensaje(int socketServidor, char* mensaje){
 	}
 	strcat(recibido, " recibido");
 
-	log_info(logger,recibido);
+	log_info(logger,ANSI_COLOR_BOLDCYAN"%s"ANSI_COLOR_RESET, recibido);
 	free(recibido);
 }
 
-void enviarMensaje(int socketServidor, char* msg){
+void enviarMensaje(int socketServidor, void* msg){
 	int resultado;
 	resultado = send(socketServidor,msg, strlen(msg)+1,0);
 	verificarResultado(socketServidor, resultado);
 }
 
-char* prepararMensaje(char* operacion, char* clave, char* valor){
-	int size = strlen(operacion) + strlen(clave) + 1;
-	if(valor!=NULL){
-		size = size + strlen(valor) + 1;
-	}
-	char* mensaje = malloc(size);
-	strcpy(mensaje,operacion);
-	strcat(mensaje,clave);
-	if(valor!=NULL){
-		strcat(mensaje,"_");
-		strcat(mensaje,valor);
-	}
-	return mensaje;
-}
-
 void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
 	t_esi_operacion parsed = parse(instruccion);
+	header* encabezado;
+	char* paquete;
 	if(parsed.valido){
 		switch(parsed.keyword){
 			case GET:
-				enviarMensaje(socketCoordinador,prepararMensaje("GET_",parsed.argumentos.GET.clave,NULL));
+				prepararHeader(0,parsed.argumentos.GET.clave,NULL,encabezado);
+				empaquetar(parsed.argumentos.GET.clave,NULL,paquete);
 				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
 				break;
 			case SET:
-				enviarMensaje(socketCoordinador,prepararMensaje("SET_",parsed.argumentos.SET.clave,parsed.argumentos.SET.valor));
+				prepararHeader(1,parsed.argumentos.SET.clave,parsed.argumentos.SET.valor,encabezado);
+				empaquetar(parsed.argumentos.SET.clave,parsed.argumentos.SET.valor,paquete);
 				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
 				break;
 			case STORE:
-				enviarMensaje(socketCoordinador,prepararMensaje("STR_",parsed.argumentos.STORE.clave,NULL));
+				prepararHeader(2,parsed.argumentos.GET.clave,NULL,encabezado);
+				empaquetar(parsed.argumentos.STORE.clave,NULL,paquete);
 				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
 				break;
 			default:
 				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);
 				exit(EXIT_FAILURE);
 		}
-
+		enviarMensaje(socketCoordinador,(void*)encabezado);
+		enviarMensaje(socketCoordinador,(void*)paquete);
 		destruir_operacion(parsed);
 	} else {
 		fprintf(stderr, "La linea <%s> no es valida\n", instruccion);
@@ -191,11 +191,21 @@ void administrarID(int socketPlanificador, int socketCoordinador){
 	int resultado;
 	resultado = recv(socketPlanificador, recibido, sizeof(int),MSG_WAITALL);
 	verificarResultado(socketPlanificador,resultado);
-	log_info(logger,"ID ESI Recibido");
+	log_info(logger,ANSI_COLOR_BOLDWHITE"ID ESI %d Recibido"ANSI_COLOR_RESET, *recibido);
 
 	resultado = send(socketCoordinador,recibido,sizeof(int),0);
 	verificarResultado(socketCoordinador,resultado);
-	log_info(logger,"ID ESI Enviado al Coordinador");
+	log_info(logger,ANSI_COLOR_BOLDWHITE"ID ESI %d Enviado al Coordinador"ANSI_COLOR_RESET, *recibido);
 	free(recibido);
+}
+
+int cantidadSentencias(FILE* script){
+	int sentencias = 0;
+	size_t len = 0;
+	char* instruccion  = malloc(PACKAGESIZE);
+	while(getline(&instruccion,&len,script) != -1){
+		sentencias++;
+	}
+	return sentencias;
 }
 

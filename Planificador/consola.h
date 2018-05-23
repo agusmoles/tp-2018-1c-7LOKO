@@ -1,10 +1,3 @@
-/*
- * consola.h
- *
- *  Created on: 20 abr. 2018
- *      Author: nacho
- */
-
 #ifndef CONSOLAPLANIFICADOR_SRC_CONSOLA_H_
 #define CONSOLAPLANIFICADOR_SRC_CONSOLA_H_
 
@@ -21,13 +14,14 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <signal.h>
+#include <semaphore.h>
 #include "../Colores.h"
 
 #define IP "127.0.0.1"
 #define PUERTO "6666"
 
 t_log* logger;
-int pausado;
+sem_t pausado;
 
 int ejecutar_consola();
 int com_pausar(char **args);

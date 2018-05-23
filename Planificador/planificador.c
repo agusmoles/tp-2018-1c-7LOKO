@@ -34,7 +34,7 @@ void setearConfigEnVariables() {
 	algoritmoPlanificacion = config_get_string_value(config, "Algoritmo de planificación");
 	alfaPlanificacion = config_get_double_value(config, "Alfa planificación");
 	estimacionInicial = config_get_int_value(config, "Estimación inicial");
-	pausado = 0;
+	sem_init(&pausado, 0, 1);
 }
 
 void setearListaDeEstados() {
@@ -165,18 +165,20 @@ void manejoDeClientes(int socket, cliente* socketCliente) {
 		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el manejo de clientes"ANSI_COLOR_RESET);
 				break;
 
-		default: while (pausado) {			// SI EL PLANIFICADOR ESTA PAUSADO, NO HACE NADA...
-
-				}
+		default: sem_wait(&pausado);			// SI EL PLANIFICADOR ESTA PAUSADO, NO HACE NADA...
+				sem_post(&pausado);				// SI PASO, LO LIBERO...
 
 				if (FD_ISSET(socket, &descriptoresLectura)) { //ACA SE TRATA AL SOCKET SERVIDOR, SI DA TRUE ES PORQUE TIENE UN CLIENTE ESPERANDO EN COLA
 					aceptarCliente(socket, socketCliente);
+
+					if(list_is_empty(ejecutando)) {			// SI LA LISTA DE EJECUTANDO ESTA VACIA, ENTONCES MANDO ORDEN DE EJECUTAR
+						ordenarProximoAEjecutar(socket);	// PORQUE SINO MANDABA DOS EXEOR AL MISMO ESI CUANDO ESTE NO LO ESPERA
+					}
 				}
 
 				for (int i=0; i<NUMEROCLIENTES; i++) {
 					if (FD_ISSET(socketCliente[i].fd, &descriptoresLectura)) {
 						recibirMensaje(socket, socketCliente, i); //RECIBO EL MENSAJE, DENTRO DE LA FUNCION MANEJO ERRORES
-						ordenarProximoAEjecutar(socket);	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
 					}
 				}
 
@@ -254,21 +256,22 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 
 			socketCliente[i].identificadorESI = i;		//LE ASIGNO EL IDENTIFICADOR AL ESI
 
+			list_add(listos, &socketCliente[i]);			//LO AGREGO A LA COLA DE LISTOS
+
 			log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un %s %d"ANSI_COLOR_RESET, socketCliente[i].nombre, socketCliente[i].identificadorESI);
 
 			break;
 		}
 	}
-
 }
 
 void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 	void* buffer = malloc(1024);
 	int resultado_recv;
 
-	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, MSG_DONTWAIT)) {
+	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, 0)) {
 
-		case -1: _exit_with_error(socket, "No se pudo recibir el mensaje del cliente");
+		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el mensaje del cliente"ANSI_COLOR_RESET);
 				break;
 
 		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el %s %d"ANSI_COLOR_RESET, socketCliente[posicion].nombre, socketCliente[posicion].identificadorESI);
@@ -277,10 +280,6 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 				break;
 
 		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del %s %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, socketCliente[posicion].nombre, socketCliente[posicion].identificadorESI, resultado_recv, (char*) buffer);
-
-				if(strcmp(buffer, "EXERQ") == 0) {				// SI EL ESI PIDE SOLICITUD DE EJECUCION, ES PORQUE ESTA LISTO
-					list_add(listos, &socketCliente[posicion]);	// SE LO AÑADE A LA LISTA
-				}
 
 				if (strcmp(buffer, "OPOK") == 0) {
 					socketCliente[posicion].rafagaActual++;
@@ -292,18 +291,19 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 						ordenarColaDeListos(&socketCliente[posicion]);
 					}
 
-
+					ordenarProximoAEjecutar(socket);
 				}
 
 				if (strcmp(buffer, "EXEEND") == 0) {
+					list_remove(ejecutando, 0);
 					list_add(finalizados, &socketCliente[posicion]);
 
-					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
-						ordenarColaDeListos(&socketCliente[posicion]);
-					}
+//					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
+//						ordenarColaDeListos(&socketCliente[posicion]);
+//					}
 
+					ordenarProximoAEjecutar(socket);	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
 				}
-
 				break;
 
 	}
@@ -313,11 +313,20 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 
 void ordenarProximoAEjecutar(int socket) {
 	char* ordenEjecucion = "EXEOR";
+	cliente* esiProximoAEjecutar;
 
-	if(list_is_empty(listos)) {
+	if(list_is_empty(listos) && list_is_empty(ejecutando)) {		// SI LAS DOS LISTAS ESTAN VACIAS, NADIE VA A EJECUTAR
 		printf(ANSI_COLOR_BOLDRED"No hay ESIs para ejecutar\n"ANSI_COLOR_RESET);
+	} else if (!list_is_empty(ejecutando)){							// SI EJECUTANDO NO ESTA VACIA, DEBERIA SEGUIR EJECUTANDO EL...
+		esiProximoAEjecutar = list_get(ejecutando, 0);
+
+		if(send(esiProximoAEjecutar->fd, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
+			_exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
+		}
+
+		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio orden de ejecucion al %s %d"ANSI_COLOR_RESET, esiProximoAEjecutar->nombre, esiProximoAEjecutar->identificadorESI);
 	} else {
-		cliente* esiProximoAEjecutar = getESIProximoAEJecutar();
+		esiProximoAEjecutar = getESIProximoAEJecutar();
 
 		if(send(esiProximoAEjecutar->fd, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
 			_exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);

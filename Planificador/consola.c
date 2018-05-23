@@ -111,15 +111,9 @@ int com_pausar(char **args){
 	if(args[1] != NULL){
 		return error_no_lleva_parametros(args);
 	}else{
-		switch(pausado) {
-			case 0: pausado = 1;
-					printf(ANSI_COLOR_BOLDWHITE"Planificador pausado\n"ANSI_COLOR_RESET);
-					break;
-			case 1: pausado = 0;
-					printf(ANSI_COLOR_BOLDWHITE"Planificador despausado\n"ANSI_COLOR_RESET);
-					break;
-			default: break;
-		}
+		printf(ANSI_COLOR_BOLDWHITE"Planificador pausado\n"ANSI_COLOR_RESET);
+		sem_wait(&pausado);
+		liberar_parametros(args);
 		return 1;
 	}
 }
@@ -128,7 +122,9 @@ int com_continuar(char **args){
 	if(args[1] != NULL){
 		return error_no_lleva_parametros(args);
 	}else{
-		puts("Estas en continuar");
+		sem_post(&pausado);
+		printf(ANSI_COLOR_BOLDWHITE"Planificador despausado\n"ANSI_COLOR_RESET);
+		liberar_parametros(args);
 		return 1;
 	}
 }
@@ -142,6 +138,8 @@ int com_bloquear(char **args){
 		if(args[k] != NULL)
 			return error_sobran_parametros(args);
 	}
+
+	// NO OLVIDARSE DE LIBERAR PARAMETROS
 
 	puts("Estas en bloquear");
 	return 1;
@@ -158,6 +156,8 @@ int com_desbloquear(char **args){
 			return error_sobran_parametros(args);
 	}
 
+	// NO OLVIDARSE DE LIBERAR PARAMETROS
+
 	puts("Estas en desbloquear");
 	return 1;
 
@@ -173,6 +173,8 @@ int com_listar(char **args){
 			return error_sobran_parametros(args);
 	}
 
+	// NO OLVIDARSE DE LIBERAR PARAMETROS
+
 	puts("Estas en listar");
 	return 1;
 }
@@ -186,6 +188,8 @@ int com_kill(char **args){
 		if(args[k] != NULL)
 			return error_sobran_parametros(args);
 	}
+
+	// NO OLVIDARSE DE LIBERAR PARAMETROS
 
 	puts("Estas en kill");
 	return 1;
@@ -201,6 +205,8 @@ int com_status(char **args){
 			return error_sobran_parametros(args);
 	}
 
+	// NO OLVIDARSE DE LIBERAR PARAMETROS
+
 	puts("Estas en status");
 	return 1;
 }
@@ -209,6 +215,8 @@ int com_deadlock(char **args){
 	if(args[1] != NULL){
 		return error_no_lleva_parametros(args);
 	}
+
+	// NO OLVIDARSE DE LIBERAR PARAMETROS
 
 	puts("Estas en deadlock");
 	return 1;

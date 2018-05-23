@@ -102,10 +102,9 @@ void recibirSentenciaESI(int socketCliente){
 				case -1: _exit_with_error(socketCliente, "No se pudo recibir la sentencia");
 						break;
 
-				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente"ANSI_COLOR_RESET);
+				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el ESI"ANSI_COLOR_RESET);
 						close(socketCliente); 		//CIERRO EL SOCKET
-						flag = 0; 					//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
-		//				args->socketCliente.fd = -1;	//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
+						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
 						break;
 
 				default:
@@ -174,7 +173,6 @@ void recibirMensaje(void* argumentos) {
 						close(args->socketCliente.fd); 		//CIERRO EL SOCKET
 						free(args);							//LIBERO MEMORIA CUANDO SE DESCONECTA
 						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
-		//				args->socketCliente.fd = -1;			//LO VUELVO A SETEAR EN -1 PARA QUE FUTUROS CLIENTES OCUPEN SU LUGAR EN EL ARRAY
 						break;
 
 				default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente %s de %d bytes y dice: %s\n"ANSI_COLOR_RESET, args->socketCliente.nombre, resultado_recv, (char*) buffer);
