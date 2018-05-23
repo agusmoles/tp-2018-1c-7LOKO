@@ -85,25 +85,26 @@ void enviarMensaje(int socketCliente, char* msg){
 }
 
 /* Recibe sentencia del ESI */
-void recibirSentenciaESI(int socketCliente){
+void recibirSentenciaESI(void* argumento){
 	char* buffer = malloc(1024);
+	cliente* socketCliente = (cliente*) argumento;
 	int flag = 1;
 	int instanciaEncargada;
 	fd_set descriptoresLectura;
 
 	while(flag) {
 		FD_ZERO(&descriptoresLectura);
-		FD_SET(socketCliente, &descriptoresLectura);
+		FD_SET(socketCliente->fd, &descriptoresLectura);
 
-		select(socketCliente + 1 , &descriptoresLectura, NULL, NULL, NULL);
+		select(socketCliente->fd + 1 , &descriptoresLectura, NULL, NULL, NULL);
 
-		if (FD_ISSET(socketCliente, &descriptoresLectura)) {
-		switch(recv(socketCliente, buffer, 1024, 0)) {
-				case -1: _exit_with_error(socketCliente, "No se pudo recibir la sentencia");
+		if (FD_ISSET(socketCliente->fd, &descriptoresLectura)) {
+		switch(recv(socketCliente->fd, buffer, 1024, 0)) {
+				case -1: _exit_with_error(socketCliente->fd, "No se pudo recibir la sentencia");
 						break;
 
 				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el ESI"ANSI_COLOR_RESET);
-						close(socketCliente); 		//CIERRO EL SOCKET
+						close(socketCliente->fd); 		//CIERRO EL SOCKET
 						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
 						break;
 
@@ -116,7 +117,7 @@ void recibirSentenciaESI(int socketCliente){
 							enviarSentenciaESIaInstancia(v_instanciasConectadas[instanciaEncargada].fd, buffer);
 							printf(ANSI_COLOR_BOLDGREEN"Se envio la sentencia %s a la Instancia %d \n"ANSI_COLOR_RESET, (char*) buffer, instanciaEncargada);
 
-							enviarMensaje(socketCliente, "OPOK");
+							enviarMensaje(socketCliente->fd, "OPOK");
 							break;
 			}
 		}
@@ -192,7 +193,7 @@ void crearHiloPlanificador(cliente socketCliente){
 	pthread_t threadPlanificador;
 
 	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
-	args->socket=socket;
+	//args->socket=socket;
 	args->socketCliente.fd = socketCliente.fd;
 	strcpy(args->socketCliente.nombre, socketCliente.nombre);
 
@@ -209,7 +210,7 @@ void crearHiloInstancia(cliente socketCliente){
 	pthread_t threadInstancia;
 
 	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
-	args->socket=socket;
+	//args->socket=socket;
 	args->socketCliente.fd = socketCliente.fd;
 	strcpy(args->socketCliente.nombre, socketCliente.nombre);
 
@@ -229,7 +230,7 @@ void crearHiloESI(cliente socketCliente){
 //	args->socketCliente.fd=socketCliente.fd;
 //	strcpy(args->socketCliente.nombre, socketCliente.nombre);
 
-	if( pthread_create(&threadESI, NULL, (void *) recibirSentenciaESI, (void *) socketCliente.fd )!= 0 ){
+	if( pthread_create(&threadESI, NULL, (void *) recibirSentenciaESI, (void*) &socketCliente)!= 0 ){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo ESI"ANSI_COLOR_RESET);
 		exit(-1);
 	}

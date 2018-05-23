@@ -12,7 +12,7 @@
 #include <commons/log.h>
 #include <commons/config.h>
 #include "../Colores.h"
-#include "../sharedlib.h"
+#include "sharedlib.h"
 #include "parser.h"
 
 char* IPPLANIFICADOR;

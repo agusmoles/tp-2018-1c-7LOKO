@@ -39,28 +39,48 @@ void crearConfig();
 void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 void escuchar(int socket);
-void asignarNombreAlSocketCliente(cliente* socketCliente, char* nombre);
+
+/* Asigna nombre a cada cliente particular:  Instancia, ESI, Planificador */
+void asignarNombreAlSocketCliente(struct Cliente* socketCliente, char* nombre);
+
 
 void enviarMensaje(int socketCliente, char* msg);
 
-void recibirSentenciaESI(int socketCliente);
+/* Recibe sentencia del ESI */
+void recibirSentenciaESI(void* socketCliente);
+
 void recibirIDdeESI(cliente* cliente);
 
-/* Maneja los clientes */
-void aceptarCliente(int socket, cliente* socketCliente);
+/* Asigna ID a cada Instancia para identificarlas */
+void asignarIDdeInstancia(struct Cliente* socketCliente, int id);
 
 void recibirMensaje(void* argumentos);
 
-/*Crea un hilo para cada conexion*/
+/* CREACION DE HILOS PARA CADA CLIENTE */
+
 void crearHiloPlanificador(cliente socketCliente);
+
 void crearHiloInstancia(cliente socketCliente);
+
 void crearHiloESI(cliente socketCliente);
 
-int envioHandshake(int socketCliente);
+/* Crea un array con las instancias que se encuentran conectadas y muestra la cantidad*/
+void instanciasConectadas();
 
-/*Identifica si es Planificador, ESI o Instancia*/
+/* Si no hay instancias conectadas logea el error */
+int verificarSiExistenInstanciasConectadas();
+
+/* Distribuye las sentencias a las disitintas instancias */
+int seleccionEquitativeLoad();
+
+/*Envia la sentencia a la instancia correspondiente*/
+void enviarSentenciaESIaInstancia(int socket, char* sentencia);
+
+/* Maneja todos los clientes que se pueden conectar */
+void aceptarCliente(int socket, cliente* socketCliente);
+int envioHandshake(int socketCliente) ;
+
+/* Identifica si se conecto ESI, PLANIFICADOR o INSTANCIA */
 int reciboIdentificacion(int socketCliente);
 
 void intHandler();
-
-int seleccionEquitativeLoad();

@@ -154,8 +154,8 @@ void enviarMensaje(int socketServidor, void* msg){
 
 void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
 	t_esi_operacion parsed = parse(instruccion);
-	header* encabezado;
-	char* paquete;
+	header* encabezado = NULL;
+	char* paquete = NULL;
 	if(parsed.valido){
 		switch(parsed.keyword){
 			case GET:
@@ -179,6 +179,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPla
 		}
 		enviarMensaje(socketCoordinador,(void*)encabezado);
 		enviarMensaje(socketCoordinador,(void*)paquete);
+		free(paquete);
 		destruir_operacion(parsed);
 	} else {
 		fprintf(stderr, "La linea <%s> no es valida\n", instruccion);
@@ -208,4 +209,6 @@ int cantidadSentencias(FILE* script){
 	}
 	return sentencias;
 }
+
+
 
