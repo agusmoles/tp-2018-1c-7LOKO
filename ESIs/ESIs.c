@@ -9,6 +9,7 @@ int main(){
 	FILE* script = fopen("script.esi","r");
 	char* instruccion = malloc(PACKAGESIZE);
 	size_t len = 0;
+	int sentencias = 0;
 
 	socketPlanificador = conect_to_server(IPPLANIFICADOR,PUERTOPLANIFICADOR);
 	recibirHandshake(socketPlanificador,"******PLANIFICADOR HANDSHAKE******");
@@ -18,17 +19,22 @@ int main(){
 	envioIdentificador(socketCoordinador);
 
 	administrarID(socketPlanificador,socketCoordinador);
-
+	sentencias = cantidadSentencias(script);
+	fseek(script,0,SEEK_SET);
 
 	while(getline(&instruccion,&len,script) != -1){
+		sentencias--;
 		enviarMensaje(socketPlanificador,"EXERQ");
 		recibirMensaje(socketPlanificador,"EXEOR");
 
 		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);
 		recibirMensaje(socketCoordinador,"OPOK");
-		enviarMensaje(socketPlanificador,"OPOK");
+		if(sentencias){										//Consulto si es la ultima sentencia para enviar el EXEEND
+			enviarMensaje(socketPlanificador,"OPOK");
+		}else{
+			enviarMensaje(socketPlanificador,"EXEEND");
+		}
 	}
-	enviarMensaje(socketPlanificador,"EXEEND");
 	close(socketPlanificador);
 	close(socketCoordinador);
 }
@@ -197,5 +203,33 @@ void administrarID(int socketPlanificador, int socketCoordinador){
 	verificarResultado(socketCoordinador,resultado);
 	log_info(logger,"ID ESI Enviado al Coordinador");
 	free(recibido);
+}
+//
+//void recibirHeader(int socket, header_operacion header){
+//	int* buffer_id = sizeof(int);
+//	int* buffer_clavetam  = sizeof(int);
+//
+//	if(recv(socket,buffer_id ,sizeof(int),0)){
+//		switch(buffer_id){
+//		case 0:		//GET
+//			recv(socket, buffer_clavetam, sizeof(int), 0);
+//			break;
+//		case 1:		//SET
+//			break;
+//		case 2:		//STORE
+//			break;
+//		}
+//	}
+//
+//}
+
+int cantidadSentencias(FILE* script){
+	int sentencias = 0;
+	size_t len = 0;
+	char* instruccion  = malloc(PACKAGESIZE);
+	while(getline(&instruccion,&len,script) != -1){
+		sentencias++;
+	}
+	return sentencias;
 }
 
