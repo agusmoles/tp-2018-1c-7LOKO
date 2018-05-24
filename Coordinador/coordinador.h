@@ -63,7 +63,7 @@ void crearHiloPlanificador(cliente socketCliente);
 
 void crearHiloInstancia(cliente socketCliente);
 
-void crearHiloESI(cliente socketCliente);
+void crearHiloESI(cliente* socketCliente);
 
 /* Crea un array con las instancias que se encuentran conectadas y muestra la cantidad*/
 void instanciasConectadas();

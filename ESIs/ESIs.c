@@ -16,7 +16,6 @@ int main(){
 	socketCoordinador = conect_to_server(IPCOORDINADOR,PUERTOCOORDINADOR);
 	recibirHandshake(socketCoordinador,"******COORDINADOR HANDSHAKE******");
 
-
 	envioIdentificador(socketCoordinador);
 
 	administrarID(socketPlanificador,socketCoordinador);
@@ -153,48 +152,73 @@ void enviarMensaje(int socketServidor, void* msg){
 	verificarResultado(socketServidor, resultado);
 }
 
+void enviarHeader(int socket, header* header) {
+	if (send(socket, header, sizeof(header), 0) < 0) {
+		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el header"ANSI_COLOR_RESET);
+}
+
+void enviarClave(int socket, char* clave) {
+	if (send(socket, clave, strlen(clave)+1, 0) < 0) {
+		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la clave"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio la clave"ANSI_COLOR_RESET);
+}
+
+void enviarValor(int socket, char* valor) {
+	int tamanioValor = strlen(valor) +1;
+
+	if (send(socket, (void*) tamanioValor, sizeof(int), 0) < 0) {
+		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el tamanio del valor (%d bytes)"ANSI_COLOR_RESET, tamanioValor);
+
+	if (send(socket, valor, tamanioValor, 0) < 0) {
+		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDRED"Se envio el valor %s"ANSI_COLOR_RESET, valor);
+}
+
 void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
 	t_esi_operacion parsed = parse(instruccion);
-	header* encabezado = malloc(sizeof(header));
-	char* paquete = NULL;
-	int size = 0;
+	header* header;
+	int tamanioClave;
 	if(parsed.valido){
 		switch(parsed.keyword){
 			case GET:
-				prepararHeader(0,parsed.argumentos.GET.clave,NULL,encabezado);
+				tamanioClave = strlen(parsed.argumentos.GET.clave) + 1;
+				header = crearHeader(0, tamanioClave);
+				enviarHeader(socketCoordinador, header);
+				enviarClave(socketCoordinador, parsed.argumentos.GET.clave);
+				printf(ANSI_COLOR_BOLDWHITE"TAMANIO CLAVE: %d\n"ANSI_COLOR_RESET, header->tamanioClave);
 				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
-				size = strlen(parsed.argumentos.GET.clave) + 1;
-				paquete = malloc(size);
-				strcpy(paquete,parsed.argumentos.GET.clave);
 				break;
 			case SET:
-				prepararHeader(1,parsed.argumentos.SET.clave,parsed.argumentos.SET.valor,encabezado);
+				tamanioClave = strlen(parsed.argumentos.SET.clave) + 1;
+				header = crearHeader(1, tamanioClave);
+				enviarHeader(socketCoordinador, header);
+				enviarClave(socketCoordinador, parsed.argumentos.SET.clave);
+				enviarValor(socketCoordinador, parsed.argumentos.SET.valor);
 				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
-				size = strlen(parsed.argumentos.SET.clave) + strlen(parsed.argumentos.SET.valor) + 1;
-				paquete = malloc(size);
-				strcpy(paquete,parsed.argumentos.SET.clave);
-				strcat(paquete,parsed.argumentos.SET.valor);
 				break;
 			case STORE:
-				prepararHeader(2,parsed.argumentos.STORE.clave,NULL,encabezado);
+				tamanioClave = strlen(parsed.argumentos.STORE.clave) + 1;
+				header = crearHeader(2, tamanioClave);
+				enviarHeader(socketCoordinador, header);
+				enviarClave(socketCoordinador, parsed.argumentos.STORE.clave);
 				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
-				size = strlen(parsed.argumentos.STORE.clave) + 1;
-				paquete = malloc(size);
-				strcpy(paquete,parsed.argumentos.STORE.clave);
 				break;
 			default:
 				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);
 				exit(EXIT_FAILURE);
 		}
-		if(send(socketCoordinador,encabezado,sizeof(header),0)<0){
-			exitError(socketCoordinador,"No se pudo enviar el header");
-		}
-		printf("%s",paquete);
-		if(send(socketCoordinador,paquete, strlen(paquete) + 1,0)<0){
-			exitError(socketCoordinador, "No se pudo enviar el paquete");
-		}
-		free(paquete);
 		destruir_operacion(parsed);
+
 	} else {
 		fprintf(stderr, "La linea <%s> no es valida\n", instruccion);
 		exit(EXIT_FAILURE);

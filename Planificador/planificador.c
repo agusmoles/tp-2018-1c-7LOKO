@@ -4,8 +4,8 @@
 #include "consola.h"
 
 
-void _exit_with_error(int socket, char* mensaje) {
-	close(socket);
+void _exit_with_error(char* mensaje) {
+	close(listenSocket);
 
 	for(int i=0; i<NUMEROCLIENTES; i++) {
 		if (socketCliente[i].fd != -1) {
@@ -58,13 +58,13 @@ int conectarSocketYReservarPuerto() {
 	int listenSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
 
 	if (listenSocket <= 0) {
-		_exit_with_error(listenSocket, "No se pudo conectar el socket");
+		_exit_with_error("No se pudo conectar el socket");
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar el socket con éxito"ANSI_COLOR_RESET);
 
 	if(bind(listenSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
-		_exit_with_error(listenSocket,"No se pudo reservar correctamente el puerto de escucha");
+		_exit_with_error("No se pudo reservar correctamente el puerto de escucha");
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo reservar correctamente el puerto de escucha del servidor"ANSI_COLOR_RESET);
@@ -89,7 +89,7 @@ int conectarSocketCoordinador() {
 	int server_socket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
 
 	if (connect(server_socket, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
-		_exit_with_error(server_socket, "No se pudo conectar con el servidor");
+		_exit_with_error("No se pudo conectar con el servidor");
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se pudo conectar con el Coordinador"ANSI_COLOR_RESET);
@@ -105,9 +105,9 @@ void reciboHandshake(int socket) {
 
 
 	switch (recv(socket, buffer, strlen(handshake)+1, MSG_WAITALL)) {
-		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el handshake"ANSI_COLOR_RESET);
+		case -1: _exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el handshake"ANSI_COLOR_RESET);
 				break;
-		case 0:  _exit_with_error(socket, ANSI_COLOR_BOLDRED"Se desconecto el servidor forzosamente"ANSI_COLOR_RESET);
+		case 0:  _exit_with_error(ANSI_COLOR_BOLDRED"Se desconecto el servidor forzosamente"ANSI_COLOR_RESET);
 				break;
 		default: if (strcmp(handshake, buffer) == 0) {
 					log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se recibio el handshake correctamente"ANSI_COLOR_RESET);
@@ -122,7 +122,7 @@ void envioIdentificador(int socket) {
 	char* identificador = "1";			//PLANIFICADOR ES 1
 
 	if (send(socket, identificador, strlen(identificador)+1, 0) < 0) {
-		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio correctamente el identificador"ANSI_COLOR_RESET);
@@ -139,7 +139,7 @@ void conectarConCoordinador() {
 
 void escuchar(int socket) {
 	if(listen(socket, NUMEROCLIENTES)) {
-		_exit_with_error(socket, "No se puede esperar por conexiones");
+		_exit_with_error("No se puede esperar por conexiones");
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se esta escuchando correctamente en el puerto"ANSI_COLOR_RESET);
@@ -162,7 +162,7 @@ void manejoDeClientes(int socket, cliente* socketCliente) {
 		case 0: log_info(logger, "Expiro el tiempo de espera de conexion o mensaje de los clientes");
 				break;
 
-		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el manejo de clientes"ANSI_COLOR_RESET);
+		case -1: _exit_with_error(ANSI_COLOR_BOLDRED"Fallo el manejo de clientes"ANSI_COLOR_RESET);
 				break;
 
 		default: sem_wait(&pausado);			// SI EL PLANIFICADOR ESTA PAUSADO, NO HACE NADA...
@@ -178,7 +178,7 @@ void manejoDeClientes(int socket, cliente* socketCliente) {
 
 				for (int i=0; i<NUMEROCLIENTES; i++) {
 					if (FD_ISSET(socketCliente[i].fd, &descriptoresLectura)) {
-						recibirMensaje(socket, socketCliente, i); //RECIBO EL MENSAJE, DENTRO DE LA FUNCION MANEJO ERRORES
+						recibirMensaje(socketCliente, i); //RECIBO EL MENSAJE, DENTRO DE LA FUNCION MANEJO ERRORES
 					}
 				}
 
@@ -231,7 +231,7 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 			socketCliente[i].fd = accept(socket, (struct sockaddr *) &addr, &addrlen);		//ASIGNO FD AL ARRAY
 
 			if (socketCliente[i].fd < 0) {
-				_exit_with_error(socket, "No se pudo conectar el cliente");		// MANEJO DE ERRORES
+				_exit_with_error("No se pudo conectar el cliente");		// MANEJO DE ERRORES
 			}
 
 			if (socketCliente[i].fd > fdmax) {
@@ -239,14 +239,14 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 			}
 
 			switch(envioHandshake(socketCliente[i].fd)) {
-				case -1: _exit_with_error(socket, "No se pudo enviar el handshake");
+				case -1: _exit_with_error("No se pudo enviar el handshake");
 						break;
 				case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el handshake correctamente"ANSI_COLOR_RESET);
 						break;
 			}
 
 			switch(envioIDDeESI(socketCliente[i].fd, i)) {
-				case -1: _exit_with_error(socket, "No se pudo enviar el ID del ESI");
+				case -1: _exit_with_error("No se pudo enviar el ID del ESI");
 						break;
 				case 0: log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el ID del ESI correctamente"ANSI_COLOR_RESET);
 						break;
@@ -265,13 +265,13 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 	}
 }
 
-void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
-	void* buffer = malloc(1024);
+void recibirMensaje(cliente* socketCliente, int posicion) {
+	void* buffer = malloc(7);
 	int resultado_recv;
 
-	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 1024, 0)) {
+	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 7, 0)) {
 
-		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el mensaje del cliente"ANSI_COLOR_RESET);
+		case -1: _exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el mensaje del cliente"ANSI_COLOR_RESET);
 				break;
 
 		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el %s %d"ANSI_COLOR_RESET, socketCliente[posicion].nombre, socketCliente[posicion].identificadorESI);
@@ -291,7 +291,7 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 						ordenarColaDeListos(&socketCliente[posicion]);
 					}
 
-					ordenarProximoAEjecutar(socket);
+					ordenarProximoAEjecutar();
 				}
 
 				if (strcmp(buffer, "EXEEND") == 0) {
@@ -302,7 +302,7 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 //						ordenarColaDeListos(&socketCliente[posicion]);
 //					}
 
-					ordenarProximoAEjecutar(socket);	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
+					ordenarProximoAEjecutar();	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
 				}
 				break;
 
@@ -311,7 +311,7 @@ void recibirMensaje(int socket, cliente* socketCliente, int posicion) {
 	free(buffer);
 }
 
-void ordenarProximoAEjecutar(int socket) {
+void ordenarProximoAEjecutar() {
 	char* ordenEjecucion = "EXEOR";
 	cliente* esiProximoAEjecutar;
 
@@ -321,7 +321,7 @@ void ordenarProximoAEjecutar(int socket) {
 		esiProximoAEjecutar = list_get(ejecutando, 0);
 
 		if(send(esiProximoAEjecutar->fd, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
-			_exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
+			_exit_with_error(ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
 		}
 
 		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio orden de ejecucion al %s %d"ANSI_COLOR_RESET, esiProximoAEjecutar->nombre, esiProximoAEjecutar->identificadorESI);
@@ -329,7 +329,7 @@ void ordenarProximoAEjecutar(int socket) {
 		esiProximoAEjecutar = getESIProximoAEJecutar();
 
 		if(send(esiProximoAEjecutar->fd, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
-			_exit_with_error(socket, ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
+			_exit_with_error(ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
 		}
 
 		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio orden de ejecucion al %s %d"ANSI_COLOR_RESET, esiProximoAEjecutar->nombre, esiProximoAEjecutar->identificadorESI);
@@ -415,7 +415,7 @@ int main(void) {
 	pthread_detach(threadCliente);
 	pthread_detach(threadConsola);
 
-	int listenSocket = conectarSocketYReservarPuerto();
+	listenSocket = conectarSocketYReservarPuerto();
 
 	escuchar(listenSocket);
 

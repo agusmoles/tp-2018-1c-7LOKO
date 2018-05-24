@@ -86,37 +86,78 @@ void enviarMensaje(int socketCliente, char* msg){
 
 
 void recibirSegunOperacion(header* header, int socket){
-	paquete* paquete = NULL;
-	int tamanio = header->tamanoClave + header->tamanoValor + 1;
-
-	char* buffer = malloc(tamanio);
-
-	if(recv(socket, buffer, tamanio , 0) < 0){
-		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir la clave/valor de la Sentencia"ANSI_COLOR_RESET);
-	}
-
-	desempaquetar(buffer, header, paquete);
-
-	printf(ANSI_COLOR_BOLDGREEN"Se recibio la sentencia del ESI y dice: %d %s %s\n"ANSI_COLOR_RESET, header->codigoOperacion, paquete->clave, paquete->valor);
-
+	char* buffer = malloc(header->tamanioClave);
 	switch(header->codigoOperacion){
-	case 0: /* GET */
-		/* Avisar al planificador */
+		case 0: /* GET */
+			if (recv(socket, buffer, header->tamanioClave, 0) < 0) {
+				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
+			}
 
-		break;
-	case 1: /* SET */
-		/*Avisa a Instancia encargada */
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, buffer);
 
+			/* Avisar al planificador */
 
-		break;
-	case 2: /* STORE */
-		/* Avisar al planificador */
+			break;
+		case 1: /* SET */
+			if (recv(socket, buffer, header->tamanioClave, 0) < 0) {
+				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
+			}
 
-		break;
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, buffer);
+
+			int tamanioValor = 0;
+
+			if (recv(socket, (void*) tamanioValor, sizeof(int), 0) < 0) {
+				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
+			}
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, tamanioValor);
+
+			char* bufferValor = malloc(tamanioValor);
+
+			if (recv(socket, bufferValor, tamanioValor, 0) < 0) {
+				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el valor de la clave"ANSI_COLOR_RESET);
+			}
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
+
+			free(bufferValor);
+			/*Avisa a Instancia encargada */
+
+			break;
+		case 2: /* STORE */
+			if (recv(socket, buffer, header->tamanioClave, 0) < 0) {
+				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
+			}
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, buffer);
+
+			/* Avisar al planificador */
+
+			break;
+		default:
+			_exit_with_error(socket, "No cumpliste el protocolo de enviar Header");
 	}
+
 	free(buffer);
-	free(paquete);
-	free(header);
+
+//	paquete* paquete = NULL;
+//	int tamanio = header->tamanoClave + header->tamanoValor + 1;
+//
+//	char* buffer = malloc(tamanio);
+//
+//	if(recv(socket, buffer, tamanio , 0) < 0){
+//		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir la clave/valor de la Sentencia"ANSI_COLOR_RESET);
+//	}
+//
+//	desempaquetar(buffer, header, paquete);
+//
+//	printf(ANSI_COLOR_BOLDGREEN"Se recibio la sentencia del ESI y dice: %d %s %s\n"ANSI_COLOR_RESET, header->codigoOperacion, paquete->clave, paquete->valor);
+//
+
+//	free(buffer);
+//	free(paquete);
+//	free(header);
 }
 
 /* Recibe sentencia del ESI */
@@ -124,6 +165,7 @@ void recibirSentenciaESI(void* argumento){
 	header* buffer_header = malloc(sizeof(header));
 
 	cliente* socketCliente = (cliente*) argumento;
+	printf(ANSI_COLOR_BOLDWHITE"FD del ESI %d: %d \n"ANSI_COLOR_RESET, socketCliente->identificadorESI, socketCliente->fd);
 	int flag = 1;
 	int instanciaEncargada;
 	fd_set descriptoresLectura;
@@ -135,7 +177,7 @@ void recibirSentenciaESI(void* argumento){
 		select(socketCliente->fd + 1 , &descriptoresLectura, NULL, NULL, NULL);
 
 		if (FD_ISSET(socketCliente->fd, &descriptoresLectura)) {
-		switch(recv(socketCliente->fd, buffer_header, sizeof(header), 0)){
+		switch(recv(socketCliente->fd, buffer_header, sizeof(header), MSG_WAITALL)){
 				case -1: _exit_with_error(socketCliente->fd, ANSI_COLOR_BOLDRED"No se pudo recibir el header de la Sentencia"ANSI_COLOR_RESET);
 						break;
 
@@ -145,7 +187,7 @@ void recibirSentenciaESI(void* argumento){
 						break;
 
 				default:
-					log_info(logger, "Header recibido %d \n", buffer_header->codigoOperacion);
+					log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d \n"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
 					recibirSegunOperacion(buffer_header, socketCliente->fd);
 //							instanciaEncargada = seleccionEquitativeLoad();
 //							printf("La sentencia sera tratada por la Instancia %d \n", instanciaEncargada);
@@ -257,14 +299,14 @@ void crearHiloInstancia(cliente socketCliente){
 	pthread_detach(threadInstancia);
 }
 
-void crearHiloESI(cliente socketCliente){
+void crearHiloESI(cliente* socketCliente){
 	pthread_t threadESI;
 //	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
 //	args->socket=socket;
 //	args->socketCliente.fd=socketCliente.fd;
 //	strcpy(args->socketCliente.nombre, socketCliente.nombre);
 
-	if( pthread_create(&threadESI, NULL, (void *) recibirSentenciaESI, (void*) &socketCliente)!= 0 ){
+	if( pthread_create(&threadESI, NULL, (void *) recibirSentenciaESI, (void*) socketCliente)!= 0 ){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo ESI"ANSI_COLOR_RESET);
 		exit(-1);
 	}
@@ -378,7 +420,7 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 
 				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
 						recibirIDdeESI(&socketCliente[i]);
-						crearHiloESI(socketCliente[i]);
+						crearHiloESI(&socketCliente[i]);
 						break;
 
 				default: _exit_with_error(socket, ANSI_COLOR_RED"No estas cumpliendo con el protocolo de conexion"ANSI_COLOR_RESET);
