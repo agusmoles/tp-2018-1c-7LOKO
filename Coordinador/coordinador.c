@@ -84,9 +84,45 @@ void enviarMensaje(int socketCliente, char* msg){
 	}
 }
 
+
+void recibirSegunOperacion(header* header, int socket){
+	paquete* paquete = NULL;
+	int tamanio = header->tamanoClave + header->tamanoValor + 1;
+
+	char* buffer = malloc(tamanio);
+
+	if(recv(socket, buffer, tamanio , 0) < 0){
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir la clave/valor de la Sentencia"ANSI_COLOR_RESET);
+	}
+
+	desempaquetar(buffer, header, paquete);
+
+	printf(ANSI_COLOR_BOLDGREEN"Se recibio la sentencia del ESI y dice: %d %s %s\n"ANSI_COLOR_RESET, header->codigoOperacion, paquete->clave, paquete->valor);
+
+	switch(header->codigoOperacion){
+	case 0: /* GET */
+		/* Avisar al planificador */
+
+		break;
+	case 1: /* SET */
+		/*Avisa a Instancia encargada */
+
+
+		break;
+	case 2: /* STORE */
+		/* Avisar al planificador */
+
+		break;
+	}
+	free(buffer);
+	free(paquete);
+	free(header);
+}
+
 /* Recibe sentencia del ESI */
 void recibirSentenciaESI(void* argumento){
-	char* buffer = malloc(1024);
+	header* buffer_header = malloc(sizeof(header));
+
 	cliente* socketCliente = (cliente*) argumento;
 	int flag = 1;
 	int instanciaEncargada;
@@ -99,23 +135,22 @@ void recibirSentenciaESI(void* argumento){
 		select(socketCliente->fd + 1 , &descriptoresLectura, NULL, NULL, NULL);
 
 		if (FD_ISSET(socketCliente->fd, &descriptoresLectura)) {
-		switch(recv(socketCliente->fd, buffer, 1024, 0)) {
-				case -1: _exit_with_error(socketCliente->fd, "No se pudo recibir la sentencia");
+		switch(recv(socketCliente->fd, buffer_header, sizeof(header), 0)){
+				case -1: _exit_with_error(socketCliente->fd, ANSI_COLOR_BOLDRED"No se pudo recibir el header de la Sentencia"ANSI_COLOR_RESET);
 						break;
 
 				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el ESI"ANSI_COLOR_RESET);
 						close(socketCliente->fd); 		//CIERRO EL SOCKET
-						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
+						flag = 0; 						//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
 						break;
 
 				default:
-							printf(ANSI_COLOR_BOLDGREEN"Se recibio la sentencia del ESI y dice: %s\n"ANSI_COLOR_RESET, (char*) buffer);
-
-							instanciaEncargada = seleccionEquitativeLoad();
-							printf("La sentencia sera tratada por la Instancia %d \n", instanciaEncargada);
-
-							enviarSentenciaESIaInstancia(v_instanciasConectadas[instanciaEncargada].fd, buffer);
-							printf(ANSI_COLOR_BOLDGREEN"Se envio la sentencia %s a la Instancia %d \n"ANSI_COLOR_RESET, (char*) buffer, instanciaEncargada);
+					log_info(logger, "Header recibido %d \n", buffer_header->codigoOperacion);
+					recibirSegunOperacion(buffer_header, socketCliente->fd);
+//							instanciaEncargada = seleccionEquitativeLoad();
+//							printf("La sentencia sera tratada por la Instancia %d \n", instanciaEncargada);
+//							enviarSentenciaESIaInstancia(v_instanciasConectadas[instanciaEncargada].fd, buffer);
+//							printf(ANSI_COLOR_BOLDGREEN"Se envio la sentencia %s a la Instancia %d \n"ANSI_COLOR_RESET, (char*) buffer, instanciaEncargada);
 
 							enviarMensaje(socketCliente->fd, "OPOK");
 							break;
@@ -123,7 +158,6 @@ void recibirSentenciaESI(void* argumento){
 		}
 	}
 
-	free(buffer);
 	pthread_exit(NULL);
 }
 

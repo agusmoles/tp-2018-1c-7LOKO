@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include "../Colores.h"
+#include "sharedlib.h"
 
 char* PUERTO;
 #define NUMEROCLIENTES 20
