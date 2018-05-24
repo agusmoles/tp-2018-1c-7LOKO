@@ -84,55 +84,64 @@ void enviarMensaje(int socketCliente, char* msg){
 	}
 }
 
+void recibirClave(int socket, header* header, char* bufferClave){
+	if (recv(socket, bufferClave, header->tamanioClave, 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
+	}
 
-void recibirSegunOperacion(header* header, int socket){
-	char* buffer = malloc(header->tamanioClave);
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, bufferClave);
+}
+
+void recibirValor(int socket, header* header, int* tamanioValor, char*bufferValor){
+
+	if (recv(socket, tamanioValor, sizeof(int), 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
+
+	if (recv(socket, bufferValor, *tamanioValor, 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el valor de la clave"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
+}
+
+
+void tratarSegunOperacion(header* header, int socket){
+	char* bufferClave = malloc(header->tamanioClave);
+	int instanciaEncargada;
+	int* tamanioValor;
+	char* bufferValor;
+
 	switch(header->codigoOperacion){
 		case 0: /* GET */
-			if (recv(socket, buffer, header->tamanioClave, 0) < 0) {
-				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
-			}
-
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, buffer);
-
+			recibirClave(socket, header,bufferClave);
 			/* Avisar al planificador */
 
 			break;
 		case 1: /* SET */
-			if (recv(socket, buffer, header->tamanioClave, 0) < 0) {
-				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
-			}
+			/* Primero recibo todo*/
+			tamanioValor = malloc(sizeof(int));
+			bufferValor = malloc(*tamanioValor);
 
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, buffer);
+			recibirClave(socket, header,bufferClave);
+			recibirValor(socket, header, tamanioValor, bufferValor);
 
-			int* tamanioValor = malloc(sizeof(int));
+			/*Ahora envio la sentencia a la Instancia encargada */
+			instanciaEncargada = seleccionEquitativeLoad();
+			printf("La sentencia sera tratada por la Instancia %d \n", instanciaEncargada);
 
-			if (recv(socket, tamanioValor, sizeof(int), 0) < 0) {
-				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
-			}
+			actualizarVectorInstanciasConectadas();
 
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
-
-			char* bufferValor = malloc(*tamanioValor);
-
-			if (recv(socket, bufferValor, *tamanioValor, 0) < 0) {
-				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el valor de la clave"ANSI_COLOR_RESET);
-			}
-
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
+			enviarSentenciaESIaInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
+			/*Avisa a Instancia encargada */
 
 			free(bufferValor);
 			free(tamanioValor);
-			/*Avisa a Instancia encargada */
-
 			break;
 		case 2: /* STORE */
-			if (recv(socket, buffer, header->tamanioClave, 0) < 0) {
-				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
-			}
-
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, buffer);
-
+			recibirClave(socket, header,bufferClave);
 			/* Avisar al planificador */
 
 			break;
@@ -140,25 +149,7 @@ void recibirSegunOperacion(header* header, int socket){
 			_exit_with_error(socket, "No cumpliste el protocolo de enviar Header");
 	}
 
-	free(buffer);
-
-//	paquete* paquete = NULL;
-//	int tamanio = header->tamanoClave + header->tamanoValor + 1;
-//
-//	char* buffer = malloc(tamanio);
-//
-//	if(recv(socket, buffer, tamanio , 0) < 0){
-//		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir la clave/valor de la Sentencia"ANSI_COLOR_RESET);
-//	}
-//
-//	desempaquetar(buffer, header, paquete);
-//
-//	printf(ANSI_COLOR_BOLDGREEN"Se recibio la sentencia del ESI y dice: %d %s %s\n"ANSI_COLOR_RESET, header->codigoOperacion, paquete->clave, paquete->valor);
-//
-
-//	free(buffer);
-//	free(paquete);
-//	free(header);
+	free(bufferClave);
 }
 
 /* Recibe sentencia del ESI */
@@ -168,7 +159,6 @@ void recibirSentenciaESI(void* argumento){
 	cliente* socketCliente = (cliente*) argumento;
 	printf(ANSI_COLOR_BOLDWHITE"FD del ESI %d: %d \n"ANSI_COLOR_RESET, socketCliente->identificadorESI, socketCliente->fd);
 	int flag = 1;
-	int instanciaEncargada;
 	fd_set descriptoresLectura;
 
 	while(flag) {
@@ -187,15 +177,10 @@ void recibirSentenciaESI(void* argumento){
 						flag = 0; 						//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
 						break;
 
-				default:
-					log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d \n"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
-					recibirSegunOperacion(buffer_header, socketCliente->fd);
-//							instanciaEncargada = seleccionEquitativeLoad();
-//							printf("La sentencia sera tratada por la Instancia %d \n", instanciaEncargada);
-//							enviarSentenciaESIaInstancia(v_instanciasConectadas[instanciaEncargada].fd, buffer);
-//							printf(ANSI_COLOR_BOLDGREEN"Se envio la sentencia %s a la Instancia %d \n"ANSI_COLOR_RESET, (char*) buffer, instanciaEncargada);
-
-							enviarMensaje(socketCliente->fd, "OPOK");
+				default: /* Si no hay errores */
+						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d \n"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
+						tratarSegunOperacion(buffer_header, socketCliente->fd);
+						enviarMensaje(socketCliente->fd, "OPOK");
 							break;
 			}
 		}
@@ -348,31 +333,59 @@ int seleccionEquitativeLoad(){
 	}
 }
 
-/*Envia la sentencia a la instancia correspondiente*/
-void enviarSentenciaESIaInstancia(int socket, char* sentencia){
-	int h=0;
 
+void enviarHeader(int socket, header* header) {
+	if (send(socket, header, sizeof(header), 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el header"ANSI_COLOR_RESET);
+}
+
+void enviarClave(int socket, char* clave) {
+	if (send(socket, clave, strlen(clave)+1, 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la clave"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio la clave"ANSI_COLOR_RESET);
+}
+
+void enviarValor(int socket, char* valor) {
+	int* tamanioValor = malloc(sizeof(int));
+
+	*tamanioValor = strlen(valor) +1;
+
+	if (send(socket, tamanioValor, sizeof(int), 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el tamanio del valor (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
+
+	if (send(socket, valor, *tamanioValor, 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
+	}
+
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s"ANSI_COLOR_RESET, valor);
+	free(tamanioValor);
+}
+
+/* Busca y crea vector Instancias Conectadas */
+void actualizarVectorInstanciasConectadas(){
+	int h= 0;
 	for(int i=0; i< NUMEROCLIENTES; i++){
 		if(strcmp(socketCliente[i].nombre, "Instancia") == 0){
 			v_instanciasConectadas[h] = socketCliente[i];
 			h++;
 		}
 	}
+}
 
-	if(send(socket, sentencia, sizeof(sentencia),0) < 0){
-		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la sentencia a la Instancia"ANSI_COLOR_RESET);
-	}
-
-	//
-//	for(int j=0; j<cantidadInstanciasConectadas; j++){
-//		if(v_instanciasConectadas[j].identificadorInstancia == id_instancia){
-//			if( send(socket, sentencia, sizeof(sentencia),0) < 0){
-//				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la sentencia a la Instancia"ANSI_COLOR_RESET);
-//			}
-//		}else{
-//			log_error(logger, "La Instancia %d no esta conectada\n", id_instancia);
-//		}
-//	}
+/*Envia la sentencia a la instancia correspondiente*/
+void enviarSentenciaESIaInstancia(int socket, header* header, char* clave, char* valor){
+	enviarHeader(socket, header);
+	enviarClave(socket, clave);
+	enviarValor(socket, valor);
 }
 
 /* Maneja todos los clientes que se pueden conectar */

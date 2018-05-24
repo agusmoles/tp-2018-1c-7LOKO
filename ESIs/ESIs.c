@@ -184,7 +184,7 @@ void enviarValor(int socket, char* valor) {
 	}
 
 
-	log_info(logger, ANSI_COLOR_BOLDRED"Se envio el valor %s"ANSI_COLOR_RESET, valor);
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s"ANSI_COLOR_RESET, valor);
 	free(tamanioValor);
 }
 
@@ -199,6 +199,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPla
 				header = crearHeader(0, tamanioClave);
 				enviarHeader(socketCoordinador, header);
 				enviarClave(socketCoordinador, parsed.argumentos.GET.clave);
+
 				printf(ANSI_COLOR_BOLDWHITE"TAMANIO CLAVE: %d\n"ANSI_COLOR_RESET, header->tamanioClave);
 				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
 				break;
@@ -209,6 +210,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPla
 				enviarClave(socketCoordinador, parsed.argumentos.SET.clave);
 
 				enviarValor(socketCoordinador, parsed.argumentos.SET.valor);
+
 				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
 				break;
 			case STORE:
@@ -216,6 +218,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPla
 				header = crearHeader(2, tamanioClave);
 				enviarHeader(socketCoordinador, header);
 				enviarClave(socketCoordinador, parsed.argumentos.STORE.clave);
+
 				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
 				break;
 			default:

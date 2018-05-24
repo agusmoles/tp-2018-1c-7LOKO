@@ -75,7 +75,7 @@ int verificarSiExistenInstanciasConectadas();
 int seleccionEquitativeLoad();
 
 /*Envia la sentencia a la instancia correspondiente*/
-void enviarSentenciaESIaInstancia(int socket, char* sentencia);
+void enviarSentenciaESIaInstancia(int socket, header* header, char* clave, char* valor);
 
 /* Maneja todos los clientes que se pueden conectar */
 void aceptarCliente(int socket, cliente* socketCliente);
@@ -85,3 +85,9 @@ int envioHandshake(int socketCliente) ;
 int reciboIdentificacion(int socketCliente);
 
 void intHandler();
+
+void tratarSegunOperacion(header* header, int socket);
+
+void actualizarVectorInstanciasConectadas();
+
+
