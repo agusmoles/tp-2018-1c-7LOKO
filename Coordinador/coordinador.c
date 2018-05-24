@@ -105,23 +105,24 @@ void recibirSegunOperacion(header* header, int socket){
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, buffer);
 
-			int tamanioValor = 0;
+			int* tamanioValor = malloc(sizeof(int));
 
-			if (recv(socket, (void*) tamanioValor, sizeof(int), 0) < 0) {
+			if (recv(socket, tamanioValor, sizeof(int), 0) < 0) {
 				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
 			}
 
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, tamanioValor);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
 
-			char* bufferValor = malloc(tamanioValor);
+			char* bufferValor = malloc(*tamanioValor);
 
-			if (recv(socket, bufferValor, tamanioValor, 0) < 0) {
+			if (recv(socket, bufferValor, *tamanioValor, 0) < 0) {
 				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el valor de la clave"ANSI_COLOR_RESET);
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
 
 			free(bufferValor);
+			free(tamanioValor);
 			/*Avisa a Instancia encargada */
 
 			break;

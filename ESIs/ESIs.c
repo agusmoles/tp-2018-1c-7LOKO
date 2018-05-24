@@ -169,19 +169,23 @@ void enviarClave(int socket, char* clave) {
 }
 
 void enviarValor(int socket, char* valor) {
-	int tamanioValor = strlen(valor) +1;
+	int* tamanioValor = malloc(sizeof(int));
 
-	if (send(socket, (void*) tamanioValor, sizeof(int), 0) < 0) {
+	*tamanioValor = strlen(valor) +1;
+
+	if (send(socket, tamanioValor, sizeof(int), 0) < 0) {
 		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
 	}
 
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el tamanio del valor (%d bytes)"ANSI_COLOR_RESET, tamanioValor);
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el tamanio del valor (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
 
-	if (send(socket, valor, tamanioValor, 0) < 0) {
+	if (send(socket, valor, *tamanioValor, 0) < 0) {
 		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
 	}
 
+
 	log_info(logger, ANSI_COLOR_BOLDRED"Se envio el valor %s"ANSI_COLOR_RESET, valor);
+	free(tamanioValor);
 }
 
 void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
@@ -203,6 +207,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPla
 				header = crearHeader(1, tamanioClave);
 				enviarHeader(socketCoordinador, header);
 				enviarClave(socketCoordinador, parsed.argumentos.SET.clave);
+
 				enviarValor(socketCoordinador, parsed.argumentos.SET.valor);
 				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
 				break;
