@@ -16,6 +16,7 @@ int main(){
 	socketCoordinador = conect_to_server(IPCOORDINADOR,PUERTOCOORDINADOR);
 	recibirHandshake(socketCoordinador,"******COORDINADOR HANDSHAKE******");
 
+
 	envioIdentificador(socketCoordinador);
 
 	administrarID(socketPlanificador,socketCoordinador);
@@ -154,31 +155,44 @@ void enviarMensaje(int socketServidor, void* msg){
 
 void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
 	t_esi_operacion parsed = parse(instruccion);
-	header* encabezado = NULL;
+	header* encabezado = malloc(sizeof(header));
 	char* paquete = NULL;
+	int size = 0;
 	if(parsed.valido){
 		switch(parsed.keyword){
 			case GET:
 				prepararHeader(0,parsed.argumentos.GET.clave,NULL,encabezado);
-				empaquetar(parsed.argumentos.GET.clave,NULL,paquete);
 				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+				size = strlen(parsed.argumentos.GET.clave) + 1;
+				paquete = malloc(size);
+				strcpy(paquete,parsed.argumentos.GET.clave);
 				break;
 			case SET:
 				prepararHeader(1,parsed.argumentos.SET.clave,parsed.argumentos.SET.valor,encabezado);
-				empaquetar(parsed.argumentos.SET.clave,parsed.argumentos.SET.valor,paquete);
 				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+				size = strlen(parsed.argumentos.SET.clave) + strlen(parsed.argumentos.SET.valor) + 1;
+				paquete = malloc(size);
+				strcpy(paquete,parsed.argumentos.SET.clave);
+				strcat(paquete,parsed.argumentos.SET.valor);
 				break;
 			case STORE:
-				prepararHeader(2,parsed.argumentos.GET.clave,NULL,encabezado);
-				empaquetar(parsed.argumentos.STORE.clave,NULL,paquete);
+				prepararHeader(2,parsed.argumentos.STORE.clave,NULL,encabezado);
 				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+				size = strlen(parsed.argumentos.STORE.clave) + 1;
+				paquete = malloc(size);
+				strcpy(paquete,parsed.argumentos.STORE.clave);
 				break;
 			default:
 				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);
 				exit(EXIT_FAILURE);
 		}
-		enviarMensaje(socketCoordinador,(void*)encabezado);
-		enviarMensaje(socketCoordinador,(void*)paquete);
+		if(send(socketCoordinador,encabezado,sizeof(header),0)<0){
+			exitError(socketCoordinador,"No se pudo enviar el header");
+		}
+		printf("%s",paquete);
+		if(send(socketCoordinador,paquete, strlen(paquete) + 1,0)<0){
+			exitError(socketCoordinador, "No se pudo enviar el paquete");
+		}
 		free(paquete);
 		destruir_operacion(parsed);
 	} else {
