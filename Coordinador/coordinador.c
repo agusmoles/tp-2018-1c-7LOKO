@@ -84,7 +84,7 @@ void enviarMensaje(int socketCliente, char* msg){
 	}
 }
 
-void recibirClave(int socket, header* header, char* bufferClave){
+void recibirClave(int socket, header_t* header, char* bufferClave){
 	if (recv(socket, bufferClave, header->tamanioClave, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
 	}
@@ -92,7 +92,7 @@ void recibirClave(int socket, header* header, char* bufferClave){
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, bufferClave);
 }
 
-void recibirValor(int socket, header* header, int* tamanioValor, char*bufferValor){
+void recibirValor(int socket, header_t* header, int* tamanioValor, char*bufferValor){
 
 	if (recv(socket, tamanioValor, sizeof(int), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
@@ -108,7 +108,7 @@ void recibirValor(int socket, header* header, int* tamanioValor, char*bufferValo
 }
 
 
-void tratarSegunOperacion(header* header, int socket){
+void tratarSegunOperacion(header_t* header, int socket){
 	char* bufferClave = malloc(header->tamanioClave);
 	int instanciaEncargada;
 	int* tamanioValor;
@@ -121,7 +121,7 @@ void tratarSegunOperacion(header* header, int socket){
 
 			break;
 		case 1: /* SET */
-			/* Primero recibo todo*/
+			/* Primero recibo all*/
 			tamanioValor = malloc(sizeof(int));
 			bufferValor = malloc(*tamanioValor);
 
@@ -154,7 +154,7 @@ void tratarSegunOperacion(header* header, int socket){
 
 /* Recibe sentencia del ESI */
 void recibirSentenciaESI(void* argumento){
-	header* buffer_header = malloc(sizeof(header));
+	header_t* buffer_header = malloc(sizeof(header_t));
 
 	cliente* socketCliente = (cliente*) argumento;
 	printf(ANSI_COLOR_BOLDWHITE"FD del ESI %d: %d \n"ANSI_COLOR_RESET, socketCliente->identificadorESI, socketCliente->fd);
@@ -168,7 +168,7 @@ void recibirSentenciaESI(void* argumento){
 		select(socketCliente->fd + 1 , &descriptoresLectura, NULL, NULL, NULL);
 
 		if (FD_ISSET(socketCliente->fd, &descriptoresLectura)) {
-		switch(recv(socketCliente->fd, buffer_header, sizeof(header), MSG_WAITALL)){
+		switch(recv(socketCliente->fd, buffer_header, sizeof(header_t), MSG_WAITALL)){
 				case -1: _exit_with_error(socketCliente->fd, ANSI_COLOR_BOLDRED"No se pudo recibir el header de la Sentencia"ANSI_COLOR_RESET);
 						break;
 
@@ -178,7 +178,7 @@ void recibirSentenciaESI(void* argumento){
 						break;
 
 				default: /* Si no hay errores */
-						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d \n"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
+						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
 						tratarSegunOperacion(buffer_header, socketCliente->fd);
 						enviarMensaje(socketCliente->fd, "OPOK");
 							break;
@@ -334,8 +334,8 @@ int seleccionEquitativeLoad(){
 }
 
 
-void enviarHeader(int socket, header* header) {
-	if (send(socket, header, sizeof(header), 0) < 0) {
+void enviarHeader(int socket, header_t* header) {
+	if (send(socket, header, sizeof(header_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
 	}
 
@@ -382,7 +382,7 @@ void actualizarVectorInstanciasConectadas(){
 }
 
 /*Envia la sentencia a la instancia correspondiente*/
-void enviarSentenciaESIaInstancia(int socket, header* header, char* clave, char* valor){
+void enviarSentenciaESIaInstancia(int socket, header_t* header, char* clave, char* valor){
 	enviarHeader(socket, header);
 	enviarClave(socket, clave);
 	enviarValor(socket, valor);

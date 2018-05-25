@@ -6,13 +6,13 @@
 #include <stdio.h>
 
 typedef struct header{
-	int codigoOperacion;
-	int tamanioClave;
-}header;
+	int32_t codigoOperacion;
+	int32_t tamanioClave;
+}header_t;
 
 
-header* crearHeaderVacio();
+header_t* crearHeaderVacio();
 
-header* crearHeader(int cod_op, int tamanioClave);
+header_t* crearHeader(int32_t cod_op, int32_t tamanioClave);
 
 #endif /* SHAREDLIB_H_ */

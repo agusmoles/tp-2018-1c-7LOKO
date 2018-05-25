@@ -152,8 +152,8 @@ void enviarMensaje(int socketServidor, void* msg){
 	verificarResultado(socketServidor, resultado);
 }
 
-void enviarHeader(int socket, header* header) {
-	if (send(socket, header, sizeof(header), 0) < 0) {
+void enviarHeader(int socket, header_t* header) {
+	if (send(socket, header, sizeof(header_t), 0) < 0) {
 		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
 	}
 
@@ -169,29 +169,25 @@ void enviarClave(int socket, char* clave) {
 }
 
 void enviarValor(int socket, char* valor) {
-	int* tamanioValor = malloc(sizeof(int));
+	int32_t tamanioValor = strlen(valor) +1;
 
-	*tamanioValor = strlen(valor) +1;
-
-	if (send(socket, tamanioValor, sizeof(int), 0) < 0) {
+	if (send(socket, (void *) tamanioValor, sizeof(int), 0) < 0) {
 		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
 	}
 
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el tamanio del valor (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el tamanio del valor (%d bytes)"ANSI_COLOR_RESET, tamanioValor);
 
-	if (send(socket, valor, *tamanioValor, 0) < 0) {
+	if (send(socket, valor, tamanioValor, 0) < 0) {
 		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
 	}
 
-
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s"ANSI_COLOR_RESET, valor);
-	free(tamanioValor);
 }
 
 void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
 	t_esi_operacion parsed = parse(instruccion);
-	header* header;
-	int tamanioClave;
+	header_t* header;
+	int32_t tamanioClave;
 	if(parsed.valido){
 		switch(parsed.keyword){
 			case GET:
