@@ -47,7 +47,7 @@ void recibirMensaje(int socketServidor,char* mensaje);
 void enviarMensaje(int socketServidor, void* instruccion);
 
 
-void ejecutarInstruccion(char*,int,int);
+void ejecutarInstruccion(char*,int);
 
 int cantidadSentencias(FILE*);  //Cuenta cantidad de sentencias que tiene el script
 

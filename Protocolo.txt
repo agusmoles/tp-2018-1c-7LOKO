@@ -17,8 +17,6 @@ COORDINADOR RECIBE UN 3: ESI SE HA CONECTADO
 
 ------------------------	ESI	   ------------------------
 
-El ESI envia una solicitud de ejecución: EXERQ. 
-
 Cuando el Planificador lo decida, envia un EXEOR para indicarle al ESI que debe ejecutar.
 
 El ESI envia un mensaje al Coordinador solicitando recurso, segun instruccion:
@@ -26,5 +24,14 @@ GET_Recurso
 SET_Recurso_Valor
 STR_Recurso
 
-Si la operacion finalizo correctamente, el Coordinador envia OPOK y 
-el ESI envia lo mismo al planificador para indicar que termino de ejecutar dicha linea
+----------------------------------- ENVIO DE MENSAJES -------------------------------------------
+
+Todos los mensajes se van a mandar a traves de un Header que contiene el Codigo de Operacion y el Tamaño de la Clave (o lo que sea que va a recibir)
+
+COD. OP
+
+0. Para indicar que es una operacion de GET
+1. Para indicar que es una operacion de SET
+2. Para indicar que es una operacion de STR
+3. Para indicar que se va a enviar mensajes del estilo "OPOK", "OPBLOQ", ETC. 
+

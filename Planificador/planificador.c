@@ -286,6 +286,7 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 
 					if (strcmp(algoritmoPlanificacion, "SJF-CD") == 0) {	//SI ES CON DESALOJO DEBO ORDENAR LA COLA CADA VEZ QUE EJECUTA UNA SENTENCIA
 						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
+						printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, socketCliente[posicion].identificadorESI,socketCliente[posicion].estimacionProximaRafaga, socketCliente[posicion].estimacionRafagaActual);
 						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
 
 						ordenarColaDeListos(&socketCliente[posicion]);
@@ -298,9 +299,11 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 					list_remove(ejecutando, 0);
 					list_add(finalizados, &socketCliente[posicion]);
 
-//					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
-//						ordenarColaDeListos(&socketCliente[posicion]);
-//					}
+					if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0 || strcmp(algoritmoPlanificacion, "HRRN") == 0) { // SI ES HRRN O SJF ORDENO
+						if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
+							ordenarColaDeListos(&socketCliente[posicion]);
+						}
+					}
 
 					ordenarProximoAEjecutar();	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
 				}
@@ -320,23 +323,15 @@ void ordenarProximoAEjecutar() {
 	} else if (!list_is_empty(ejecutando)){							// SI EJECUTANDO NO ESTA VACIA, DEBERIA SEGUIR EJECUTANDO EL...
 		esiProximoAEjecutar = list_get(ejecutando, 0);
 
-		if(send(esiProximoAEjecutar->fd, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
-			_exit_with_error(ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
-		}
-
-		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio orden de ejecucion al %s %d"ANSI_COLOR_RESET, esiProximoAEjecutar->nombre, esiProximoAEjecutar->identificadorESI);
+		enviarOrdenDeEjecucion(esiProximoAEjecutar, ordenEjecucion);
 	} else {
-		esiProximoAEjecutar = getESIProximoAEJecutar();
+		esiProximoAEjecutar = getPrimerESIListo();
 
-		if(send(esiProximoAEjecutar->fd, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
-			_exit_with_error(ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
-		}
-
-		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio orden de ejecucion al %s %d"ANSI_COLOR_RESET, esiProximoAEjecutar->nombre, esiProximoAEjecutar->identificadorESI);
+		enviarOrdenDeEjecucion(esiProximoAEjecutar, ordenEjecucion);
 	}
 }
 
-cliente* getESIProximoAEJecutar() {
+cliente* getPrimerESIListo() {
 	cliente* cliente;
 
 	cliente = list_get(listos, 0);					//TOMO EL PRIMERO DE LA LISTA DE LISTOS
@@ -350,6 +345,7 @@ void ordenarColaDeListos(cliente* ESIEjecutando) {
 
 	list_sort(listos, (void*) comparadorRafaga);
 
+
 	if(!list_is_empty(listos)) {
 		primerESIListo = list_get(listos, 0);			//AGARRO EL QUE AHORA ESTA PRIMERO EN LA LISTA DE LISTOS
 
@@ -357,17 +353,37 @@ void ordenarColaDeListos(cliente* ESIEjecutando) {
 			list_remove(ejecutando, 0);			// DESALOJO AL ESI EJECUTANDO
 			list_add(listos, ESIEjecutando);	// LO AGREGO AL FINAL DE LA LISTA DE LISTOS
 			ESIEjecutando->rafagaActual = 0;	// SE RESETEA LA RAFAGA ACTUAL (PORQUE FUE DESALOJADO)
-		} else {							// SINO...
-			list_remove(ejecutando, 0);			// SACO AL ESI EJECUTANDO Y LO PONGO PRIMERO EN LA COLA DE LISTOS
-			list_add_in_index(listos, 0, ESIEjecutando);
+			list_add(ejecutando, primerESIListo);
 		}
 	}
+
+	/*************************** PARA VER COMO QUEDO ORDENADA LA LISTA ***********************/
+
+	printf(ANSI_COLOR_BOLDWHITE"\n\n\n--------------------SE ORDENO LA COLA DE LISTOS-----------------------\n\n\n"ANSI_COLOR_RESET);
+
+	for (int i=0; i<list_size(listos); i++) {
+		struct Cliente* esi = list_get(listos, i);
+		printf(ANSI_COLOR_BOLDWHITE"ESI %d ------ Rafaga: %f\n"ANSI_COLOR_RESET, esi->identificadorESI, esi->estimacionProximaRafaga);
+	}
+
+	printf("\n\n\n");
+
+	/*****************************************************************************************/
+
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se ordeno satisfactoriamente la cola de listos"ANSI_COLOR_RESET);
 }
 
+void enviarOrdenDeEjecucion(cliente* esiProximoAEjecutar, char* ordenEjecucion) {
+	if(send(esiProximoAEjecutar->fd, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio orden de ejecucion al %s %d"ANSI_COLOR_RESET, esiProximoAEjecutar->nombre, esiProximoAEjecutar->identificadorESI);
+}
+
 int comparadorRafaga(cliente* cliente, struct Cliente* cliente2) {
-	if(cliente->estimacionProximaRafaga < cliente2->estimacionProximaRafaga)
+	if(cliente2->estimacionProximaRafaga < cliente->estimacionProximaRafaga)
 		return 1;
 	else
 		return 0;
@@ -423,7 +439,7 @@ int main(void) {
 		socketCliente[i].fd = -1;				//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
 		socketCliente[i].estimacionProximaRafaga = estimacionInicial;	//ESTIMACION INICIAL POR DEFAULT
 		socketCliente[i].rafagaActual = 0;
-		socketCliente[i].estimacionRafagaActual = 0;
+		socketCliente[i].estimacionRafagaActual = estimacionInicial;
 	}
 
 	manejoDeClientes(listenSocket, socketCliente);

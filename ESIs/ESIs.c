@@ -28,7 +28,7 @@ int main(){
 		sentencias--;
 		recibirMensaje(socketPlanificador,"EXEOR");		// ESPERO ORDEN DE EJECUCION
 
-		ejecutarInstruccion(instruccion,socketCoordinador,socketPlanificador);	// EJECUTO
+		ejecutarInstruccion(instruccion,socketCoordinador);	// EJECUTO
 		recibirMensaje(socketCoordinador,"OPOK");				// ESPERO QUE ME LLEGUE UN OPOK
 
 		if(sentencias){										//Consulto si es la ultima sentencia para enviar el EXEEND
@@ -184,7 +184,7 @@ void enviarValor(int socket, char* valor) {
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s"ANSI_COLOR_RESET, valor);
 }
 
-void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
+void ejecutarInstruccion(char* instruccion, int socketCoordinador){
 	t_esi_operacion parsed = parse(instruccion);
 	header_t* header;
 	int32_t tamanioClave;
