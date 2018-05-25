@@ -171,7 +171,7 @@ void enviarClave(int socket, char* clave) {
 void enviarValor(int socket, char* valor) {
 	int32_t tamanioValor = strlen(valor) +1;
 
-	if (send(socket, (void *) tamanioValor, sizeof(int), 0) < 0) {
+	if (send(socket, &tamanioValor, sizeof(int32_t), 0) < 0) {
 		exitError(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
 	}
 

@@ -117,8 +117,8 @@ void tratarSegunOperacion(header_t* header, int socket){
 	switch(header->codigoOperacion){
 		case 0: /* GET */
 			recibirClave(socket, header,bufferClave);
-			/* Avisar al planificador */
 
+			/*Avisa a Instancia encargada */
 			break;
 		case 1: /* SET */
 			/* Primero recibo all*/
@@ -130,7 +130,7 @@ void tratarSegunOperacion(header_t* header, int socket){
 
 			/*Ahora envio la sentencia a la Instancia encargada */
 			instanciaEncargada = seleccionEquitativeLoad();
-			printf("La sentencia sera tratada por la Instancia %d \n", instanciaEncargada);
+			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 
 			actualizarVectorInstanciasConectadas();
 
@@ -143,6 +143,7 @@ void tratarSegunOperacion(header_t* header, int socket){
 		case 2: /* STORE */
 			recibirClave(socket, header,bufferClave);
 			/* Avisar al planificador */
+
 
 			break;
 		default:
@@ -157,7 +158,6 @@ void recibirSentenciaESI(void* argumento){
 	header_t* buffer_header = malloc(sizeof(header_t));
 
 	cliente* socketCliente = (cliente*) argumento;
-	printf(ANSI_COLOR_BOLDWHITE"FD del ESI %d: %d \n"ANSI_COLOR_RESET, socketCliente->identificadorESI, socketCliente->fd);
 	int flag = 1;
 	fd_set descriptoresLectura;
 
