@@ -289,7 +289,9 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 						printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, socketCliente[posicion].identificadorESI,socketCliente[posicion].estimacionProximaRafaga, socketCliente[posicion].estimacionRafagaActual);
 						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
 
-						ordenarColaDeListos(&socketCliente[posicion]);
+						if (list_size(listos) >= 2) {			//SI HAY MAS DOS ESIS EN LISTOS ORDENO
+							ordenarColaDeListos(&socketCliente[posicion]);
+						}
 					}
 
 					ordenarProximoAEjecutar();
@@ -383,7 +385,7 @@ void enviarOrdenDeEjecucion(cliente* esiProximoAEjecutar, char* ordenEjecucion) 
 }
 
 int comparadorRafaga(cliente* cliente, struct Cliente* cliente2) {
-	if(cliente2->estimacionProximaRafaga < cliente->estimacionProximaRafaga)
+	if(cliente->estimacionProximaRafaga <= cliente2->estimacionProximaRafaga)
 		return 1;
 	else
 		return 0;
