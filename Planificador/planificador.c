@@ -290,8 +290,15 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
 
 						if (list_size(listos) >= 2) {			//SI HAY MAS DOS ESIS EN LISTOS ORDENO
-							ordenarColaDeListos(&socketCliente[posicion]);
+							ordenarColaDeListosPorSJF(&socketCliente[posicion]);
 						}
+					}
+
+					if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
+						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
+						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
+
+						list_iterate(listos, (void *) sumarUnoAlWaitingTime);
 					}
 
 					ordenarProximoAEjecutar();
@@ -301,13 +308,19 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 					list_remove(ejecutando, 0);
 					list_add(finalizados, &socketCliente[posicion]);
 
-					if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0 || strcmp(algoritmoPlanificacion, "HRRN") == 0) { // SI ES HRRN O SJF ORDENO
-						if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
-							ordenarColaDeListos(&socketCliente[posicion]);
+					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
+						if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) { // SI ES SJF
+							ordenarColaDeListosPorSJF(&socketCliente[posicion]);
+						}
+
+						else if (strcmp(algoritmoPlanificacion, "HRRN") == 0) { //SI ES HRRN
+							list_iterate(listos, (void*) calcularResponseRatio);	// CALCULO LA TASA DE RESPUESTA DE TODOS LOS ESIS LISTOS
+							ordenarColaDeListosPorHRRN(&socketCliente[posicion]);
 						}
 					}
 
 					ordenarProximoAEjecutar();	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
+					list_iterate(listos, (void*) reiniciarWaitingTime);
 				}
 				break;
 
@@ -342,13 +355,13 @@ cliente* getPrimerESIListo() {
 	return cliente;
 }
 
-void ordenarColaDeListos(cliente* ESIEjecutando) {
+void ordenarColaDeListosPorSJF(cliente* ESIEjecutando) {
 	struct Cliente* primerESIListo;
 
 	list_sort(listos, (void*) comparadorRafaga);
 
 
-	if(!list_is_empty(listos)) {
+	if(!list_is_empty(listos) && !list_is_empty(ejecutando)) {
 		primerESIListo = list_get(listos, 0);			//AGARRO EL QUE AHORA ESTA PRIMERO EN LA LISTA DE LISTOS
 
 		if (primerESIListo->estimacionProximaRafaga < ESIEjecutando->estimacionProximaRafaga) {	// SI LA RAFAGA ESTIMADA DEL ESI LISTO ES MENOR AL QUE EJECUTA
@@ -376,6 +389,10 @@ void ordenarColaDeListos(cliente* ESIEjecutando) {
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se ordeno satisfactoriamente la cola de listos"ANSI_COLOR_RESET);
 }
 
+void ordenarColaDeListosPorHRRN(cliente* ESIEjecutando) {
+	list_sort(listos, (void*) comparadorResponseRatio);
+}
+
 void enviarOrdenDeEjecucion(cliente* esiProximoAEjecutar, char* ordenEjecucion) {
 	if(send(esiProximoAEjecutar->fd, ordenEjecucion, strlen(ordenEjecucion)+1, 0) < 0) {
 		_exit_with_error(ANSI_COLOR_BOLDRED"Fallo el envio de orden de ejecucion al ESI"ANSI_COLOR_RESET);
@@ -389,6 +406,25 @@ int comparadorRafaga(cliente* cliente, struct Cliente* cliente2) {
 		return 1;
 	else
 		return 0;
+}
+
+int comparadorResponseRatio(cliente* cliente, struct Cliente* cliente2) {
+	if(cliente->tasaDeRespuesta <= cliente2->tasaDeRespuesta)
+		return 1;
+	else
+		return 0;
+}
+
+void sumarUnoAlWaitingTime(cliente* cliente) {
+	cliente->tiempoDeEspera += 1;
+}
+
+void reiniciarWaitingTime(cliente* cliente) {
+	cliente->tiempoDeEspera = 0;
+}
+
+void calcularResponseRatio(cliente* cliente) {
+	cliente->tasaDeRespuesta = (cliente->tiempoDeEspera + cliente->estimacionProximaRafaga) / cliente->estimacionProximaRafaga;
 }
 
 void intHandler() {
@@ -442,6 +478,7 @@ int main(void) {
 		socketCliente[i].estimacionProximaRafaga = estimacionInicial;	//ESTIMACION INICIAL POR DEFAULT
 		socketCliente[i].rafagaActual = 0;
 		socketCliente[i].estimacionRafagaActual = estimacionInicial;
+		socketCliente[i].tasaDeRespuesta = 0;
 	}
 
 	manejoDeClientes(listenSocket, socketCliente);

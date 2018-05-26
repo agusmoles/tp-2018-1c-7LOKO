@@ -29,6 +29,8 @@ typedef struct Cliente{
 	int rafagaActual;
 	float estimacionRafagaActual;
 	float estimacionProximaRafaga;
+	float tasaDeRespuesta;
+	int tiempoDeEspera;
 }cliente;
 
 t_log* logger;
@@ -57,7 +59,12 @@ void aceptarCliente(int socket, cliente* socketCliente);
 void recibirMensaje(cliente* socketCliente, int posicion);
 void ordenarProximoAEjecutar();
 cliente* getPrimerESIListo();
-void ordenarColaDeListos(cliente* ESIEjecutando);
+void ordenarColaDeListosPorSJF(cliente* ESIEjecutando);
+void ordenarColaDeListosPorHRRN(cliente* ESIEjecutando);
 void enviarOrdenDeEjecucion(cliente* esiProximoAEjecutar, char* ordenEjecucion);
 int comparadorRafaga(cliente* cliente, struct Cliente* cliente2);
+int comparadorResponseRatio(cliente* cliente, struct Cliente* cliente2);
+void sumarUnoAlWaitingTime(cliente* cliente);
+void reiniciarWaitingTime(cliente* cliente);
+void calcularResponseRatio(cliente* cliente);
 void _exit_with_error(char* mensaje);
