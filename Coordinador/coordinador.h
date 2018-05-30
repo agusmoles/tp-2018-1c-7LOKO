@@ -29,6 +29,7 @@ struct arg_struct {
 };
 
 t_log* logger;
+t_log* logOperaciones;
 t_config* config;
 cliente socketCliente[NUMEROCLIENTES];
 
@@ -75,7 +76,7 @@ int verificarSiExistenInstanciasConectadas();
 int seleccionEquitativeLoad();
 
 /*Envia la sentencia a la instancia correspondiente*/
-void enviarSentenciaESIaInstancia(int socket, header_t* header, char* clave, char* valor);
+void enviarSentenciaESI(int socket, header_t* header, char* clave, char* valor);
 
 /* Maneja todos los clientes que se pueden conectar */
 void aceptarCliente(int socket, cliente* socketCliente);
@@ -86,8 +87,15 @@ int reciboIdentificacion(int socketCliente);
 
 void intHandler();
 
-void tratarSegunOperacion(header_t* header, int socket);
+void tratarSegunOperacion(header_t* header, cliente* socket);
 
 void actualizarVectorInstanciasConectadas();
 
+/* Envios header, clave, valor, idESI */
+void enviarHeader(int socket, header_t* header);
 
+void enviarClave(int socket, char* clave);
+
+void enviarValor(int socket, char* valor);
+
+void enviarIDEsi(int socket, int idESI);

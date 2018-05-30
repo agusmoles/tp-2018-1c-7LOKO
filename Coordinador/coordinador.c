@@ -26,6 +26,10 @@ void configurarLogger() {
 	logger = log_create("coordinador.log", "coordinador", 1, LOG_LEVEL_INFO);
 }
 
+void configurarLogOperaciones(){
+	logOperaciones = log_create("logOperaciones.log", "coordinador", 0, LOG_LEVEL_INFO);
+}
+
 void crearConfig() {
 	config = config_create("../cfg");
 }
@@ -117,8 +121,7 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
 }
 
-
-void tratarSegunOperacion(header_t* header, int socket){
+void tratarSegunOperacion(header_t* header, cliente* socketESI){
 	char* bufferClave = malloc(header->tamanioClave);
 	int instanciaEncargada;
 	int32_t * tamanioValor;
@@ -126,9 +129,14 @@ void tratarSegunOperacion(header_t* header, int socket){
 
 	switch(header->codigoOperacion){
 		case 0: /* GET */
-			recibirClave(socket, header,bufferClave);
+			recibirClave(socketESI->fd, header,bufferClave);
 
-			/*Avisa a Instancia encargada */
+			/* Avisa a Planificador */
+
+
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
+
 			break;
 		case 1: /* SET */
 			/* Primero recibo all*/
@@ -139,13 +147,13 @@ void tratarSegunOperacion(header_t* header, int socket){
 //			}
 			tamanioValor = malloc(sizeof(int32_t));
 
-			recibirClave(socket, header, bufferClave);
+			recibirClave(socketESI->fd, header, bufferClave);
 
-			recibirTamanioValor(socket, tamanioValor);
+			recibirTamanioValor(socketESI->fd, tamanioValor);
 
 			bufferValor = malloc(*tamanioValor);
 
-			recibirValor(socket, tamanioValor, bufferValor);
+			recibirValor(socketESI->fd, tamanioValor, bufferValor);
 
 			/*Ahora envio la sentencia a la Instancia encargada */
 			instanciaEncargada = seleccionEquitativeLoad();
@@ -154,20 +162,25 @@ void tratarSegunOperacion(header_t* header, int socket){
 
 			actualizarVectorInstanciasConectadas();
 
-			enviarSentenciaESIaInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
+			enviarSentenciaESI(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 			/*Avisa a Instancia encargada */
+
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: SET %s %s",socketESI->identificadorESI, bufferClave, bufferValor);
 
 			free(tamanioValor);
 			free(bufferValor);
 			break;
 		case 2: /* STORE */
-			recibirClave(socket, header,bufferClave);
+			recibirClave(socketESI->fd, header,bufferClave);
 			/* Avisar al planificador */
 
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
 
 			break;
 		default:
-			_exit_with_error(socket, "No cumpliste el protocolo de enviar Header");
+			_exit_with_error(socketESI->fd, "No cumpliste el protocolo de enviar Header");
 	}
 
 	free(bufferClave);
@@ -200,7 +213,7 @@ void recibirSentenciaESI(void* argumento){
 				default: /* Si no hay errores */
 						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
 
-						tratarSegunOperacion(buffer_header, socketCliente->fd);
+						tratarSegunOperacion(buffer_header, socketCliente);
 
 						enviarMensaje(socketCliente->fd, "OPOK");
 						break;
@@ -355,7 +368,6 @@ int seleccionEquitativeLoad(){
 	}
 }
 
-
 void enviarHeader(int socket, header_t* header) {
 	if (send(socket, header, sizeof(header_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
@@ -391,6 +403,21 @@ void enviarValor(int socket, char* valor) {
 	free(tamanioValor);
 }
 
+void enviarIDEsi(int socket, int idESI){
+	int* idEsi = malloc(sizeof(int));
+
+	*idEsi = idESI;
+
+	if(send(socket, idEsi, sizeof(int), 0) < 0){
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el ID del ESI"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el ID del ESI %d"ANSI_COLOR_RESET, idESI);
+
+	free(idEsi);
+}
+
+
 /* Busca y crea vector Instancias Conectadas */
 void actualizarVectorInstanciasConectadas(){
 	int h= 0;
@@ -403,10 +430,17 @@ void actualizarVectorInstanciasConectadas(){
 }
 
 /*Envia la sentencia a la instancia correspondiente*/
-void enviarSentenciaESIaInstancia(int socket, header_t* header, char* clave, char* valor){
+void enviarSentenciaESI(int socket, header_t* header, char* clave, char* valor){
 	enviarHeader(socket, header);
 	enviarClave(socket, clave);
 	enviarValor(socket, valor);
+}
+
+/* Envia la sentencia al planificador */
+void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int idESI){
+	enviarHeader(socket, header);
+	enviarClave(socket, clave);
+	enviarIDEsi(socket, idESI);
 }
 
 /* Maneja todos los clientes que se pueden conectar */
@@ -526,6 +560,8 @@ int main(void) {
 
 	escuchar(listenSocket);
 
+	configurarLogOperaciones();
+
 	//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
 	//INICIALIZO EL ARRAY DE INSTANCIAS CONECTADAS EN -1 LAS ID
 	for (int i=0; i<NUMEROCLIENTES; i++) {
@@ -536,8 +572,6 @@ int main(void) {
 	while(1) {
 		aceptarCliente(listenSocket, socketCliente);
 	}
-
-
 
 	close(listenSocket);
 
