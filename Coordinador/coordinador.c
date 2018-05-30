@@ -92,15 +92,25 @@ void recibirClave(int socket, header_t* header, char* bufferClave){
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, bufferClave);
 }
 
-void recibirValor(int socket, header_t* header, int* tamanioValor, char*bufferValor){
-
-	if (recv(socket, tamanioValor, sizeof(int), 0) < 0) {
+void recibirTamanioValor(int socket, int32_t* tamanioValor){
+	if (recv(socket, tamanioValor, sizeof(int32_t), MSG_WAITALL) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
 	}
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
 
-	if (recv(socket, bufferValor, *tamanioValor, 0) < 0) {
+}
+
+void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
+
+//	if (recv(socket, tamanioValor, sizeof(int32_t), MSG_WAITALL) < 0) {
+//		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
+//	}
+//
+//	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
+
+
+	if (recv(socket, bufferValor, (*tamanioValor), MSG_WAITALL) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el valor de la clave"ANSI_COLOR_RESET);
 	}
 
@@ -111,7 +121,7 @@ void recibirValor(int socket, header_t* header, int* tamanioValor, char*bufferVa
 void tratarSegunOperacion(header_t* header, int socket){
 	char* bufferClave = malloc(header->tamanioClave);
 	int instanciaEncargada;
-	int* tamanioValor;
+	int32_t * tamanioValor;
 	char* bufferValor;
 
 	switch(header->codigoOperacion){
@@ -122,14 +132,24 @@ void tratarSegunOperacion(header_t* header, int socket){
 			break;
 		case 1: /* SET */
 			/* Primero recibo all*/
-			tamanioValor = malloc(sizeof(int));
+
+//
+//			for(int i=0; i<NUMEROCLIENTES; i++){
+//				printf("%d", v_instanciasConectadas[i].identificadorInstancia);
+//			}
+			tamanioValor = malloc(sizeof(int32_t));
+
+			recibirClave(socket, header, bufferClave);
+
+			recibirTamanioValor(socket, tamanioValor);
+
 			bufferValor = malloc(*tamanioValor);
 
-			recibirClave(socket, header,bufferClave);
-			recibirValor(socket, header, tamanioValor, bufferValor);
+			recibirValor(socket, tamanioValor, bufferValor);
 
 			/*Ahora envio la sentencia a la Instancia encargada */
 			instanciaEncargada = seleccionEquitativeLoad();
+
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 
 			actualizarVectorInstanciasConectadas();
@@ -137,8 +157,8 @@ void tratarSegunOperacion(header_t* header, int socket){
 			enviarSentenciaESIaInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 			/*Avisa a Instancia encargada */
 
-			free(bufferValor);
 			free(tamanioValor);
+			free(bufferValor);
 			break;
 		case 2: /* STORE */
 			recibirClave(socket, header,bufferClave);
@@ -179,9 +199,11 @@ void recibirSentenciaESI(void* argumento){
 
 				default: /* Si no hay errores */
 						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
+
 						tratarSegunOperacion(buffer_header, socketCliente->fd);
+
 						enviarMensaje(socketCliente->fd, "OPOK");
-							break;
+						break;
 			}
 		}
 	}
@@ -324,8 +346,8 @@ int seleccionEquitativeLoad(){
 			instanciaSiguiente++;
 		return (instanciaSiguiente-1);
 		}else {
-			instanciaSiguiente = 0;
-		return instanciaSiguiente;
+			instanciaSiguiente = 1;
+		return (instanciaSiguiente -1 );
 		}
 
 	} else {
@@ -351,11 +373,11 @@ void enviarClave(int socket, char* clave) {
 }
 
 void enviarValor(int socket, char* valor) {
-	int* tamanioValor = malloc(sizeof(int));
+	int32_t* tamanioValor = malloc(sizeof(int32_t));
 
 	*tamanioValor = strlen(valor) +1;
 
-	if (send(socket, tamanioValor, sizeof(int), 0) < 0) {
+	if (send(socket, tamanioValor, sizeof(int32_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
 	}
 
@@ -364,7 +386,6 @@ void enviarValor(int socket, char* valor) {
 	if (send(socket, valor, *tamanioValor, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
 	}
-
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s"ANSI_COLOR_RESET, valor);
 	free(tamanioValor);
@@ -506,8 +527,10 @@ int main(void) {
 	escuchar(listenSocket);
 
 	//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
+	//INICIALIZO EL ARRAY DE INSTANCIAS CONECTADAS EN -1 LAS ID
 	for (int i=0; i<NUMEROCLIENTES; i++) {
 		socketCliente[i].fd = -1;
+		v_instanciasConectadas[i].identificadorInstancia = -1;
 	}
 
 	while(1) {
