@@ -1,3 +1,0 @@
-GET jugador
-    SET jugador messi
-    STORE jugador       

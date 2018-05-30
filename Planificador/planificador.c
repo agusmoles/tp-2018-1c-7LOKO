@@ -27,6 +27,10 @@ void crearConfig() {
 	config = config_create("../cfg");
 }
 
+void crearDiccionarioDeClaves() {
+	diccionarioClaves = dictionary_create();
+}
+
 void setearConfigEnVariables() {
 	PUERTOPLANIFICADOR = config_get_string_value(config, "Puerto Planificador");
 	PUERTOCOORDINADOR = config_get_string_value(config, "Puerto Coordinador");
@@ -34,7 +38,22 @@ void setearConfigEnVariables() {
 	algoritmoPlanificacion = config_get_string_value(config, "Algoritmo de planificación");
 	alfaPlanificacion = config_get_double_value(config, "Alfa planificación");
 	estimacionInicial = config_get_int_value(config, "Estimación inicial");
-	sem_init(&pausado, 0, 1);
+	sem_init(&pausado, 0, 1);	//SETEO EL SEMAFORO PAUSADO EN 1 PORQUE INICIALMENTE NO ESTA BLOQUEADO
+
+	/************************ SETEO CLAVES BLOQUEADAS ******************/
+
+	char* claves = config_get_string_value(config, "Claves inicialmente bloqueadas");
+
+	if (claves != NULL) {
+		char** clavesSeparadas = string_split(claves, ",");
+
+		for (int i=0; clavesSeparadas[i] != NULL; i++) {
+			dictionary_put(diccionarioClaves, clavesSeparadas[i], "SISTEMA");
+			free(clavesSeparadas[i]);
+		}
+
+		free(clavesSeparadas);
+	}
 }
 
 void setearListaDeEstados() {
@@ -297,6 +316,7 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 					if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
 						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
 						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
+						socketCliente[posicion].tiempoDeEspera = 0; 	// LO REINICIO CADA VEZ QUE DEVUELVE OPOK (DEBERIA SER SOLO UNA VEZ CUANDO ENTRA A EJECUTAR PERO BUE)
 
 						list_iterate(listos, (void *) sumarUnoAlWaitingTime);
 					}
@@ -320,7 +340,6 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 					}
 
 					ordenarProximoAEjecutar();	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
-					list_iterate(listos, (void*) reiniciarWaitingTime);
 				}
 				break;
 
@@ -419,10 +438,6 @@ void sumarUnoAlWaitingTime(cliente* cliente) {
 	cliente->tiempoDeEspera += 1;
 }
 
-void reiniciarWaitingTime(cliente* cliente) {
-	cliente->tiempoDeEspera = 0;
-}
-
 void calcularResponseRatio(cliente* cliente) {
 	cliente->tasaDeRespuesta = (cliente->tiempoDeEspera + cliente->estimacionProximaRafaga) / cliente->estimacionProximaRafaga;
 }
@@ -439,8 +454,15 @@ int main(void) {
 
 	configurarLogger();
 	crearConfig();
+	crearDiccionarioDeClaves();
 	setearConfigEnVariables();
 	setearListaDeEstados();
+
+	/************************************** MUESTRO CLAVES INICIALMENTE BLOQUEADAS *************************/
+
+	for (int i=0; i<dictionary_size(diccionarioClaves); i++) {
+		printf("%s \n", (char*) dictionary_get(diccionarioClaves, "materias:K3002"));
+	}
 
 	/************************************** CONEXION CON COORDINADOR **********************************/
 

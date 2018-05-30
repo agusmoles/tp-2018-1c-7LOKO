@@ -8,6 +8,7 @@
 #include <commons/log.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
+#include <commons/collections/dictionary.h>
 #include <signal.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -39,12 +40,14 @@ t_list* listos;
 t_list* ejecutando;
 t_list* finalizados;
 t_list* bloqueados;
+t_dictionary* diccionarioClaves;
 fd_set descriptoresLectura;
 cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
 int fdmax = 10;
 
 void configurarLogger();
 void crearConfig();
+void crearDiccionarioDeClaves();
 void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 int conectarSocketCoordinador();
@@ -65,6 +68,5 @@ void enviarOrdenDeEjecucion(cliente* esiProximoAEjecutar, char* ordenEjecucion);
 int comparadorRafaga(cliente* cliente, struct Cliente* cliente2);
 int comparadorResponseRatio(cliente* cliente, struct Cliente* cliente2);
 void sumarUnoAlWaitingTime(cliente* cliente);
-void reiniciarWaitingTime(cliente* cliente);
 void calcularResponseRatio(cliente* cliente);
 void _exit_with_error(char* mensaje);

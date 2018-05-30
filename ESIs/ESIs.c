@@ -6,7 +6,7 @@ int main(){
 	crearConfig();
 	setearConfigEnVariables();
 	int socketPlanificador,socketCoordinador;
-	FILE* script = fopen("script.esi","r");
+	FILE* script = fopen("ESI_1","r");
 	char* instruccion = malloc(PACKAGESIZE);
 	size_t len = 0;
 	int sentencias = 0;
