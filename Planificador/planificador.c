@@ -160,6 +160,7 @@ void conectarConCoordinador() {
 	int fdmax;
 	header_t* buffer_header = malloc(sizeof(header_t));
 	int* IDESI = malloc(sizeof(int));
+	int idESI;
 	char* clave;
 
 	while(1) {
@@ -183,53 +184,53 @@ void conectarConCoordinador() {
 
 			recibirIDDeESI(socket, IDESI);
 
-			log_info(logger, ANSI_COLOR_BOLDYELLOW"Se recibio el ID del ESI que bloquea/libera recurso: %d"ANSI_COLOR_RESET, IDESI);
+			idESI = *IDESI;
+			free(IDESI);
 
-//			switch(buffer_header->codigoOperacion) {
-//			case 0: // OPERACION GET
-//				if (dictionary_has_key(diccionarioClaves, clave)) {
-//					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
-//
-//					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
-//
-//					log_info(logger, ANSI_COLOR_BOLDWHITE"La clave %s ya estaba tomada por el ESI %d"ANSI_COLOR_RESET, clave, *IDEsiQueTieneLaClaveTomada);
-//
-////					informarClaveTomada(); AL COORDINADOR
-//				}
-//
-//				dictionary_put(diccionarioClaves, clave, IDESI);
-//
-//				log_info(logger, ANSI_COLOR_BOLDWHITE"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, IDESI, clave);
-//
-////				informarClaveTomada(); AL COORDINADOR
-//				break;
-//			case 2: //OPERACION STORE
-//				if (dictionary_has_key(diccionarioClaves, clave)) {
-//
-//					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
-//
-//					if(IDEsiQueTieneLaClaveTomada == IDESI) {
-////						dictionary_remove(diccionarioClaves, clave);
-//						log_info(logger, ANSI_COLOR_BOLDWHITE"Se removio la clave %s tomada por el ESI %d"ANSI_COLOR_RESET, clave, IDESI);
-//					} else {
-//						// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
-//					}
-//				}
-//
-//				// TAMBIEN DEBO ABORTAR AL ESI E INFORMAR AL USUARIO
-//				break;
-//			default:
-//				_exit_with_error(ANSI_COLOR_BOLDRED"No se esperaba un codigo de operacion distinto de 0 (GET) o 2 (STORE) del Coordinador"ANSI_COLOR_RESET);
-//				break;
-//			}
+			log_info(logger, ANSI_COLOR_BOLDYELLOW"Se recibio el ID del ESI que bloquea/libera recurso: %d"ANSI_COLOR_RESET, idESI);
+
+			switch(buffer_header->codigoOperacion) {
+			case 0: // OPERACION GET
+				if (dictionary_has_key(diccionarioClaves, clave)) {
+					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
+
+					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+
+					log_info(logger, ANSI_COLOR_BOLDWHITE"La clave %s ya estaba tomada por el ESI %d"ANSI_COLOR_RESET, clave, *IDEsiQueTieneLaClaveTomada);
+
+//					informarClaveTomada(); AL COORDINADOR
+				}
+
+				dictionary_put(diccionarioClaves, clave, &idESI);
+
+				log_info(logger, ANSI_COLOR_BOLDWHITE"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, idESI, clave);
+
+//				informarClaveTomada(); AL COORDINADOR
+				break;
+			case 2: //OPERACION STORE
+				if (dictionary_has_key(diccionarioClaves, clave)) {
+
+					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+
+					if(*IDEsiQueTieneLaClaveTomada == idESI) {
+//						dictionary_remove(diccionarioClaves, clave);
+						log_info(logger, ANSI_COLOR_BOLDWHITE"Se removio la clave %s tomada por el ESI %d"ANSI_COLOR_RESET, clave, idESI);
+					} else {
+						// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
+					}
+				}
+
+				// TAMBIEN DEBO ABORTAR AL ESI E INFORMAR AL USUARIO
+				break;
+			default:
+				_exit_with_error(ANSI_COLOR_BOLDRED"No se esperaba un codigo de operacion distinto de 0 (GET) o 2 (STORE) del Coordinador"ANSI_COLOR_RESET);
+				break;
+			}
 
 			free(clave);
 		}
 
 	}
-
-	free(IDESI);
-
 }
 
 /******************************************************** CONEXION COORDINADOR FIN *****************************************************/

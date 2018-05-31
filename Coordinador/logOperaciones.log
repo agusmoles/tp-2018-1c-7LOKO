@@ -1,0 +1,63 @@
+[INFO] 20:08:47:771 coordinador/(18086:18160): ESI 0: OPERACION: GET futbol:messi
+[INFO] 20:08:47:812 coordinador/(18086:18160): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 20:08:47:856 coordinador/(18086:18160): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 20:10:03:564 coordinador/(18086:18255): ESI 1: OPERACION: GET futbol:messi
+[INFO] 20:10:03:608 coordinador/(18086:18255): ESI 1: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 20:10:03:652 coordinador/(18086:18255): ESI 1: OPERACION: STORE futbol:messi
+[INFO] 20:10:22:178 coordinador/(18086:18267): ESI 2: OPERACION: GET futbol:messi
+[INFO] 20:10:22:220 coordinador/(18086:18267): ESI 2: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 20:10:22:264 coordinador/(18086:18267): ESI 2: OPERACION: STORE futbol:messi
+[INFO] 20:11:17:120 coordinador/(18086:18299): ESI 3: OPERACION: GET futbol:messi
+[INFO] 20:11:17:164 coordinador/(18086:18299): ESI 3: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 20:11:17:208 coordinador/(18086:18299): ESI 3: OPERACION: STORE futbol:messi
+[INFO] 23:10:58:866 coordinador/(24019:24045): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:10:58:932 coordinador/(24019:24045): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:10:58:976 coordinador/(24019:24045): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:12:27:803 coordinador/(24096:24105): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:12:27:844 coordinador/(24096:24105): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:12:27:888 coordinador/(24096:24105): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:32:17:402 coordinador/(24901:24915): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:32:17:469 coordinador/(24901:24915): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:32:17:512 coordinador/(24901:24915): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:33:50:270 coordinador/(24977:24989): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:33:50:312 coordinador/(24977:24989): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:33:50:356 coordinador/(24977:24989): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:35:38:291 coordinador/(25068:25078): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:35:38:333 coordinador/(25068:25078): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:35:38:376 coordinador/(25068:25078): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:37:15:857 coordinador/(25147:25156): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:37:15:900 coordinador/(25147:25156): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:37:15:944 coordinador/(25147:25156): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:38:54:954 coordinador/(25250:25259): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:38:54:0 coordinador/(25250:25259): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:38:55:48 coordinador/(25250:25259): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:51:06:416 coordinador/(25918:25936): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:51:06:460 coordinador/(25918:25936): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:51:06:504 coordinador/(25918:25936): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:54:05:68 coordinador/(26097:26110): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:54:05:128 coordinador/(26097:26110): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:54:05:172 coordinador/(26097:26110): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:57:23:713 coordinador/(26248:26258): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:57:23:757 coordinador/(26248:26258): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:57:23:800 coordinador/(26248:26258): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 23:58:34:13 coordinador/(26310:26318): ESI 0: OPERACION: GET futbol:messi
+[INFO] 23:58:34:56 coordinador/(26310:26318): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 23:58:34:100 coordinador/(26310:26318): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 00:20:23:966 coordinador/(27119:27136): ESI 0: OPERACION: GET futbol:messi
+[INFO] 00:20:24:32 coordinador/(27119:27136): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 00:20:24:80 coordinador/(27119:27136): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 00:47:02:80 coordinador/(27893:27902): ESI 0: OPERACION: GET futbol:messi
+[INFO] 00:47:02:141 coordinador/(27893:27902): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 00:47:02:184 coordinador/(27893:27902): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 02:02:57:388 coordinador/(29909:30029): ESI 0: OPERACION: GET futbol:messi
+[INFO] 02:02:57:428 coordinador/(29909:30029): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 02:02:57:472 coordinador/(29909:30029): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 02:07:49:604 coordinador/(30199:30235): ESI 0: OPERACION: GET futbol:messi
+[INFO] 02:07:49:649 coordinador/(30199:30235): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 02:07:49:692 coordinador/(30199:30235): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 02:10:46:379 coordinador/(30379:30458): ESI 0: OPERACION: GET futbol:messi
+[INFO] 02:10:46:428 coordinador/(30379:30458): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 02:10:46:476 coordinador/(30379:30458): ESI 0: OPERACION: STORE futbol:messi
+[INFO] 02:32:27:380 coordinador/(31386:31399): ESI 0: OPERACION: GET futbol:messi
+[INFO] 02:32:27:425 coordinador/(31386:31399): ESI 0: OPERACION: SET futbol:messi TraemeLaCopa
+[INFO] 02:32:27:468 coordinador/(31386:31399): ESI 0: OPERACION: STORE futbol:messi
