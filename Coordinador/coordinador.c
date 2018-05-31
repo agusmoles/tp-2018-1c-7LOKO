@@ -106,14 +106,6 @@ void recibirTamanioValor(int socket, int32_t* tamanioValor){
 }
 
 void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
-
-//	if (recv(socket, tamanioValor, sizeof(int32_t), MSG_WAITALL) < 0) {
-//		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
-//	}
-//
-//	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
-
-
 	if (recv(socket, bufferValor, (*tamanioValor), MSG_WAITALL) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el valor de la clave"ANSI_COLOR_RESET);
 	}
@@ -206,7 +198,7 @@ void recibirSentenciaESI(void* argumentos){
 
 		if (FD_ISSET(args->socketCliente->fd, &descriptoresLectura)) {
 		switch(recv(args->socketCliente->fd, buffer_header, sizeof(header_t), MSG_WAITALL)){
-				case -1: _exit_with_error(args->socketCliente->fd, ANSI_COLOR_BOLDRED"No se pudo recibir el header de la Sentencia"ANSI_COLOR_RESET);
+				case -1: _exit_with_error(args->socketCliente->fd, ANSI_COLOR_BOLDRED"No se pudo recibir el header del ESI"ANSI_COLOR_RESET);
 						break;
 
 				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el ESI"ANSI_COLOR_RESET);

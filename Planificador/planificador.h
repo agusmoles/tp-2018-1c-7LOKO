@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include "../Colores.h"
+#include "sharedlib.h"
 
 char* PUERTOPLANIFICADOR;
 char* PUERTOCOORDINADOR;
@@ -59,6 +60,9 @@ int envioHandshake(int socketCliente);
 int envioIDDeESI(int socketCliente, int identificador);
 void manejoDeClientes(int socket, cliente* socketCliente);
 void aceptarCliente(int socket, cliente* socketCliente);
+void recibirHeader(int socket, header_t* header);
+void recibirClave(int socket, int tamanioClave, char* clave);
+void recibirIDDeESI(int socket, int* ID);
 void recibirMensaje(cliente* socketCliente, int posicion);
 void ordenarProximoAEjecutar();
 cliente* getPrimerESIListo();

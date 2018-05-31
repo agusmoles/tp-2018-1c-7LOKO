@@ -45,14 +45,17 @@ void setearConfigEnVariables() {
 	char* claves = config_get_string_value(config, "Claves inicialmente bloqueadas");
 
 	if (claves != NULL) {
+		int* IDSistema = malloc(sizeof(int));
+		*IDSistema = -1;
 		char** clavesSeparadas = string_split(claves, ",");
 
-		for (int i=0; clavesSeparadas[i] != NULL; i++) {
-			dictionary_put(diccionarioClaves, clavesSeparadas[i], "SISTEMA");
-			free(clavesSeparadas[i]);
+		for (int i=0; clavesSeparadas[i] != NULL; i++) {		// SIGO HASTA QUE SEA NULL EL ARRAY
+			dictionary_put(diccionarioClaves, clavesSeparadas[i], IDSistema);	// AGREGO LA CLAVE Y QUIEN LA TOMA ES EL "-1" (SISTEMA)
+			free(clavesSeparadas[i]);							// LIBERO LA MEMORIA TOMADA DE LA CLAVE
 		}
 
 		free(clavesSeparadas);
+		free(IDSistema);
 	}
 }
 
@@ -93,7 +96,7 @@ int conectarSocketYReservarPuerto() {
 	return listenSocket;
 }
 
-/******************************************************** CLIENTE PLANIFICADOR INICIO *****************************************************/
+/******************************************************** CONEXION COORDINADOR INICIO *****************************************************/
 
 int conectarSocketCoordinador() {
 	struct addrinfo hints;
@@ -152,9 +155,84 @@ void conectarConCoordinador() {
 
 	reciboHandshake(socket);
 	envioIdentificador(socket);
+
+	fd_set descriptorCoordinador;
+	int fdmax;
+	header_t* buffer_header = malloc(sizeof(header_t));
+	int* IDESI = malloc(sizeof(int));
+	char* clave;
+
+	while(1) {
+		FD_ZERO(&descriptorCoordinador);
+		FD_SET(socket, &descriptorCoordinador);
+		fdmax = socket;
+
+		select(fdmax + 1, &descriptorCoordinador, NULL, NULL, NULL);
+
+		if (FD_ISSET(socket, &descriptorCoordinador)) {
+
+			recibirHeader(socket, buffer_header);
+
+			log_info(logger, ANSI_COLOR_BOLDWHITE"Header del coordinador recibido. COD OP: %d - TAM CLAVE: %d\n"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
+
+			clave = malloc(sizeof(buffer_header->tamanioClave));
+
+			recibirClave(socket, buffer_header->tamanioClave, clave);
+
+			log_info(logger, ANSI_COLOR_BOLDYELLOW"CLAVE DEL COORDINADOR RECIBIDA: %s\n"ANSI_COLOR_RESET, clave);
+
+			recibirIDDeESI(socket, IDESI);
+
+			log_info(logger, ANSI_COLOR_BOLDYELLOW"Se recibio el ID del ESI que bloquea/libera recurso: %d"ANSI_COLOR_RESET, IDESI);
+
+//			switch(buffer_header->codigoOperacion) {
+//			case 0: // OPERACION GET
+//				if (dictionary_has_key(diccionarioClaves, clave)) {
+//					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
+//
+//					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+//
+//					log_info(logger, ANSI_COLOR_BOLDWHITE"La clave %s ya estaba tomada por el ESI %d"ANSI_COLOR_RESET, clave, *IDEsiQueTieneLaClaveTomada);
+//
+////					informarClaveTomada(); AL COORDINADOR
+//				}
+//
+//				dictionary_put(diccionarioClaves, clave, IDESI);
+//
+//				log_info(logger, ANSI_COLOR_BOLDWHITE"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, IDESI, clave);
+//
+////				informarClaveTomada(); AL COORDINADOR
+//				break;
+//			case 2: //OPERACION STORE
+//				if (dictionary_has_key(diccionarioClaves, clave)) {
+//
+//					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+//
+//					if(IDEsiQueTieneLaClaveTomada == IDESI) {
+////						dictionary_remove(diccionarioClaves, clave);
+//						log_info(logger, ANSI_COLOR_BOLDWHITE"Se removio la clave %s tomada por el ESI %d"ANSI_COLOR_RESET, clave, IDESI);
+//					} else {
+//						// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
+//					}
+//				}
+//
+//				// TAMBIEN DEBO ABORTAR AL ESI E INFORMAR AL USUARIO
+//				break;
+//			default:
+//				_exit_with_error(ANSI_COLOR_BOLDRED"No se esperaba un codigo de operacion distinto de 0 (GET) o 2 (STORE) del Coordinador"ANSI_COLOR_RESET);
+//				break;
+//			}
+
+			free(clave);
+		}
+
+	}
+
+	free(IDESI);
+
 }
 
-/******************************************************** CLIENTE PLANIFICADOR FIN *****************************************************/
+/******************************************************** CONEXION COORDINADOR FIN *****************************************************/
 
 void escuchar(int socket) {
 	if(listen(socket, NUMEROCLIENTES)) {
@@ -281,6 +359,24 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 
 			break;
 		}
+	}
+}
+
+void recibirHeader(int socket, header_t* header) {
+	if(recv(socket, header, sizeof(header_t), MSG_WAITALL) < 0) {		// RECIBO EL HEADER
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el header"ANSI_COLOR_RESET);
+	}
+}
+
+void recibirClave(int socket, int tamanioClave, char* clave) {
+	if(recv(socket, clave, tamanioClave, MSG_WAITALL) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir la clave del coordinador"ANSI_COLOR_RESET);
+	}
+}
+
+void recibirIDDeESI(int socket, int* ID) {
+	if (recv(socket, ID, sizeof(int), 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el ID del ESI"ANSI_COLOR_RESET);
 	}
 }
 
@@ -460,9 +556,9 @@ int main(void) {
 
 	/************************************** MUESTRO CLAVES INICIALMENTE BLOQUEADAS *************************/
 
-	for (int i=0; i<dictionary_size(diccionarioClaves); i++) {
-		printf("%s \n", (char*) dictionary_get(diccionarioClaves, "materias:K3002"));
-	}
+//	for (int i=0; i<dictionary_size(diccionarioClaves); i++) {
+//		printf("%s \n", (char*) dictionary_get(diccionarioClaves, "materias:K3002"));
+//	}
 
 	/************************************** CONEXION CON COORDINADOR **********************************/
 
