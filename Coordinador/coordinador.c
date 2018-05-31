@@ -403,7 +403,6 @@ void enviarIDEsi(int socket, int idESI){
 	free(idEsi);
 }
 
-
 /* Busca y crea vector Instancias Conectadas */
 void actualizarVectorInstanciasConectadas(){
 	int h= 0;
