@@ -76,7 +76,6 @@ void reciboHandshake(int socket) {
 	char* handshake = "******COORDINADOR HANDSHAKE******";
 	char* buffer = malloc(strlen(handshake)+1);
 
-
 	switch (recv(socket, buffer, strlen(handshake)+1, MSG_WAITALL)) {
 		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el handshake"ANSI_COLOR_RESET);
 				break;
@@ -127,6 +126,10 @@ void recibirInstruccion(int socket){ // aca se reciben los SETS del coordinador
 
 		recibirValor(socket, tamanioValor, bufferValor);
 	}
+
+	free(tamanioValor);
+	free(bufferClave);
+	free(bufferValor);
 }
 
 int procesarInstruccion(char* instruccion){

@@ -179,7 +179,6 @@ void tratarSegunOperacion(header_t* header, cliente* socketESI, int socketPlanif
 		default:
 			_exit_with_error(socketESI->fd, "No cumpliste el protocolo de enviar Header");
 	}
-
 	free(bufferClave);
 }
 
