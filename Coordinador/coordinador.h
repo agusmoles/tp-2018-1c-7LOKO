@@ -28,6 +28,12 @@ struct arg_struct {
 	cliente socketCliente;
 };
 
+
+typedef struct arg_esi {
+	int socketPlanificador;
+	cliente* socketCliente;
+}arg_esi_t;
+
 t_log* logger;
 t_log* logOperaciones;
 t_config* config;
@@ -64,7 +70,7 @@ void crearHiloPlanificador(cliente socketCliente);
 
 void crearHiloInstancia(cliente socketCliente);
 
-void crearHiloESI(cliente* socketCliente);
+void crearHiloESI(cliente* socketCliente, int socketPlanificador);
 
 /* Crea un array con las instancias que se encuentran conectadas y muestra la cantidad*/
 void instanciasConectadas();
@@ -78,6 +84,9 @@ int seleccionEquitativeLoad();
 /*Envia la sentencia a la instancia correspondiente*/
 void enviarSentenciaESI(int socket, header_t* header, char* clave, char* valor);
 
+/* Envia la sentencia al planificador */
+void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int idESI);
+
 /* Maneja todos los clientes que se pueden conectar */
 void aceptarCliente(int socket, cliente* socketCliente);
 int envioHandshake(int socketCliente) ;
@@ -87,7 +96,7 @@ int reciboIdentificacion(int socketCliente);
 
 void intHandler();
 
-void tratarSegunOperacion(header_t* header, cliente* socket);
+void tratarSegunOperacion(header_t* header, cliente* socket, int socketPlanificador);
 
 void actualizarVectorInstanciasConectadas();
 
@@ -99,3 +108,5 @@ void enviarClave(int socket, char* clave);
 void enviarValor(int socket, char* valor);
 
 void enviarIDEsi(int socket, int idESI);
+
+int buscarSocketPlanificador();

@@ -121,7 +121,7 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
 }
 
-void tratarSegunOperacion(header_t* header, cliente* socketESI){
+void tratarSegunOperacion(header_t* header, cliente* socketESI, int socketPlanificador){
 	char* bufferClave = malloc(header->tamanioClave);
 	int instanciaEncargada;
 	int32_t * tamanioValor;
@@ -132,11 +132,11 @@ void tratarSegunOperacion(header_t* header, cliente* socketESI){
 			recibirClave(socketESI->fd, header,bufferClave);
 
 			/* Avisa a Planificador */
-
+			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
-
 			break;
 		case 1: /* SET */
 			/* Primero recibo all*/
@@ -163,6 +163,8 @@ void tratarSegunOperacion(header_t* header, cliente* socketESI){
 			actualizarVectorInstanciasConectadas();
 
 			enviarSentenciaESI(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
 			/*Avisa a Instancia encargada */
 
 			/*Logea sentencia */
@@ -173,7 +175,10 @@ void tratarSegunOperacion(header_t* header, cliente* socketESI){
 			break;
 		case 2: /* STORE */
 			recibirClave(socketESI->fd, header,bufferClave);
-			/* Avisar al planificador */
+
+			/* Avisa a Planificador */
+			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
@@ -187,35 +192,36 @@ void tratarSegunOperacion(header_t* header, cliente* socketESI){
 }
 
 /* Recibe sentencia del ESI */
-void recibirSentenciaESI(void* argumento){
+void recibirSentenciaESI(void* argumentos){
 	header_t* buffer_header = malloc(sizeof(header_t));
-
-	cliente* socketCliente = (cliente*) argumento;
+	arg_esi_t* args = argumentos;
 	int flag = 1;
 	fd_set descriptoresLectura;
 
 	while(flag) {
 		FD_ZERO(&descriptoresLectura);
-		FD_SET(socketCliente->fd, &descriptoresLectura);
+		FD_SET(args->socketCliente->fd, &descriptoresLectura);
 
-		select(socketCliente->fd + 1 , &descriptoresLectura, NULL, NULL, NULL);
+		select(args->socketCliente->fd + 1 , &descriptoresLectura, NULL, NULL, NULL);
 
-		if (FD_ISSET(socketCliente->fd, &descriptoresLectura)) {
-		switch(recv(socketCliente->fd, buffer_header, sizeof(header_t), MSG_WAITALL)){
-				case -1: _exit_with_error(socketCliente->fd, ANSI_COLOR_BOLDRED"No se pudo recibir el header de la Sentencia"ANSI_COLOR_RESET);
+		if (FD_ISSET(args->socketCliente->fd, &descriptoresLectura)) {
+		switch(recv(args->socketCliente->fd, buffer_header, sizeof(header_t), MSG_WAITALL)){
+				case -1: _exit_with_error(args->socketCliente->fd, ANSI_COLOR_BOLDRED"No se pudo recibir el header de la Sentencia"ANSI_COLOR_RESET);
 						break;
 
 				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el ESI"ANSI_COLOR_RESET);
-						close(socketCliente->fd); 		//CIERRO EL SOCKET
+						close(args->socketCliente->fd); 		//CIERRO EL SOCKET
 						flag = 0; 						//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
+
+						free(args);
 						break;
 
 				default: /* Si no hay errores */
 						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
 
-						tratarSegunOperacion(buffer_header, socketCliente);
+						tratarSegunOperacion(buffer_header, args->socketCliente, args->socketPlanificador);
 
-						enviarMensaje(socketCliente->fd, "OPOK");
+						enviarMensaje(args->socketCliente->fd, "OPOK");
 						break;
 			}
 		}
@@ -320,14 +326,13 @@ void crearHiloInstancia(cliente socketCliente){
 	pthread_detach(threadInstancia);
 }
 
-void crearHiloESI(cliente* socketCliente){
+void crearHiloESI(cliente* socketCliente, int socketPlanificador){
 	pthread_t threadESI;
-//	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
-//	args->socket=socket;
-//	args->socketCliente.fd=socketCliente.fd;
-//	strcpy(args->socketCliente.nombre, socketCliente.nombre);
+	arg_esi_t* args = malloc(sizeof(cliente *) + sizeof(int));
+	args->socketPlanificador = socketPlanificador;
+	args->socketCliente = socketCliente;
 
-	if( pthread_create(&threadESI, NULL, (void *) recibirSentenciaESI, (void*) socketCliente)!= 0 ){
+	if( pthread_create(&threadESI, NULL, (void *) recibirSentenciaESI, (void*) args)!= 0 ){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo ESI"ANSI_COLOR_RESET);
 		exit(-1);
 	}
@@ -372,16 +377,12 @@ void enviarHeader(int socket, header_t* header) {
 	if (send(socket, header, sizeof(header_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
 	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el header"ANSI_COLOR_RESET);
 }
 
 void enviarClave(int socket, char* clave) {
 	if (send(socket, clave, strlen(clave)+1, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la clave"ANSI_COLOR_RESET);
 	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio la clave"ANSI_COLOR_RESET);
 }
 
 void enviarValor(int socket, char* valor) {
@@ -393,13 +394,9 @@ void enviarValor(int socket, char* valor) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
 	}
 
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el tamanio del valor (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
-
 	if (send(socket, valor, *tamanioValor, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
 	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s"ANSI_COLOR_RESET, valor);
 	free(tamanioValor);
 }
 
@@ -411,9 +408,6 @@ void enviarIDEsi(int socket, int idESI){
 	if(send(socket, idEsi, sizeof(int), 0) < 0){
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el ID del ESI"ANSI_COLOR_RESET);
 	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el ID del ESI %d"ANSI_COLOR_RESET, idESI);
-
 	free(idEsi);
 }
 
@@ -448,6 +442,7 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
 	fd_set descriptores;
+	int socketPlanificador;
 
 	FD_ZERO(&descriptores);
 	FD_SET(socket, &descriptores);
@@ -489,7 +484,14 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 
 				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
 						recibirIDdeESI(&socketCliente[i]);
-						crearHiloESI(&socketCliente[i]);
+
+						/*Buscar el socket del planificador */
+						if((socketPlanificador = buscarSocketPlanificador())< 0){
+							_exit_with_error(socketCliente[i].fd, "No se encontro el socket del Planificador");
+						}
+
+
+						crearHiloESI(&socketCliente[i], socketPlanificador);
 						break;
 
 				default: _exit_with_error(socket, ANSI_COLOR_RED"No estas cumpliendo con el protocolo de conexion"ANSI_COLOR_RESET);
@@ -539,6 +541,17 @@ int reciboIdentificacion(int socketCliente) {
 	}
 
 	free(identificador);
+	return -1;
+}
+
+int buscarSocketPlanificador(){
+	for(int i = 0; i<NUMEROCLIENTES; i++){
+
+		if(strcmp(socketCliente[i].nombre, "Planificador") == 0){
+			return socketCliente[i].fd;
+		}
+
+	}
 	return -1;
 }
 
