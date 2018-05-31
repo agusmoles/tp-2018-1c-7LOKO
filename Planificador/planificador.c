@@ -159,7 +159,7 @@ void conectarConCoordinador() {
 	fd_set descriptorCoordinador;
 	int fdmax;
 	header_t* buffer_header = malloc(sizeof(header_t));
-	int* IDESI = malloc(sizeof(int));
+	int* idEsi = malloc(sizeof(int));
 	int idESI;
 	char* clave;
 
@@ -173,52 +173,62 @@ void conectarConCoordinador() {
 		if (FD_ISSET(socket, &descriptorCoordinador)) {
 
 			recibirHeader(socket, buffer_header);
-
 			log_info(logger, ANSI_COLOR_BOLDWHITE"Header del coordinador recibido. COD OP: %d - TAM CLAVE: %d\n"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
 
 			clave = malloc(sizeof(buffer_header->tamanioClave));
 
-			recibirClave(socket, buffer_header->tamanioClave, clave);
-
-			log_info(logger, ANSI_COLOR_BOLDYELLOW"CLAVE DEL COORDINADOR RECIBIDA: %s\n"ANSI_COLOR_RESET, clave);
-
-			recibirIDDeESI(socket, IDESI);
-
-			idESI = *IDESI;
-			free(IDESI);
-
-			log_info(logger, ANSI_COLOR_BOLDYELLOW"Se recibio el ID del ESI que bloquea/libera recurso: %d"ANSI_COLOR_RESET, idESI);
-
 			switch(buffer_header->codigoOperacion) {
 			case 0: // OPERACION GET
-				if (dictionary_has_key(diccionarioClaves, clave)) {
-					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
+				recibirClave(socket, buffer_header->tamanioClave, clave);
 
-					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+				log_info(logger, ANSI_COLOR_BOLDYELLOW"CLAVE DEL COORDINADOR RECIBIDA: %s\n"ANSI_COLOR_RESET, clave);
 
-					log_info(logger, ANSI_COLOR_BOLDWHITE"La clave %s ya estaba tomada por el ESI %d"ANSI_COLOR_RESET, clave, *IDEsiQueTieneLaClaveTomada);
+				recibirIDDeESI(socket, idEsi);
 
-//					informarClaveTomada(); AL COORDINADOR
-				}
+				idESI = *idEsi;
+				free(idEsi);
 
-				dictionary_put(diccionarioClaves, clave, &idESI);
+				log_info(logger, ANSI_COLOR_BOLDYELLOW"Se recibio el ID del ESI que bloquea/libera recurso: %d"ANSI_COLOR_RESET, idESI);
 
-				log_info(logger, ANSI_COLOR_BOLDWHITE"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, idESI, clave);
+//				if (dictionary_has_key(diccionarioClaves, clave)) {
+//					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
+//
+//					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+//
+//					log_info(logger, ANSI_COLOR_BOLDWHITE"La clave %s ya estaba tomada por el ESI %d"ANSI_COLOR_RESET, clave, *IDEsiQueTieneLaClaveTomada);
+//
+////					informarClaveTomada(); AL COORDINADOR
+//				}
+//
+//				dictionary_put(diccionarioClaves, clave, &idESI);
+//
+//				log_info(logger, ANSI_COLOR_BOLDWHITE"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, idESI, clave);
 
 //				informarClaveTomada(); AL COORDINADOR
 				break;
 			case 2: //OPERACION STORE
-				if (dictionary_has_key(diccionarioClaves, clave)) {
+				recibirClave(socket, buffer_header->tamanioClave, clave);
 
-					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+				log_info(logger, ANSI_COLOR_BOLDYELLOW"CLAVE DEL COORDINADOR RECIBIDA: %s\n"ANSI_COLOR_RESET, clave);
 
-					if(*IDEsiQueTieneLaClaveTomada == idESI) {
-//						dictionary_remove(diccionarioClaves, clave);
-						log_info(logger, ANSI_COLOR_BOLDWHITE"Se removio la clave %s tomada por el ESI %d"ANSI_COLOR_RESET, clave, idESI);
-					} else {
-						// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
-					}
-				}
+				recibirIDDeESI(socket, idEsi);
+
+				idESI = *idEsi;
+				free(idEsi);
+
+				log_info(logger, ANSI_COLOR_BOLDYELLOW"Se recibio el ID del ESI que bloquea/libera recurso: %d"ANSI_COLOR_RESET, idESI);
+
+//				if (dictionary_has_key(diccionarioClaves, clave)) {
+//
+//					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+//
+//					if(*IDEsiQueTieneLaClaveTomada == idESI) {
+////						dictionary_remove(diccionarioClaves, clave);
+//						log_info(logger, ANSI_COLOR_BOLDWHITE"Se removio la clave %s tomada por el ESI %d"ANSI_COLOR_RESET, clave, idESI);
+//					} else {
+//						// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
+//					}
+//				}
 
 				// TAMBIEN DEBO ABORTAR AL ESI E INFORMAR AL USUARIO
 				break;
@@ -375,8 +385,8 @@ void recibirClave(int socket, int tamanioClave, char* clave) {
 	}
 }
 
-void recibirIDDeESI(int socket, int* ID) {
-	if (recv(socket, ID, sizeof(int), 0) < 0) {
+void recibirIDDeESI(int socket, int* id) {
+	if (recv(socket, id, sizeof(int), 0) < 0) {
 		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el ID del ESI"ANSI_COLOR_RESET);
 	}
 }
