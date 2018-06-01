@@ -113,6 +113,36 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
 }
 
+void verificarSiExisteClave(char* clave){
+	int flag = 0;
+
+	for(int i=0; i<CANTIDADCLAVES; i++){
+		if(strcmp(clavesExistentes[i], clave) == 0 && flag == 0){
+			flag = 1;
+		}
+	}
+	/* No esta la clave cargada */
+	if(flag == 0){
+		log_error(logger, ANSI_COLOR_BOLDRED"Error de Clave no Identificada"ANSI_COLOR_RESET);
+	}
+}
+
+void agregarClave(int tamanioClave, char* clave){
+	int flag = 0;
+
+	for(int i=0; i<CANTIDADCLAVES; i++){
+		if(strcmp(clavesExistentes[i], "Nada") == 0 && flag == 0){
+			clavesExistentes[i] = malloc(tamanioClave);
+			strcpy(clavesExistentes[i], clave);
+			flag = 1;
+		}
+	}
+	/* Si esta lleno el vector */
+	if(flag == 0){
+		log_error(logger, ANSI_COLOR_BOLDRED"No hay mas espacio para claves"ANSI_COLOR_RESET);
+	}
+}
+
 void tratarSegunOperacion(header_t* header, cliente* socketESI, int socketPlanificador){
 	char* bufferClave = malloc(header->tamanioClave);
 	int instanciaEncargada;
@@ -122,6 +152,12 @@ void tratarSegunOperacion(header_t* header, cliente* socketESI, int socketPlanif
 	switch(header->codigoOperacion){
 		case 0: /* GET */
 			recibirClave(socketESI->fd, header,bufferClave);
+			/* Agregar clave nueva */
+			agregarClave(header->tamanioClave, bufferClave);
+
+			for(int i=0; i<CANTIDADCLAVES; i++){
+				printf("Clave: %s \n", clavesExistentes[i]);
+			}
 
 			/* Avisa a Planificador */
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
@@ -132,14 +168,12 @@ void tratarSegunOperacion(header_t* header, cliente* socketESI, int socketPlanif
 			break;
 		case 1: /* SET */
 			/* Primero recibo all*/
-
-//
-//			for(int i=0; i<NUMEROCLIENTES; i++){
-//				printf("%d", v_instanciasConectadas[i].identificadorInstancia);
-//			}
 			tamanioValor = malloc(sizeof(int32_t));
 
 			recibirClave(socketESI->fd, header, bufferClave);
+
+			/* Chequear que exista la clave */
+			verificarSiExisteClave(bufferClave);
 
 			recibirTamanioValor(socketESI->fd, tamanioValor);
 
@@ -167,6 +201,9 @@ void tratarSegunOperacion(header_t* header, cliente* socketESI, int socketPlanif
 			break;
 		case 2: /* STORE */
 			recibirClave(socketESI->fd, header,bufferClave);
+
+			/* Chequear que exista la clave */
+			verificarSiExisteClave(bufferClave);
 
 			/* Avisa a Planificador */
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
@@ -570,6 +607,13 @@ int main(void) {
 	for (int i=0; i<NUMEROCLIENTES; i++) {
 		socketCliente[i].fd = -1;
 		v_instanciasConectadas[i].identificadorInstancia = -1;
+	}
+
+	for(int j=0; j<CANTIDADCLAVES; j++){
+		char* flag = "Nada";
+		int tamanioFlag = strlen(flag) + 1;
+		clavesExistentes[j] = malloc(tamanioFlag);
+		strcpy(clavesExistentes[j], "Nada");
 	}
 
 	while(1) {

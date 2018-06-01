@@ -15,6 +15,7 @@
 
 char* PUERTO;
 #define NUMEROCLIENTES 20
+#define CANTIDADCLAVES 20
 
 typedef struct Cliente{
 	char nombre[14];
@@ -28,7 +29,6 @@ struct arg_struct {
 	cliente socketCliente;
 };
 
-
 typedef struct arg_esi {
 	int socketPlanificador;
 	cliente* socketCliente;
@@ -38,7 +38,7 @@ t_log* logger;
 t_log* logOperaciones;
 t_config* config;
 cliente socketCliente[NUMEROCLIENTES];
-
+char* clavesExistentes[CANTIDADCLAVES];
 
 /*FUNCIONES DE CONEXION */
 void _exit_with_error(int socket, char* mensaje);
