@@ -45,17 +45,14 @@ void setearConfigEnVariables() {
 	char* claves = config_get_string_value(config, "Claves inicialmente bloqueadas");
 
 	if (claves != NULL) {
-		int* IDSistema = malloc(sizeof(int));
-		*IDSistema = -1;
 		char** clavesSeparadas = string_split(claves, ",");
 
 		for (int i=0; clavesSeparadas[i] != NULL; i++) {		// SIGO HASTA QUE SEA NULL EL ARRAY
-			dictionary_put(diccionarioClaves, clavesSeparadas[i], (void*) IDSistema);	// AGREGO LA CLAVE Y QUIEN LA TOMA ES EL "-1" (SISTEMA)
+			dictionary_put(diccionarioClaves, clavesSeparadas[i], "SISTEMA");	// AGREGO LA CLAVE Y QUIEN LA TOMA ES EL "SISTEMA"
 			free(clavesSeparadas[i]);							// LIBERO LA MEMORIA TOMADA DE LA CLAVE
 		}
 
 		free(clavesSeparadas);
-		free(IDSistema);
 	}
 }
 
@@ -172,7 +169,6 @@ void conectarConCoordinador() {
 		if (FD_ISSET(socket, &descriptorCoordinador)) {
 
 			recibirHeader(socket, buffer_header);
-			log_info(logger, ANSI_COLOR_BOLDWHITE"Header del coordinador recibido. COD OP: %d - TAM CLAVE: %d\n"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
 
 			clave = malloc(buffer_header->tamanioClave);
 
@@ -180,38 +176,47 @@ void conectarConCoordinador() {
 
 			recibirIDDeESI(socket, IDESI);
 
+			char* nombreESI = malloc(7);	// 7 PORQUE ES "ESI ID", DEJO ESPACIO PARA ESIS DE MAS DE DOS CIFRAS
+
+			strcpy(nombreESI, "ESI ");
+
+			strcat(nombreESI, (char*) IDESI);
+
 			switch(buffer_header->codigoOperacion) {
 			case 0: // OPERACION GET
 				if (dictionary_has_key(diccionarioClaves, clave)) {
 					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
 
-					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
 
-					log_info(logger, ANSI_COLOR_BOLDCYAN"La clave %s ya estaba tomada por el ESI %d"ANSI_COLOR_RESET, clave, *IDEsiQueTieneLaClaveTomada);
+					log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el %s"ANSI_COLOR_RESET, clave, IDEsiQueTieneLaClaveTomada);
+
+//					informarClaveTomada(); AL COORDINADOR
+				} else {
+
+					dictionary_put(diccionarioClaves, clave, nombreESI);
+
+					log_info(logger, ANSI_COLOR_BOLDCYAN"El %s tomo efectivamente la clave %s"ANSI_COLOR_RESET, nombreESI, clave);
 
 //					informarClaveTomada(); AL COORDINADOR
 				}
-
-				dictionary_put(diccionarioClaves, clave, IDESI);
-
-				log_info(logger, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, *IDESI, clave);
-
-//				informarClaveTomada(); AL COORDINADOR
 				break;
 			case 2: //OPERACION STORE
 				if (dictionary_has_key(diccionarioClaves, clave)) {
 
-					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
 
-					if(*IDEsiQueTieneLaClaveTomada == *IDESI) {
+					if(strcmp(nombreESI, IDEsiQueTieneLaClaveTomada) == 0) {	// SI EL QUE QUIERE STOREAR ES EL MISMO QUE LA TIENE STOREADA, OK.
 						dictionary_remove(diccionarioClaves, clave);
-						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el ESI %d"ANSI_COLOR_RESET, clave, *IDESI);
-					} else {
-						// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
+						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el %s"ANSI_COLOR_RESET, clave, nombreESI);
+					} else {		// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
+						log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s que no es de el"ANSI_COLOR_RESET, nombreESI, clave);
 					}
+				} else {		// SI LA CLAVE NO ESTA EN EL DICCIONARIO...
+					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, nombreESI, clave);
+//				 TAMBIEN DEBO ABORTAR AL ESI E INFORMAR AL USUARIO QUE NO ESTABA LA CLAVE
 				}
 
-//				 TAMBIEN DEBO ABORTAR AL ESI E INFORMAR AL USUARIO QUE NO ESTABA LA CLAVE
 				break;
 			default:
 				_exit_with_error(ANSI_COLOR_BOLDRED"No se esperaba un codigo de operacion distinto de 0 (GET) o 2 (STORE) del Coordinador"ANSI_COLOR_RESET);
@@ -549,12 +554,12 @@ int main(void) {
 
 	/************************************** MUESTRO CLAVES INICIALMENTE BLOQUEADAS *************************/
 
-	int* IDEsi = malloc(sizeof(int));
+	char* IDEsi;
 
 	IDEsi = dictionary_get(diccionarioClaves, "futbol:messi");
 
 	for (int i=0; i<dictionary_size(diccionarioClaves); i++) {
-		printf("%d \n", *IDEsi);
+		printf("%s \n", IDEsi);
 	}
 
 	/************************************** CONEXION CON COORDINADOR **********************************/
