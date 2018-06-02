@@ -39,6 +39,10 @@ void setearConfigEnVariables() {
 	alfaPlanificacion = config_get_double_value(config, "Alfa planificación");
 	estimacionInicial = config_get_int_value(config, "Estimación inicial");
 	sem_init(&pausado, 0, 1);	//SETEO EL SEMAFORO PAUSADO EN 1 PORQUE INICIALMENTE NO ESTA BLOQUEADO
+	sem_init(&mutexListos, 0, 1);
+	sem_init(&mutexEjecutando, 0, 1);
+	sem_init(&mutexBloqueados, 0, 1);
+	sem_init(&mutexFinalizados, 0, 1);
 
 	/************************ SETEO CLAVES BLOQUEADAS ******************/
 
@@ -180,7 +184,11 @@ void conectarConCoordinador() {
 
 			strcpy(nombreESI, "ESI ");
 
-			strcat(nombreESI, (char*) IDESI);
+			char* idEsi = string_itoa(*IDESI);
+
+			strcat(nombreESI, idEsi);
+
+			free(idEsi);
 
 			switch(buffer_header->codigoOperacion) {
 			case 0: // OPERACION GET
@@ -351,7 +359,9 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 
 			socketCliente[i].identificadorESI = i;		//LE ASIGNO EL IDENTIFICADOR AL ESI
 
+			sem_wait(&mutexListos);
 			list_add(listos, &socketCliente[i]);			//LO AGREGO A LA COLA DE LISTOS
+			sem_post(&mutexListos);
 
 			log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un %s %d"ANSI_COLOR_RESET, socketCliente[i].nombre, socketCliente[i].identificadorESI);
 
@@ -361,7 +371,7 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 }
 
 void recibirHeader(int socket, header_t* header) {
-	if(recv(socket, header, sizeof(header_t), MSG_WAITALL) < 0) {		// RECIBO EL HEADER
+	if(recv(socket, header, sizeof(header_t), MSG_WAITALL) <= 0) {		// RECIBO EL HEADER
 		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el header"ANSI_COLOR_RESET);
 	}
 }
@@ -419,8 +429,13 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 				}
 
 				if (strcmp(buffer, "EXEEND") == 0) {
+					sem_wait(&mutexEjecutando);
 					list_remove(ejecutando, 0);
+					sem_post(&mutexEjecutando);
+
+					sem_wait(&mutexFinalizados);
 					list_add(finalizados, &socketCliente[posicion]);
+					sem_post(&mutexFinalizados);
 
 					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
 						if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) { // SI ES SJF
@@ -428,7 +443,9 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 						}
 
 						else if (strcmp(algoritmoPlanificacion, "HRRN") == 0) { //SI ES HRRN
+							sem_wait(&mutexListos);
 							list_iterate(listos, (void*) calcularResponseRatio);	// CALCULO LA TASA DE RESPUESTA DE TODOS LOS ESIS LISTOS
+							sem_post(&mutexListos);
 							ordenarColaDeListosPorHRRN(&socketCliente[posicion]);
 						}
 					}
@@ -463,25 +480,39 @@ cliente* getPrimerESIListo() {
 	cliente* cliente;
 
 	cliente = list_get(listos, 0);					//TOMO EL PRIMERO DE LA LISTA DE LISTOS
+	sem_wait(&mutexListos);
 	list_remove(listos, 0);							//LO SACO PORQUE PASA A EJECUTAR
+	sem_post(&mutexListos);
+
+	sem_wait(&mutexEjecutando);
 	list_add(ejecutando, cliente);					//LO AGREGO A LA LISTA DE EJECUTANDO
+	sem_post(&mutexEjecutando);
 	return cliente;
 }
 
 void ordenarColaDeListosPorSJF(cliente* ESIEjecutando) {
 	struct Cliente* primerESIListo;
 
+	sem_wait(&mutexListos);
 	list_sort(listos, (void*) comparadorRafaga);
-
+	sem_post(&mutexListos);
 
 	if(!list_is_empty(listos) && !list_is_empty(ejecutando)) {
 		primerESIListo = list_get(listos, 0);			//AGARRO EL QUE AHORA ESTA PRIMERO EN LA LISTA DE LISTOS
 
 		if (primerESIListo->estimacionProximaRafaga < ESIEjecutando->estimacionProximaRafaga) {	// SI LA RAFAGA ESTIMADA DEL ESI LISTO ES MENOR AL QUE EJECUTA
+			sem_wait(&mutexEjecutando);
 			list_remove(ejecutando, 0);			// DESALOJO AL ESI EJECUTANDO
+			sem_post(&mutexEjecutando);
+
+			sem_wait(&mutexListos);
 			list_add(listos, ESIEjecutando);	// LO AGREGO AL FINAL DE LA LISTA DE LISTOS
+			sem_post(&mutexListos);
 			ESIEjecutando->rafagaActual = 0;	// SE RESETEA LA RAFAGA ACTUAL (PORQUE FUE DESALOJADO)
+
+			sem_wait(&mutexEjecutando);
 			list_add(ejecutando, primerESIListo);
+			sem_post(&mutexEjecutando);
 		}
 	}
 
@@ -503,7 +534,9 @@ void ordenarColaDeListosPorSJF(cliente* ESIEjecutando) {
 }
 
 void ordenarColaDeListosPorHRRN(cliente* ESIEjecutando) {
+	sem_wait(&mutexListos);
 	list_sort(listos, (void*) comparadorResponseRatio);
+	sem_post(&mutexListos);
 }
 
 void enviarOrdenDeEjecucion(cliente* esiProximoAEjecutar, char* ordenEjecucion) {

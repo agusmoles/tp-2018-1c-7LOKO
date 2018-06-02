@@ -42,6 +42,10 @@ t_list* ejecutando;
 t_list* finalizados;
 t_list* bloqueados;
 t_dictionary* diccionarioClaves;
+sem_t mutexListos;
+sem_t mutexEjecutando;
+sem_t mutexBloqueados;
+sem_t mutexFinalizados;
 fd_set descriptoresLectura;
 cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
 int fdmax = 10;
