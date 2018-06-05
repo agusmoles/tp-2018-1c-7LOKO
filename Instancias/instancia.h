@@ -26,9 +26,8 @@ int CANTIDADENTRADAS;
 t_log* logger;
 t_config* config;
 
-
-static Entrada TABLAENTRADAS[CANTIDADENTRADAS];
-static Data STORAGE[CANTIDADENTRADAS];
+t_list* TABLAENTRADAS;
+t_list* STORAGE;
 
 
 struct Entrada{

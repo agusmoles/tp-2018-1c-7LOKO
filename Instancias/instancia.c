@@ -132,28 +132,46 @@ void recibirInstruccion(int socket){ // aca se reciben los SETS del coordinador
 }
 
 int procesarInstruccion(char* clave, int tamanioValor, char* valor){
+	Entrada* entrada;
+	strcpy(entrada->clave, clave);
+	entrada->tamanio = tamanioValor;
 
-	Entrada entrada;
-	strcpy(entrada.clave, clave);
-	entrada.tamanio = tamanioValor;
-
-	Data data;
+	Data* data;
 	strcpy(data->info, valor);
 
-	// ADAPTAR A PARTIR DE ACA PARA QUE FUNCIONE CON LISTA. (VER COMMONS "<commons/collections/list.h>")
-	for(int i=0; i<CANTIDADENTRADAS; i++){	// me fijo si ya existe una entrada con esa clave
-		if(strcmp(entrada.clave, TABLAENTRADAS[i].clave) == 0){
-			data.numeroEntrada = i;
+	return agregarEntrada(entrada, data);
+}
+
+int agregarEntrada(Entrada* entrada, Data* data){
+
+	Entrada* aux;
+	aux = malloc(sizeof(Entrada));
+
+	for(int i=0; i<CANTIDADENTRADAS; i++){
+		aux = list_get(TABLAENTRADAS, i);
+
+		if(!strcmp(aux->clave, entrada.clave)){	// ya existe entrada con esa clave.
 			guardarEnStorage(data);
-			return 0; // encuentra entrada con esa clave y guarda la info en storage
+			free(aux);
+			return 0;
 		}
 	}
+
+	if(list_size(TABLAENTRADAS) < CANTIDADENTRADAS){	// agrego la entrada si hay lugar
+		list_add(TABLAENTRADAS, entrada);				// falta contemplar para cuando se necesitan ocupar mas de una entrada
+		guardarEnStorage(data);
+		free(aux);
+		return 1;
+	}
+
+
+	// si no hay lugar ... APLICAR ALGORITMO DE REEMPLAZO
 
 }
 
 
-void guardarEnStorage(Data data){
-	list_add(STORAGE, data); // falta contemplar para cuando ya se hay una clave para
+void guardarEnStorage(Data* data){
+	list_add(STORAGE, data);
 }
 
 void recibirClave(int socket, header_t* header, char* bufferClave){
@@ -196,6 +214,9 @@ int main(void) {
 	conectarConCoordinador(socket);
 
 	close(socket);
+
+	TABLAENTRADAS = list_create();
+	STORAGE = list_create();
 
 	return EXIT_SUCCESS;
 }
