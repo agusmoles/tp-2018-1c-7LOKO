@@ -199,7 +199,7 @@ void conectarConCoordinador() {
 				if (dictionary_has_key(diccionarioClaves, clave)) {
 					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
 
-					bloquearESI(clave, nombreESI);
+					bloquearESI(clave, IDESI);
 
 					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
 
@@ -223,7 +223,9 @@ void conectarConCoordinador() {
 						dictionary_remove(diccionarioClaves, clave);
 						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el %s"ANSI_COLOR_RESET, clave, nombreESI);
 
-						// DEBERIA DESBLOQUEAR AL ESI QUE ESTA ESPERANDO POR ESTE RECURSO, SI LO HUBIESE
+						// DESBLOQUEO AL ESI QUE ESTA ESPERANDO POR ESTE RECURSO, SI LO HUBIESE
+
+						desbloquearESI(clave);
 
 					} else {		// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
 						abortarESI(IDESI, nombreESI);
@@ -292,12 +294,43 @@ void abortarESI(int* IDESI, char* nombreESI) {
 	sem_post(&mutexFinalizados);
 }
 
-void bloquearESI(char* clave, char* nombreESI) {
+void bloquearESI(char* clave, int* IDESI) {
+	cliente* ESI = buscarESI(IDESI);
+	strcpy(ESI->recursoSolicitado, clave);
+
+	sem_wait(&mutexEjecutando);
+	list_remove(ejecutando, 0);	// LO SACO DE EJECUTANDO
+	sem_post(&mutexEjecutando);
+
 	sem_wait(&mutexBloqueados);
-	dictionary_put(bloqueados, clave, nombreESI);
+	list_add(bloqueados, ESI);	// Y LO MUEVO A BLOQUEADOS
 	sem_post(&mutexBloqueados);
 
+	// FALTA MANEJAR LO DE LAS RAFAGAS, ETC.
+
 	ordenarProximoAEjecutar();	// COMO LO BLOQUEE, TENGO QUE MANDAR A OTRO A EJECUTAR
+}
+
+void desbloquearESI(char* clave) {
+	cliente* primerESIBloqueadoEsperandoPorClave;
+
+	for(int i=0; i<list_size(bloqueados); i++) {
+		primerESIBloqueadoEsperandoPorClave = list_get(bloqueados, i);
+
+		if (strcmp(primerESIBloqueadoEsperandoPorClave->recursoSolicitado, clave) == 0) {
+			strcpy(primerESIBloqueadoEsperandoPorClave->recursoSolicitado, "");		// NO TIENE RECURSO PEDIDO AHORA...
+
+			sem_wait(&mutexBloqueados);
+			list_remove(bloqueados, i);		// LO SACO DE BLOQUEADOS AL ESI
+			sem_post(&mutexBloqueados);
+
+			break;	// SALGO DEL FOR PORQUE YA ENCONTRE AL PRIMERO
+		}
+	}
+
+	sem_wait(&mutexListos);
+	list_add(listos, primerESIBloqueadoEsperandoPorClave);	// LO MANDO A LISTOS
+	sem_post(&mutexListos);
 }
 
 /******************************************************** CONEXION COORDINADOR FIN *****************************************************/

@@ -33,6 +33,7 @@ typedef struct Cliente{
 	float estimacionProximaRafaga;
 	float tasaDeRespuesta;
 	int tiempoDeEspera;
+	char recursoSolicitado[40];
 }cliente;
 
 t_log* logger;
@@ -40,7 +41,7 @@ t_config* config;
 t_list* listos;
 t_list* ejecutando;
 t_list* finalizados;
-t_dictionary* bloqueados;
+t_list* bloqueados;
 t_dictionary* diccionarioClaves;
 sem_t mutexListos;
 sem_t mutexEjecutando;
@@ -64,7 +65,8 @@ void conectarConCoordinador();
 void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI);
 cliente* buscarESI(int* IDESI);
 void abortarESI(int* IDESI, char* nombreESI);
-void bloquearESI(char* clave, char* nombreESI);
+void bloquearESI(char* clave, int* IDESI);
+void desbloquearESI(char* clave);
 void escuchar(int socket);
 int envioHandshake(int socketCliente);
 int envioIDDeESI(int socketCliente, int identificador);
