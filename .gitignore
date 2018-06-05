@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+#TP
+.project
+.settings
+Coordinador/.settings/language.settings.xml
+Instancias/.settings/language.settings.xml

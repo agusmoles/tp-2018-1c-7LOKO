@@ -11,6 +11,7 @@
 #include <readline/readline.h> // Para usar readline
 #include <signal.h>
 #include "../Colores.h"
+#include "sharedlib.h"
 
 char* IP;
 char* PUERTO;
@@ -49,20 +50,17 @@ void configurarLogger();
 void crearConfig();
 void setearConfigEnVariables();
 int conectarSocket();
-void enviarMensajes(int socket);
+void conectarConCoordinador(int socket);
 void reciboHandshake(int socket);
 void envioIdentificador(int socket);
 void pipeHandler();
 void recibirInstruccion(int socket);
-int procesarInstruccion(char*);
-int asignarInstancia(Entrada, Data);
-void guardarEnStorage(Data);
-
-
-
-
-
-
+int procesarInstruccion(char* instruccion);
+int asignarInstancia(Entrada nuevaEntrada, Data data);
+void guardarEnStorage(Data data);
+void recibirClave(int socket, header_t* header, char* bufferClave);
+void recibirTamanioValor(int socket, int32_t* tamanioValor);
+void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor);
 
 
 

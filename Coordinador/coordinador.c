@@ -1,14 +1,11 @@
-/******** SERVIDOR COORDINADOR *********/
 #include "coordinador.h"
 
-cliente v_instanciasConectadas[NUMEROCLIENTES];
-
+cliente_t v_instanciasConectadas[NUMEROCLIENTES];
 int instanciaSiguiente = 0;
 int cantidadInstanciasConectadas = 0;
 int identificadorInstancia = 0;
 
-/* FUNCIONES DE SOCKET */
-
+/* Funciomes de conexion */
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 
@@ -24,6 +21,10 @@ void _exit_with_error(int socket, char* mensaje) {
 
 void configurarLogger() {
 	logger = log_create("coordinador.log", "coordinador", 1, LOG_LEVEL_INFO);
+}
+
+void configurarLogOperaciones(){
+	logOperaciones = log_create("logOperaciones.log", "coordinador", 0, LOG_LEVEL_INFO);
 }
 
 void crearConfig() {
@@ -73,17 +74,25 @@ void escuchar(int socket) {
 
 }
 
-/* Asigna nombre a cada cliente particular:  Instancia, ESI, Planificador */
-void asignarNombreAlSocketCliente(struct Cliente* socketCliente, char* nombre) {
-	strcpy(socketCliente->nombre, nombre);
-}
+int envioHandshake(int socketCliente) {
+	char* handshake = "******COORDINADOR HANDSHAKE******";
 
-void enviarMensaje(int socketCliente, char* msg){
-	if(send(socketCliente,msg, strlen(msg)+1,0)<0){
-		_exit_with_error(socketCliente, "No se pudo recibir la sentencia");
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
+
+	if(send(socketCliente, handshake, strlen(handshake)+1, 0) < 0) {
+		return -1;
+	}else{
+		return 0;
 	}
 }
 
+void intHandler() {
+	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
+	exit(1);
+}
+
+
+/* Recibo clave, tamanio valor, valor, id esi */
 void recibirClave(int socket, header_t* header, char* bufferClave){
 	if (recv(socket, bufferClave, header->tamanioClave, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
@@ -102,14 +111,6 @@ void recibirTamanioValor(int socket, int32_t* tamanioValor){
 }
 
 void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
-
-//	if (recv(socket, tamanioValor, sizeof(int32_t), MSG_WAITALL) < 0) {
-//		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
-//	}
-//
-//	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
-
-
 	if (recv(socket, bufferValor, (*tamanioValor), MSG_WAITALL) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el valor de la clave"ANSI_COLOR_RESET);
 	}
@@ -117,101 +118,7 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
 }
 
-
-void tratarSegunOperacion(header_t* header, int socket){
-	char* bufferClave = malloc(header->tamanioClave);
-	int instanciaEncargada;
-	int32_t * tamanioValor;
-	char* bufferValor;
-
-	switch(header->codigoOperacion){
-		case 0: /* GET */
-			recibirClave(socket, header,bufferClave);
-
-			/*Avisa a Instancia encargada */
-			break;
-		case 1: /* SET */
-			/* Primero recibo all*/
-
-//
-//			for(int i=0; i<NUMEROCLIENTES; i++){
-//				printf("%d", v_instanciasConectadas[i].identificadorInstancia);
-//			}
-			tamanioValor = malloc(sizeof(int32_t));
-
-			recibirClave(socket, header, bufferClave);
-
-			recibirTamanioValor(socket, tamanioValor);
-
-			bufferValor = malloc(*tamanioValor);
-
-			recibirValor(socket, tamanioValor, bufferValor);
-
-			/*Ahora envio la sentencia a la Instancia encargada */
-			instanciaEncargada = seleccionEquitativeLoad();
-
-			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
-
-			actualizarVectorInstanciasConectadas();
-
-			enviarSentenciaESIaInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
-			/*Avisa a Instancia encargada */
-
-			free(tamanioValor);
-			free(bufferValor);
-			break;
-		case 2: /* STORE */
-			recibirClave(socket, header,bufferClave);
-			/* Avisar al planificador */
-
-
-			break;
-		default:
-			_exit_with_error(socket, "No cumpliste el protocolo de enviar Header");
-	}
-
-	free(bufferClave);
-}
-
-/* Recibe sentencia del ESI */
-void recibirSentenciaESI(void* argumento){
-	header_t* buffer_header = malloc(sizeof(header_t));
-
-	cliente* socketCliente = (cliente*) argumento;
-	int flag = 1;
-	fd_set descriptoresLectura;
-
-	while(flag) {
-		FD_ZERO(&descriptoresLectura);
-		FD_SET(socketCliente->fd, &descriptoresLectura);
-
-		select(socketCliente->fd + 1 , &descriptoresLectura, NULL, NULL, NULL);
-
-		if (FD_ISSET(socketCliente->fd, &descriptoresLectura)) {
-		switch(recv(socketCliente->fd, buffer_header, sizeof(header_t), MSG_WAITALL)){
-				case -1: _exit_with_error(socketCliente->fd, ANSI_COLOR_BOLDRED"No se pudo recibir el header de la Sentencia"ANSI_COLOR_RESET);
-						break;
-
-				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el ESI"ANSI_COLOR_RESET);
-						close(socketCliente->fd); 		//CIERRO EL SOCKET
-						flag = 0; 						//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
-						break;
-
-				default: /* Si no hay errores */
-						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
-
-						tratarSegunOperacion(buffer_header, socketCliente->fd);
-
-						enviarMensaje(socketCliente->fd, "OPOK");
-						break;
-			}
-		}
-	}
-
-	pthread_exit(NULL);
-}
-
-void recibirIDdeESI(cliente* cliente){
+void recibirIDdeESI(cliente_t* cliente){
 	int *buffer = malloc(sizeof(int));
 
 	if(recv(cliente->fd, buffer, sizeof(int), MSG_WAITALL)<0){
@@ -224,14 +131,54 @@ void recibirIDdeESI(cliente* cliente){
 	log_info(logger, ANSI_COLOR_BOLDCYAN "Se recibio el identificador del ESI %d"ANSI_COLOR_RESET, cliente->identificadorESI);
 }
 
+/* Recibe sentencia del ESI */
+void recibirSentenciaESI(void* argumentos){
+	header_t* buffer_header = malloc(sizeof(header_t));
+	arg_esi_t* args = argumentos;
+	int flag = 1;
+	fd_set descriptoresLectura;
+
+	while(flag) {
+		FD_ZERO(&descriptoresLectura);
+		FD_SET(args->socketCliente->fd, &descriptoresLectura);
+
+		select(args->socketCliente->fd + 1 , &descriptoresLectura, NULL, NULL, NULL);
+
+		if (FD_ISSET(args->socketCliente->fd, &descriptoresLectura)) {
+		switch(recv(args->socketCliente->fd, buffer_header, sizeof(header_t), MSG_WAITALL)){
+				case -1: _exit_with_error(args->socketCliente->fd, ANSI_COLOR_BOLDRED"No se pudo recibir el header del ESI"ANSI_COLOR_RESET);
+						break;
+
+				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el ESI"ANSI_COLOR_RESET);
+						close(args->socketCliente->fd); 		//CIERRO EL SOCKET
+						flag = 0; 						//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
+
+						free(args);
+						break;
+
+				default: /* Si no hay errores */
+						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
+
+						tratarSegunOperacion(buffer_header, args->socketCliente, args->socketPlanificador);
+
+						enviarMensaje(args->socketCliente->fd, "OPOK");
+						break;
+			}
+		}
+	}
+
+	pthread_exit(NULL);
+}
+
 /* Asigna ID a cada Instancia para identificarlas */
-void asignarIDdeInstancia(struct Cliente* socketCliente, int id){
+void asignarIDdeInstancia(cliente_t* socketCliente, int id){
 	socketCliente->identificadorInstancia = id;
 	log_info(logger, ANSI_COLOR_BOLDCYAN "Se recibio el identificador de la Instancia %d"ANSI_COLOR_RESET, socketCliente->identificadorInstancia);
 }
 
+
 void recibirMensaje(void* argumentos) {
-	struct arg_struct* args = argumentos;
+	arg_t* args = argumentos;
 	fd_set descriptoresLectura;
 	int fdmax = args->socketCliente.fd + 1;
 	int flag = 1;
@@ -271,12 +218,12 @@ void recibirMensaje(void* argumentos) {
 	pthread_exit(NULL);
 }
 
-/* CREACION DE HILOS PARA CADA CLIENTE */
 
-void crearHiloPlanificador(cliente socketCliente){
+/* Creacion de hilos para cada cliente */
+void crearHiloPlanificador(cliente_t socketCliente){
 	pthread_t threadPlanificador;
 
-	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
+	arg_t* args = malloc(sizeof(socketCliente)+sizeof(int));
 	//args->socket=socket;
 	args->socketCliente.fd = socketCliente.fd;
 	strcpy(args->socketCliente.nombre, socketCliente.nombre);
@@ -290,10 +237,10 @@ void crearHiloPlanificador(cliente socketCliente){
 	pthread_detach(threadPlanificador);
 }
 
-void crearHiloInstancia(cliente socketCliente){
+void crearHiloInstancia(cliente_t socketCliente){
 	pthread_t threadInstancia;
 
-	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
+	arg_t* args = malloc(sizeof(socketCliente)+sizeof(int));
 	//args->socket=socket;
 	args->socketCliente.fd = socketCliente.fd;
 	strcpy(args->socketCliente.nombre, socketCliente.nombre);
@@ -307,14 +254,13 @@ void crearHiloInstancia(cliente socketCliente){
 	pthread_detach(threadInstancia);
 }
 
-void crearHiloESI(cliente* socketCliente){
+void crearHiloESI(cliente_t* socketCliente, int socketPlanificador){
 	pthread_t threadESI;
-//	struct arg_struct* args = malloc(sizeof(socketCliente)+sizeof(int));
-//	args->socket=socket;
-//	args->socketCliente.fd=socketCliente.fd;
-//	strcpy(args->socketCliente.nombre, socketCliente.nombre);
+	arg_esi_t* args = malloc(sizeof(cliente_t *) + sizeof(int));
+	args->socketPlanificador = socketPlanificador;
+	args->socketCliente = socketCliente;
 
-	if( pthread_create(&threadESI, NULL, (void *) recibirSentenciaESI, (void*) socketCliente)!= 0 ){
+	if( pthread_create(&threadESI, NULL, (void *) recibirSentenciaESI, (void*) args)!= 0 ){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo ESI"ANSI_COLOR_RESET);
 		exit(-1);
 	}
@@ -323,6 +269,12 @@ void crearHiloESI(cliente* socketCliente){
 
 	pthread_detach(threadESI);
 }
+
+/* Asigna nombre a cada cliente particular:  Instancia, ESI, Planificador */
+void asignarNombreAlSocketCliente(cliente_t* socketCliente, char* nombre) {
+	strcpy(socketCliente->nombre, nombre);
+}
+
 
 /* Crea un array con las instancias que se encuentran conectadas y muestra la cantidad*/
 void instanciasConectadas(){
@@ -338,7 +290,18 @@ int verificarSiExistenInstanciasConectadas(){
 	return 1;
 }
 
-/* Distribuye las sentencias a las disitintas instancias */
+/* Busca y crea vector Instancias Conectadas */
+void actualizarVectorInstanciasConectadas(){
+	int h= 0;
+	for(int i=0; i< NUMEROCLIENTES; i++){
+		if(strcmp(socketCliente[i].nombre, "Instancia") == 0){
+			v_instanciasConectadas[h] = socketCliente[i];
+			h++;
+		}
+	}
+}
+
+/* Algoritmos de distribucion de las sentencias a las disitintas instancias */
 int seleccionEquitativeLoad(){
 	if (verificarSiExistenInstanciasConectadas() > 0){
 
@@ -355,21 +318,63 @@ int seleccionEquitativeLoad(){
 	}
 }
 
+int seleccionLeastSpaceUsed(){
+	return 0;
+}
 
+int seleccionKeyExplicit(){
+	return 0;
+}
+
+/* Administracion de claves del coordinador */
+int verificarSiExisteClave(char* clave){
+	for(int i=0; i<CANTIDADCLAVES; i++){
+		if(strcmp(clavesExistentes[i].clave, clave) == 0){
+			return 1;
+		}
+	}
+	return -1;
+}
+
+void agregarClave(int tamanioClave, char* clave){
+	int flag = 0;
+
+	for(int i=0; i<CANTIDADCLAVES; i++){
+		if(strcmp(clavesExistentes[i].clave, "Nada") == 0 && flag == 0){
+			clavesExistentes[i].clave = malloc(tamanioClave);
+			strcpy(clavesExistentes[i].clave, clave);
+			flag = 1;
+		}
+	}
+	/* Si esta lleno el vector */
+	if(flag == 0){
+		log_error(logger, ANSI_COLOR_BOLDRED"No hay mas espacio para claves"ANSI_COLOR_RESET);
+	}
+}
+
+void mostrarClavesExistentes(){
+	for(int i=0; i<CANTIDADCLAVES; i++){
+		printf("Clave: %s \n", clavesExistentes[i].clave);
+	}
+}
+
+void enviarMensaje(int socketCliente, char* msg){
+	if(send(socketCliente,msg, strlen(msg)+1,0)<0){
+		_exit_with_error(socketCliente, "No se pudo recibir la sentencia");
+	}
+}
+
+/* Envios header, clave, valor, id esi */
 void enviarHeader(int socket, header_t* header) {
 	if (send(socket, header, sizeof(header_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
 	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el header"ANSI_COLOR_RESET);
 }
 
 void enviarClave(int socket, char* clave) {
 	if (send(socket, clave, strlen(clave)+1, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la clave"ANSI_COLOR_RESET);
 	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio la clave"ANSI_COLOR_RESET);
 }
 
 void enviarValor(int socket, char* valor) {
@@ -381,39 +386,141 @@ void enviarValor(int socket, char* valor) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
 	}
 
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo enviar el tamanio del valor (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
-
 	if (send(socket, valor, *tamanioValor, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
 	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s"ANSI_COLOR_RESET, valor);
 	free(tamanioValor);
 }
 
-/* Busca y crea vector Instancias Conectadas */
-void actualizarVectorInstanciasConectadas(){
-	int h= 0;
-	for(int i=0; i< NUMEROCLIENTES; i++){
-		if(strcmp(socketCliente[i].nombre, "Instancia") == 0){
-			v_instanciasConectadas[h] = socketCliente[i];
-			h++;
-		}
+void enviarIDEsi(int socket, int idESI){
+	int* idEsi = malloc(sizeof(int));
+
+	*idEsi = idESI;
+
+	if(send(socket, idEsi, sizeof(int), 0) < 0){
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el ID del ESI"ANSI_COLOR_RESET);
 	}
+	free(idEsi);
 }
 
-/*Envia la sentencia a la instancia correspondiente*/
-void enviarSentenciaESIaInstancia(int socket, header_t* header, char* clave, char* valor){
+
+/*Envia la sentencia a Instancia - Planificador*/
+void enviarSentenciaESI(int socket, header_t* header, char* clave, char* valor){
 	enviarHeader(socket, header);
 	enviarClave(socket, clave);
 	enviarValor(socket, valor);
 }
 
+void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int idESI){
+	enviarHeader(socket, header);
+	enviarClave(socket, clave);
+	enviarIDEsi(socket, idESI);
+}
+
+
+/* Realiza GET, SET, STORE */
+void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlanificador){
+	char* bufferClave = malloc(header->tamanioClave);
+	int instanciaEncargada;
+	int32_t * tamanioValor;
+	char* bufferValor;
+
+	switch(header->codigoOperacion){
+		case 0: /* GET */
+			recibirClave(socketESI->fd, header,bufferClave);
+
+			/* Agregar clave nueva */
+			if(verificarSiExisteClave(bufferClave) < 0){
+				agregarClave(header->tamanioClave, bufferClave);
+			}
+
+			mostrarClavesExistentes();
+
+			/* Avisa a Planificador */
+			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
+
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
+			break;
+		case 1: /* SET */
+			/* Primero recibo all*/
+			tamanioValor = malloc(sizeof(int32_t));
+			recibirClave(socketESI->fd, header, bufferClave);
+
+			/* Chequear que exista la clave */
+			if(verificarSiExisteClave(bufferClave) < 0){
+				log_error(logger, ANSI_COLOR_BOLDRED"Error de Clave no Identificada"ANSI_COLOR_RESET);
+			}
+
+			recibirTamanioValor(socketESI->fd, tamanioValor);
+			bufferValor = malloc(*tamanioValor);
+			recibirValor(socketESI->fd, tamanioValor, bufferValor);
+
+			/*Ahora envio la sentencia a la Instancia encargada */
+			instanciaEncargada = seleccionEquitativeLoad();
+			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
+			actualizarVectorInstanciasConectadas();
+			enviarSentenciaESI(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
+
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: SET %s %s",socketESI->identificadorESI, bufferClave, bufferValor);
+
+			free(tamanioValor);
+			free(bufferValor);
+			break;
+		case 2: /* STORE */
+			recibirClave(socketESI->fd, header,bufferClave);
+
+			/* Chequear que exista la clave */
+			if(verificarSiExisteClave(bufferClave) < 0){
+				log_error(logger, ANSI_COLOR_BOLDRED"Error de Clave no Identificada"ANSI_COLOR_RESET);
+			}
+
+			/* Avisa a Planificador */
+			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
+
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
+			break;
+		default:
+			_exit_with_error(socketESI->fd, "No cumpliste el protocolo de enviar Header");
+	}
+	free(bufferClave);
+}
+
+/* Identifica si se conecto ESI, PLANIFICADOR o INSTANCIA */
+int reciboIdentificacion(int socketCliente) {
+	char* identificador = malloc(sizeof(char));
+
+	if(recv(socketCliente, identificador, sizeof(char)+1, MSG_WAITALL) < 0) {
+		free(identificador);
+		return 0;				//MANEJO EL ERROR EN ACEPTAR CLIENTE
+	}
+
+	if (strcmp(identificador, "1") == 0) {
+		free(identificador);
+		return 1;				//PLANIFICADOR
+	} else if(strcmp(identificador, "2") == 0) {
+		free(identificador);
+		return 2;				//INSTANCIA
+	} else if(strcmp(identificador, "3") == 0) {
+		free(identificador);
+		return 3;				//ESI
+	}
+
+	free(identificador);
+	return -1;
+}
+
 /* Maneja todos los clientes que se pueden conectar */
-void aceptarCliente(int socket, cliente* socketCliente) {
+void aceptarCliente(int socket, cliente_t* socketCliente) {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
 	fd_set descriptores;
+	int socketPlanificador;
 
 	FD_ZERO(&descriptores);
 	FD_SET(socket, &descriptores);
@@ -455,7 +562,14 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 
 				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
 						recibirIDdeESI(&socketCliente[i]);
-						crearHiloESI(&socketCliente[i]);
+
+						/*Buscar el socket del planificador */
+						if((socketPlanificador = buscarSocketPlanificador())< 0){
+							_exit_with_error(socketCliente[i].fd, "No se encontro el socket del Planificador");
+						}
+
+
+						crearHiloESI(&socketCliente[i], socketPlanificador);
 						break;
 
 				default: _exit_with_error(socket, ANSI_COLOR_RED"No estas cumpliendo con el protocolo de conexion"ANSI_COLOR_RESET);
@@ -472,45 +586,13 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 
 }
 
-int envioHandshake(int socketCliente) {
-	char* handshake = "******COORDINADOR HANDSHAKE******";
-
-	log_info(logger, ANSI_COLOR_BOLDYELLOW"Enviando handshake..."ANSI_COLOR_RESET);
-
-	if(send(socketCliente, handshake, strlen(handshake)+1, 0) < 0) {
-		return -1;
-	}else{
-		return 0;
+int buscarSocketPlanificador(){
+	for(int i = 0; i<NUMEROCLIENTES; i++){
+		if(strcmp(socketCliente[i].nombre, "Planificador") == 0){
+			return socketCliente[i].fd;
+		}
 	}
-}
-
-/* Identifica si se conecto ESI, PLANIFICADOR o INSTANCIA */
-int reciboIdentificacion(int socketCliente) {
-	char* identificador = malloc(sizeof(char));
-
-	if(recv(socketCliente, identificador, sizeof(char)+1, MSG_WAITALL) < 0) {
-		free(identificador);
-		return 0;				//MANEJO EL ERROR EN ACEPTAR CLIENTE
-	}
-
-	if (strcmp(identificador, "1") == 0) {
-		free(identificador);
-		return 1;				//PLANIFICADOR
-	} else if(strcmp(identificador, "2") == 0) {
-		free(identificador);
-		return 2;				//INSTANCIA
-	} else if(strcmp(identificador, "3") == 0) {
-		free(identificador);
-		return 3;				//ESI
-	}
-
-	free(identificador);
 	return -1;
-}
-
-void intHandler() {
-	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
-	exit(1);
 }
 
 int main(void) {
@@ -526,6 +608,8 @@ int main(void) {
 
 	escuchar(listenSocket);
 
+	configurarLogOperaciones();
+
 	//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
 	//INICIALIZO EL ARRAY DE INSTANCIAS CONECTADAS EN -1 LAS ID
 	for (int i=0; i<NUMEROCLIENTES; i++) {
@@ -533,11 +617,17 @@ int main(void) {
 		v_instanciasConectadas[i].identificadorInstancia = -1;
 	}
 
+	for(int j=0; j<CANTIDADCLAVES; j++){
+		char* flag = "Nada";
+		int tamanioFlag = strlen(flag) + 1;
+		clavesExistentes[j].clave = malloc(tamanioFlag);
+		strcpy(clavesExistentes[j].clave, "Nada");
+		clavesExistentes[j].instancia = -1;
+	}
+
 	while(1) {
 		aceptarCliente(listenSocket, socketCliente);
 	}
-
-
 
 	close(listenSocket);
 

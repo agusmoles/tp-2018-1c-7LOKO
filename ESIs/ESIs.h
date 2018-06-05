@@ -19,7 +19,6 @@ char* IPPLANIFICADOR;
 char* PUERTOPLANIFICADOR;
 char* IPCOORDINADOR;
 char* PUERTOCOORDINADOR;
-#define PACKAGESIZE 1024
 
 typedef struct Header_Operacion {
 	int id_operacion; //GET: 0 , SET: 1, STORE: 2

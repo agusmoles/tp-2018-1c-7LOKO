@@ -1,3 +1,0 @@
-GET AX
-SET AX 2
-STORE AX

@@ -38,4 +38,5 @@ $(TARGET): $(OBJECTS) # Le pasamos a la tarea los objects ya compilados
 clean: # Finalmente creamos una tarea para eliminar todos los .o y el binario
 	-rm -f *.o
 	-rm -f coordinador.log
+	-rm -f logOperaciones.log
 	-rm -f $(TARGET)

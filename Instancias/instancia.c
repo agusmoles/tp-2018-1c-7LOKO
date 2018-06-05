@@ -54,33 +54,27 @@ int conectarSocket() {
 	return server_socket;
 }
 
-void enviarMensajes(int socket) {
-	int enviar = 1;
-	char* mensaje;
+void conectarConCoordinador(int socket) {
+	int flag = 1;
+	fd_set descriptorCoordinador;
+	int fdmax;
 
-	printf(ANSI_COLOR_BOLDGREEN"Envia los mensajes que quieras a continuacion ('exit' para salir):\n");
+	while(flag) {
+		FD_ZERO(&descriptorCoordinador);
+		FD_SET(socket, &descriptorCoordinador);
+		fdmax = socket;
 
-	while (enviar) {
-		mensaje = readline("");
+		select(fdmax + 1, &descriptorCoordinador, NULL, NULL, NULL);
 
-		if(strcmp(mensaje,"exit") == 0) {
-			free(mensaje);
-			break;
+		if (FD_ISSET(socket, &descriptorCoordinador)) {
+			recibirInstruccion(socket);
 		}
-
-		if(send(socket, mensaje, strlen(mensaje)+1, 0) < 0) {
-			free(mensaje);
-			_exit_with_error(socket, "No se pudo enviar el mensaje");
-		}
-
-		free(mensaje);
 	}
 }
 
 void reciboHandshake(int socket) {
 	char* handshake = "******COORDINADOR HANDSHAKE******";
 	char* buffer = malloc(strlen(handshake)+1);
-
 
 	switch (recv(socket, buffer, strlen(handshake)+1, MSG_WAITALL)) {
 		case -1: _exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el handshake"ANSI_COLOR_RESET);
@@ -112,17 +106,33 @@ void pipeHandler() {
 }
 
 void recibirInstruccion(int socket){ // aca se reciben los SETS del coordinador
+	header_t* buffer_header = malloc(sizeof(header_t));
+	char* bufferClave;
+	char* bufferValor;
+	int32_t* tamanioValor;
 
-	char* buffer = malloc(1024);
-
-	if (recv(socket,buffer,1024,MSG_WAITALL)>0){
-		procesarInstruccion(buffer); // en el buffer hay algo como "SET_11:00_jugador"
-		free(buffer);
+	if(recv(socket, buffer_header, sizeof(header_t), MSG_WAITALL)< 0){
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el Header"ANSI_COLOR_RESET);
 	}
+
+	bufferClave = malloc(buffer_header->tamanioClave);
+	tamanioValor = malloc(sizeof(int32_t));
+
+	if(buffer_header->codigoOperacion == 1){  /* SET */
+		recibirClave(socket, buffer_header, bufferClave);
+		recibirTamanioValor(socket, tamanioValor);
+
+		bufferValor = malloc(*tamanioValor);
+
+		recibirValor(socket, tamanioValor, bufferValor);
+	}
+
+	free(tamanioValor);
+	free(bufferClave);
+	free(bufferValor);
 }
 
 int procesarInstruccion(char* instruccion){
-
 	char** args;
 	args = string_split(instruccion, "_"); // separo la instruccion para obtener la clave
 
@@ -171,6 +181,31 @@ void guardarEnStorage(Data data){
 	}
 }
 
+void recibirClave(int socket, header_t* header, char* bufferClave){
+	if (recv(socket, bufferClave, header->tamanioClave, 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio la clave %s"ANSI_COLOR_RESET, bufferClave);
+}
+
+void recibirTamanioValor(int socket, int32_t* tamanioValor){
+	if (recv(socket, tamanioValor, sizeof(int32_t), MSG_WAITALL) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el tamanio del valor"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el tamaño del valor de la clave (%d bytes)"ANSI_COLOR_RESET, *tamanioValor);
+
+}
+
+void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
+	if (recv(socket, bufferValor, (*tamanioValor), MSG_WAITALL) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el valor de la clave"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
+}
+
 int main(void) {
 	struct sigaction finalizacion;
 	finalizacion.sa_handler = pipeHandler;
@@ -183,7 +218,7 @@ int main(void) {
 
 	reciboHandshake(socket);
 	envioIdentificador(socket);
-	enviarMensajes(socket);
+	conectarConCoordinador(socket);
 
 	close(socket);
 

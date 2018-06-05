@@ -1,0 +1,16 @@
+GET futbol:ansaldi
+SET futbol:ansaldi TraeVodka
+GET futbol:messi
+SET futbol:messi TraemeLaCopa
+SET futbol:messi TraemeLaCo
+SET futbol:messi TraemeLaCopa
+SET futbol:messi TraemeLaCo
+SET futbol:messi TraemeLaCopa
+SET futbol:messi TraemeLaCo
+SET futbol:messi TraemeLaCopa
+SET futbol:messi TraemeLaCo
+SET futbol:messi PorqueMessi
+SET futbol:messi SeLoMeressi
+SET futbol:messi TraemeLaCopa
+STORE futbol:messi
+STORE futbol:ansaldi

@@ -27,6 +27,14 @@ void crearConfig() {
 	config = config_create("../cfg");
 }
 
+void crearDiccionarioDeClaves() {
+	diccionarioClaves = dictionary_create();
+}
+
+void crearDiccionarioDeESIsBloqueados() {
+	bloqueados = dictionary_create();
+}
+
 void setearConfigEnVariables() {
 	PUERTOPLANIFICADOR = config_get_string_value(config, "Puerto Planificador");
 	PUERTOCOORDINADOR = config_get_string_value(config, "Puerto Coordinador");
@@ -34,7 +42,26 @@ void setearConfigEnVariables() {
 	algoritmoPlanificacion = config_get_string_value(config, "Algoritmo de planificación");
 	alfaPlanificacion = config_get_double_value(config, "Alfa planificación");
 	estimacionInicial = config_get_int_value(config, "Estimación inicial");
-	sem_init(&pausado, 0, 1);
+	sem_init(&pausado, 0, 1);	//SETEO EL SEMAFORO PAUSADO EN 1 PORQUE INICIALMENTE NO ESTA BLOQUEADO
+	sem_init(&mutexListos, 0, 1);
+	sem_init(&mutexEjecutando, 0, 1);
+	sem_init(&mutexBloqueados, 0, 1);
+	sem_init(&mutexFinalizados, 0, 1);
+
+	/************************ SETEO CLAVES BLOQUEADAS ******************/
+
+	char* claves = config_get_string_value(config, "Claves inicialmente bloqueadas");
+
+	if (claves != NULL) {
+		char** clavesSeparadas = string_split(claves, ",");
+
+		for (int i=0; clavesSeparadas[i] != NULL; i++) {		// SIGO HASTA QUE SEA NULL EL ARRAY
+			dictionary_put(diccionarioClaves, clavesSeparadas[i], "SISTEMA");	// AGREGO LA CLAVE Y QUIEN LA TOMA ES EL "SISTEMA"
+			free(clavesSeparadas[i]);							// LIBERO LA MEMORIA TOMADA DE LA CLAVE
+		}
+
+		free(clavesSeparadas);
+	}
 }
 
 void setearListaDeEstados() {
@@ -74,7 +101,7 @@ int conectarSocketYReservarPuerto() {
 	return listenSocket;
 }
 
-/******************************************************** CLIENTE PLANIFICADOR INICIO *****************************************************/
+/******************************************************** CONEXION COORDINADOR INICIO *****************************************************/
 
 int conectarSocketCoordinador() {
 	struct addrinfo hints;
@@ -133,9 +160,147 @@ void conectarConCoordinador() {
 
 	reciboHandshake(socket);
 	envioIdentificador(socket);
+
+	fd_set descriptorCoordinador;
+	int fdmax;
+	header_t* buffer_header = malloc(sizeof(header_t));
+	int* IDESI = malloc(sizeof(int));
+	char* clave;
+
+	while(1) {
+		FD_ZERO(&descriptorCoordinador);
+		FD_SET(socket, &descriptorCoordinador);
+		fdmax = socket;
+
+		select(fdmax + 1, &descriptorCoordinador, NULL, NULL, NULL);
+
+		if (FD_ISSET(socket, &descriptorCoordinador)) {
+
+			recibirHeader(socket, buffer_header);
+
+			clave = malloc(buffer_header->tamanioClave);
+
+			recibirClave(socket, buffer_header->tamanioClave, clave);
+
+			recibirIDDeESI(socket, IDESI);
+
+			char* nombreESI = malloc(7);	// 7 PORQUE ES "ESI ID", DEJO ESPACIO PARA ESIS DE MAS DE DOS CIFRAS
+
+			strcpy(nombreESI, "ESI ");
+
+			char* idEsi = string_itoa(*IDESI);  // PASO EL ID A STRING ASI LO CONCATENO
+
+			strcat(nombreESI, idEsi);	// CONCATENO "ESI" CON EL ID...
+
+			free(idEsi);	// LIBERO EL STRING QUE SOLO TIENE EL ID...
+
+			switch(buffer_header->codigoOperacion) {
+			case 0: // OPERACION GET
+				if (dictionary_has_key(diccionarioClaves, clave)) {
+					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
+
+					bloquearESI(clave, nombreESI);
+
+					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+
+					log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el %s. Se bloqueo al %s"ANSI_COLOR_RESET, clave, IDEsiQueTieneLaClaveTomada, nombreESI);
+
+//					informarClaveTomada(); AL COORDINADOR
+				} else {
+
+					dictionary_put(diccionarioClaves, clave, nombreESI);
+
+					log_info(logger, ANSI_COLOR_BOLDCYAN"El %s tomo efectivamente la clave %s"ANSI_COLOR_RESET, nombreESI, clave);
+
+//					informarClaveTomada(); AL COORDINADOR
+				}
+				break;
+			case 2: //OPERACION STORE
+				if (dictionary_has_key(diccionarioClaves, clave)) {
+					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+
+					if(strcmp(nombreESI, IDEsiQueTieneLaClaveTomada) == 0) {	// SI EL QUE QUIERE STOREAR ES EL MISMO QUE LA TIENE STOREADA, OK.
+						dictionary_remove(diccionarioClaves, clave);
+						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el %s"ANSI_COLOR_RESET, clave, nombreESI);
+
+						// DEBERIA DESBLOQUEAR AL ESI QUE ESTA ESPERANDO POR ESTE RECURSO, SI LO HUBIESE
+
+					} else {		// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
+						abortarESI(IDESI, nombreESI);
+
+						log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s que no es de el"ANSI_COLOR_RESET, nombreESI, clave);
+
+						ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
+					}
+				} else {		// SI LA CLAVE NO ESTA EN EL DICCIONARIO...
+					abortarESI(IDESI, nombreESI);
+
+					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, nombreESI, clave);
+
+					ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
+				}
+
+				break;
+			default:
+				_exit_with_error(ANSI_COLOR_BOLDRED"No se esperaba un codigo de operacion distinto de 0 (GET) o 2 (STORE) del Coordinador"ANSI_COLOR_RESET);
+				break;
+			}
+
+			free(clave);
+		}
+	}
+
+	free(IDESI);
 }
 
-/******************************************************** CLIENTE PLANIFICADOR FIN *****************************************************/
+void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI) {
+	if(strcmp(ESI, ESIABuscarEnDiccionario) == 0) {
+		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el %s ya que fue abortado"ANSI_COLOR_RESET, clave, (char*) ESI);
+		dictionary_remove(diccionarioClaves, clave);
+	}
+}
+
+cliente* buscarESI(int* IDESI) {
+	for(int i=0; i<NUMEROCLIENTES; i++) {
+		if(socketCliente[i].identificadorESI == *IDESI) {
+			return &socketCliente[i];
+		}
+	}
+	return NULL;
+}
+
+void abortarESI(int* IDESI, char* nombreESI) {
+	ESIABuscarEnDiccionario = malloc(strlen(nombreESI)+1);
+
+	strcpy(ESIABuscarEnDiccionario, nombreESI);		// SETEO LA VARIABLE GLOBAL
+
+	dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+
+	free(ESIABuscarEnDiccionario);
+
+	sem_wait(&mutexEjecutando);
+	list_remove(ejecutando, 0);
+	sem_post(&mutexEjecutando);
+
+	cliente* ESIAbortado = buscarESI(IDESI);
+
+	close(ESIAbortado->fd);
+	ESIAbortado->fd = -1;	// PARA QUE NO LO AGREGUE AL SET DE DESCRIPTORES DE LECTURA DEL MANEJODECLIENTES()
+
+	sem_wait(&mutexFinalizados);
+	list_add(finalizados, ESIAbortado);
+	sem_post(&mutexFinalizados);
+}
+
+void bloquearESI(char* clave, char* nombreESI) {
+	sem_wait(&mutexBloqueados);
+	dictionary_put(bloqueados, clave, nombreESI);
+	sem_post(&mutexBloqueados);
+
+	ordenarProximoAEjecutar();	// COMO LO BLOQUEE, TENGO QUE MANDAR A OTRO A EJECUTAR
+}
+
+/******************************************************** CONEXION COORDINADOR FIN *****************************************************/
 
 void escuchar(int socket) {
 	if(listen(socket, NUMEROCLIENTES)) {
@@ -256,12 +421,32 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 
 			socketCliente[i].identificadorESI = i;		//LE ASIGNO EL IDENTIFICADOR AL ESI
 
+			sem_wait(&mutexListos);
 			list_add(listos, &socketCliente[i]);			//LO AGREGO A LA COLA DE LISTOS
+			sem_post(&mutexListos);
 
 			log_info(logger, ANSI_COLOR_BOLDCYAN"Se conecto un %s %d"ANSI_COLOR_RESET, socketCliente[i].nombre, socketCliente[i].identificadorESI);
 
 			break;
 		}
+	}
+}
+
+void recibirHeader(int socket, header_t* header) {
+	if(recv(socket, header, sizeof(header_t), MSG_WAITALL) <= 0) {		// RECIBO EL HEADER
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el header"ANSI_COLOR_RESET);
+	}
+}
+
+void recibirClave(int socket, int tamanioClave, char* clave) {
+	if(recv(socket, clave, tamanioClave, MSG_WAITALL) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir la clave del coordinador"ANSI_COLOR_RESET);
+	}
+}
+
+void recibirIDDeESI(int socket, int* id) {
+	if (recv(socket, id, sizeof(int), 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el ID del ESI"ANSI_COLOR_RESET);
 	}
 }
 
@@ -297,6 +482,7 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 					if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
 						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
 						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
+						socketCliente[posicion].tiempoDeEspera = 0; 	// LO REINICIO CADA VEZ QUE DEVUELVE OPOK (DEBERIA SER SOLO UNA VEZ CUANDO ENTRA A EJECUTAR PERO BUE)
 
 						list_iterate(listos, (void *) sumarUnoAlWaitingTime);
 					}
@@ -305,8 +491,13 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 				}
 
 				if (strcmp(buffer, "EXEEND") == 0) {
+					sem_wait(&mutexEjecutando);
 					list_remove(ejecutando, 0);
+					sem_post(&mutexEjecutando);
+
+					sem_wait(&mutexFinalizados);
 					list_add(finalizados, &socketCliente[posicion]);
+					sem_post(&mutexFinalizados);
 
 					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
 						if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) { // SI ES SJF
@@ -314,13 +505,14 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 						}
 
 						else if (strcmp(algoritmoPlanificacion, "HRRN") == 0) { //SI ES HRRN
+							sem_wait(&mutexListos);
 							list_iterate(listos, (void*) calcularResponseRatio);	// CALCULO LA TASA DE RESPUESTA DE TODOS LOS ESIS LISTOS
+							sem_post(&mutexListos);
 							ordenarColaDeListosPorHRRN(&socketCliente[posicion]);
 						}
 					}
 
 					ordenarProximoAEjecutar();	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
-					list_iterate(listos, (void*) reiniciarWaitingTime);
 				}
 				break;
 
@@ -334,7 +526,7 @@ void ordenarProximoAEjecutar() {
 	cliente* esiProximoAEjecutar;
 
 	if(list_is_empty(listos) && list_is_empty(ejecutando)) {		// SI LAS DOS LISTAS ESTAN VACIAS, NADIE VA A EJECUTAR
-		printf(ANSI_COLOR_BOLDRED"No hay ESIs para ejecutar\n"ANSI_COLOR_RESET);
+		printf(ANSI_COLOR_BOLDRED"\nNo hay ESIs para ejecutar\n\n"ANSI_COLOR_RESET);
 	} else if (!list_is_empty(ejecutando)){							// SI EJECUTANDO NO ESTA VACIA, DEBERIA SEGUIR EJECUTANDO EL...
 		esiProximoAEjecutar = list_get(ejecutando, 0);
 
@@ -350,25 +542,39 @@ cliente* getPrimerESIListo() {
 	cliente* cliente;
 
 	cliente = list_get(listos, 0);					//TOMO EL PRIMERO DE LA LISTA DE LISTOS
+	sem_wait(&mutexListos);
 	list_remove(listos, 0);							//LO SACO PORQUE PASA A EJECUTAR
+	sem_post(&mutexListos);
+
+	sem_wait(&mutexEjecutando);
 	list_add(ejecutando, cliente);					//LO AGREGO A LA LISTA DE EJECUTANDO
+	sem_post(&mutexEjecutando);
 	return cliente;
 }
 
 void ordenarColaDeListosPorSJF(cliente* ESIEjecutando) {
 	struct Cliente* primerESIListo;
 
+	sem_wait(&mutexListos);
 	list_sort(listos, (void*) comparadorRafaga);
-
+	sem_post(&mutexListos);
 
 	if(!list_is_empty(listos) && !list_is_empty(ejecutando)) {
 		primerESIListo = list_get(listos, 0);			//AGARRO EL QUE AHORA ESTA PRIMERO EN LA LISTA DE LISTOS
 
 		if (primerESIListo->estimacionProximaRafaga < ESIEjecutando->estimacionProximaRafaga) {	// SI LA RAFAGA ESTIMADA DEL ESI LISTO ES MENOR AL QUE EJECUTA
+			sem_wait(&mutexEjecutando);
 			list_remove(ejecutando, 0);			// DESALOJO AL ESI EJECUTANDO
+			sem_post(&mutexEjecutando);
+
+			sem_wait(&mutexListos);
 			list_add(listos, ESIEjecutando);	// LO AGREGO AL FINAL DE LA LISTA DE LISTOS
+			sem_post(&mutexListos);
 			ESIEjecutando->rafagaActual = 0;	// SE RESETEA LA RAFAGA ACTUAL (PORQUE FUE DESALOJADO)
+
+			sem_wait(&mutexEjecutando);
 			list_add(ejecutando, primerESIListo);
+			sem_post(&mutexEjecutando);
 		}
 	}
 
@@ -390,7 +596,9 @@ void ordenarColaDeListosPorSJF(cliente* ESIEjecutando) {
 }
 
 void ordenarColaDeListosPorHRRN(cliente* ESIEjecutando) {
+	sem_wait(&mutexListos);
 	list_sort(listos, (void*) comparadorResponseRatio);
+	sem_post(&mutexListos);
 }
 
 void enviarOrdenDeEjecucion(cliente* esiProximoAEjecutar, char* ordenEjecucion) {
@@ -419,10 +627,6 @@ void sumarUnoAlWaitingTime(cliente* cliente) {
 	cliente->tiempoDeEspera += 1;
 }
 
-void reiniciarWaitingTime(cliente* cliente) {
-	cliente->tiempoDeEspera = 0;
-}
-
 void calcularResponseRatio(cliente* cliente) {
 	cliente->tasaDeRespuesta = (cliente->tiempoDeEspera + cliente->estimacionProximaRafaga) / cliente->estimacionProximaRafaga;
 }
@@ -439,8 +643,20 @@ int main(void) {
 
 	configurarLogger();
 	crearConfig();
+	crearDiccionarioDeClaves();
+	crearDiccionarioDeESIsBloqueados();
 	setearConfigEnVariables();
 	setearListaDeEstados();
+
+	/************************************** MUESTRO CLAVES INICIALMENTE BLOQUEADAS *************************/
+
+	char* IDEsi;
+
+	IDEsi = dictionary_get(diccionarioClaves, "futbol:messi");
+
+	for (int i=0; i<dictionary_size(diccionarioClaves); i++) {
+		printf("%s \n", IDEsi);
+	}
 
 	/************************************** CONEXION CON COORDINADOR **********************************/
 

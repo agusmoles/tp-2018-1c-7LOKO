@@ -6,8 +6,8 @@ int main(){
 	crearConfig();
 	setearConfigEnVariables();
 	int socketPlanificador,socketCoordinador;
-	FILE* script = fopen("script.esi","r");
-	char* instruccion = malloc(PACKAGESIZE);
+	FILE* script = fopen("ESI_1","r");
+	char* instruccion;
 	size_t len = 0;
 	int sentencias = 0;
 
@@ -37,6 +37,8 @@ int main(){
 			enviarMensaje(socketPlanificador,"EXEEND");		// SI LO ES, ENVIO EXEEND
 		}
 	}
+
+	free(instruccion);
 
 	close(socketPlanificador);
 	close(socketCoordinador);
@@ -118,6 +120,8 @@ void recibirHandshake(int socketServidor, char* handshake){
 		exitErrorBuffer(socketServidor,"Handshake erroneo",buffer);
 	}
 	log_info(logger,ANSI_COLOR_BOLDGREEN"Handshake recibido correctamente"ANSI_COLOR_RESET);
+
+	free(buffer);
 }
 
 void envioIdentificador(int socket) {
@@ -198,6 +202,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador){
 
 				printf(ANSI_COLOR_BOLDWHITE"TAMANIO CLAVE: %d\n"ANSI_COLOR_RESET, header->tamanioClave);
 				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+				free(header);
 				break;
 			case SET:
 				tamanioClave = strlen(parsed.argumentos.SET.clave) + 1;
@@ -208,6 +213,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador){
 				enviarValor(socketCoordinador, parsed.argumentos.SET.valor);
 
 				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+				free(header);
 				break;
 			case STORE:
 				tamanioClave = strlen(parsed.argumentos.STORE.clave) + 1;
@@ -216,6 +222,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador){
 				enviarClave(socketCoordinador, parsed.argumentos.STORE.clave);
 
 				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+				free(header);
 				break;
 			default:
 				fprintf(stderr, "No pude interpretar <%s>\n", instruccion);
@@ -245,10 +252,11 @@ void administrarID(int socketPlanificador, int socketCoordinador){
 int cantidadSentencias(FILE* script){
 	int sentencias = 0;
 	size_t len = 0;
-	char* instruccion  = malloc(PACKAGESIZE);
+	char* instruccion;
 	while(getline(&instruccion,&len,script) != -1){
 		sentencias++;
 	}
+	free(instruccion);
 	return sentencias;
 }
 
