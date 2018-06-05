@@ -24,6 +24,11 @@ int CANTIDADENTRADAS;
 t_log* logger;
 t_config* config;
 
+struct Instancia{
+	Entrada TABLAENTRADAS[CANTIDADENTRADAS];
+	Data STORAGE[CANTIDADENTRADAS];
+};
+
 struct Entrada{
 	char* clave;
 	int numero;
@@ -35,6 +40,7 @@ struct Data{
 	char* info;
 };
 
+struct Instancia typedef Instancia;
 struct Entrada typedef Entrada;
 struct Data typedef Data;
 
