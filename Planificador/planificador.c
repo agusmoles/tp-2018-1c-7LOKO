@@ -31,6 +31,10 @@ void crearDiccionarioDeClaves() {
 	diccionarioClaves = dictionary_create();
 }
 
+void crearDiccionarioDeESIsBloqueados() {
+	bloqueados = dictionary_create();
+}
+
 void setearConfigEnVariables() {
 	PUERTOPLANIFICADOR = config_get_string_value(config, "Puerto Planificador");
 	PUERTOCOORDINADOR = config_get_string_value(config, "Puerto Coordinador");
@@ -184,20 +188,22 @@ void conectarConCoordinador() {
 
 			strcpy(nombreESI, "ESI ");
 
-			char* idEsi = string_itoa(*IDESI);
+			char* idEsi = string_itoa(*IDESI);  // PASO EL ID A STRING ASI LO CONCATENO
 
-			strcat(nombreESI, idEsi);
+			strcat(nombreESI, idEsi);	// CONCATENO "ESI" CON EL ID...
 
-			free(idEsi);
+			free(idEsi);	// LIBERO EL STRING QUE SOLO TIENE EL ID...
 
 			switch(buffer_header->codigoOperacion) {
 			case 0: // OPERACION GET
 				if (dictionary_has_key(diccionarioClaves, clave)) {
 					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
 
+					bloquearESI(clave, nombreESI);
+
 					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
 
-					log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el %s"ANSI_COLOR_RESET, clave, IDEsiQueTieneLaClaveTomada);
+					log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el %s. Se bloqueo al %s"ANSI_COLOR_RESET, clave, IDEsiQueTieneLaClaveTomada, nombreESI);
 
 //					informarClaveTomada(); AL COORDINADOR
 				} else {
@@ -211,18 +217,27 @@ void conectarConCoordinador() {
 				break;
 			case 2: //OPERACION STORE
 				if (dictionary_has_key(diccionarioClaves, clave)) {
-
 					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
 
 					if(strcmp(nombreESI, IDEsiQueTieneLaClaveTomada) == 0) {	// SI EL QUE QUIERE STOREAR ES EL MISMO QUE LA TIENE STOREADA, OK.
 						dictionary_remove(diccionarioClaves, clave);
 						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el %s"ANSI_COLOR_RESET, clave, nombreESI);
+
+						// DEBERIA DESBLOQUEAR AL ESI QUE ESTA ESPERANDO POR ESTE RECURSO, SI LO HUBIESE
+
 					} else {		// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
+						abortarESI(IDESI, nombreESI);
+
 						log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s que no es de el"ANSI_COLOR_RESET, nombreESI, clave);
+
+						ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 					}
 				} else {		// SI LA CLAVE NO ESTA EN EL DICCIONARIO...
+					abortarESI(IDESI, nombreESI);
+
 					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, nombreESI, clave);
-//				 TAMBIEN DEBO ABORTAR AL ESI E INFORMAR AL USUARIO QUE NO ESTABA LA CLAVE
+
+					ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 				}
 
 				break;
@@ -236,6 +251,53 @@ void conectarConCoordinador() {
 	}
 
 	free(IDESI);
+}
+
+void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI) {
+	if(strcmp(ESI, ESIABuscarEnDiccionario) == 0) {
+		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el %s ya que fue abortado"ANSI_COLOR_RESET, clave, (char*) ESI);
+		dictionary_remove(diccionarioClaves, clave);
+	}
+}
+
+cliente* buscarESI(int* IDESI) {
+	for(int i=0; i<NUMEROCLIENTES; i++) {
+		if(socketCliente[i].identificadorESI == *IDESI) {
+			return &socketCliente[i];
+		}
+	}
+	return NULL;
+}
+
+void abortarESI(int* IDESI, char* nombreESI) {
+	ESIABuscarEnDiccionario = malloc(strlen(nombreESI)+1);
+
+	strcpy(ESIABuscarEnDiccionario, nombreESI);		// SETEO LA VARIABLE GLOBAL
+
+	dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+
+	free(ESIABuscarEnDiccionario);
+
+	sem_wait(&mutexEjecutando);
+	list_remove(ejecutando, 0);
+	sem_post(&mutexEjecutando);
+
+	cliente* ESIAbortado = buscarESI(IDESI);
+
+	close(ESIAbortado->fd);
+	ESIAbortado->fd = -1;	// PARA QUE NO LO AGREGUE AL SET DE DESCRIPTORES DE LECTURA DEL MANEJODECLIENTES()
+
+	sem_wait(&mutexFinalizados);
+	list_add(finalizados, ESIAbortado);
+	sem_post(&mutexFinalizados);
+}
+
+void bloquearESI(char* clave, char* nombreESI) {
+	sem_wait(&mutexBloqueados);
+	dictionary_put(bloqueados, clave, nombreESI);
+	sem_post(&mutexBloqueados);
+
+	ordenarProximoAEjecutar();	// COMO LO BLOQUEE, TENGO QUE MANDAR A OTRO A EJECUTAR
 }
 
 /******************************************************** CONEXION COORDINADOR FIN *****************************************************/
@@ -464,7 +526,7 @@ void ordenarProximoAEjecutar() {
 	cliente* esiProximoAEjecutar;
 
 	if(list_is_empty(listos) && list_is_empty(ejecutando)) {		// SI LAS DOS LISTAS ESTAN VACIAS, NADIE VA A EJECUTAR
-		printf(ANSI_COLOR_BOLDRED"No hay ESIs para ejecutar\n"ANSI_COLOR_RESET);
+		printf(ANSI_COLOR_BOLDRED"\nNo hay ESIs para ejecutar\n\n"ANSI_COLOR_RESET);
 	} else if (!list_is_empty(ejecutando)){							// SI EJECUTANDO NO ESTA VACIA, DEBERIA SEGUIR EJECUTANDO EL...
 		esiProximoAEjecutar = list_get(ejecutando, 0);
 
@@ -582,6 +644,7 @@ int main(void) {
 	configurarLogger();
 	crearConfig();
 	crearDiccionarioDeClaves();
+	crearDiccionarioDeESIsBloqueados();
 	setearConfigEnVariables();
 	setearListaDeEstados();
 
