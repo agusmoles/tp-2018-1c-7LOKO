@@ -4,9 +4,6 @@
 
 #define CANTIDADENTRADAS 20
 
-static Entrada TABLAENTRADAS[CANTIDADENTRADAS];
-static Data STORAGE[CANTIDADENTRADAS];
-
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 	log_error(logger, mensaje);
@@ -127,58 +124,36 @@ void recibirInstruccion(int socket){ // aca se reciben los SETS del coordinador
 		recibirValor(socket, tamanioValor, bufferValor);
 	}
 
+	procesarInstruccion(*bufferClave, *tamanioValor, *bufferValor);
+
 	free(tamanioValor);
 	free(bufferClave);
 	free(bufferValor);
 }
 
-int procesarInstruccion(char* instruccion){
-	char** args;
-	args = string_split(instruccion, "_"); // separo la instruccion para obtener la clave
+int procesarInstruccion(char* clave, int tamanioValor, char* valor){
 
 	Entrada entrada;
-	strcpy(entrada.clave, args[1]);
-	entrada.tamanio = sizeof(args[2]);
+	strcpy(entrada.clave, clave);
+	entrada.tamanio = tamanioValor;
 
 	Data data;
-	strcpy(data.info, args[2]);
+	strcpy(data->info, valor);
 
-	for(int i=0; i<CANTIDADENTRADAS; i++){	// me fijo si ya existe una instancia con esa clave
+	// ADAPTAR A PARTIR DE ACA PARA QUE FUNCIONE CON LISTA. (VER COMMONS "<commons/collections/list.h>")
+	for(int i=0; i<CANTIDADENTRADAS; i++){	// me fijo si ya existe una entrada con esa clave
 		if(strcmp(entrada.clave, TABLAENTRADAS[i].clave) == 0){
-			data.numeroEntrada = TABLAENTRADAS[i].numero;
-			guardarEnStorage(data);
-			return 0; // encuentra instancia con esa clave y guarda la info en storage
-		}
-	}
-
-	return asignarInstancia(entrada, data); // no encuentra una entrada con esa clave, procedemos a crear una nueva instancia
-}
-
-int asignarInstancia(Entrada nuevaEntrada, Data data){
-
-	for(int i=0; i<CANTIDADENTRADAS; i++){ // recorro la tabla y meto la entrada en la primer instancia libre
-		if(TABLAENTRADAS[i].clave != NULL){
-
-			nuevaEntrada.numero = i;
 			data.numeroEntrada = i;
-
-			TABLAENTRADAS[i] = nuevaEntrada;
 			guardarEnStorage(data);
-
-			return 1; // asigna una instancia en la tabla de entradas
+			return 0; // encuentra entrada con esa clave y guarda la info en storage
 		}
 	}
 
-	return -1; // la tabla esta llena y no puede asignar una nueva instancia
 }
+
 
 void guardarEnStorage(Data data){
-
-	for(int i=0; i<CANTIDADENTRADAS; i++){
-		if(STORAGE[i].numeroEntrada == data.numeroEntrada){
-			STORAGE[i] = data;
-		}
-	}
+	list_add(STORAGE, data); // falta contemplar para cuando ya se hay una clave para
 }
 
 void recibirClave(int socket, header_t* header, char* bufferClave){

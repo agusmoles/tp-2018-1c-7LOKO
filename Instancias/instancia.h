@@ -10,6 +10,7 @@
 #include <commons/string.h>
 #include <readline/readline.h> // Para usar readline
 #include <signal.h>
+#include <commons/collections/list.h>
 #include "../Colores.h"
 #include "sharedlib.h"
 
@@ -25,10 +26,10 @@ int CANTIDADENTRADAS;
 t_log* logger;
 t_config* config;
 
-struct Instancia{
-	Entrada TABLAENTRADAS[CANTIDADENTRADAS];
-	Data STORAGE[CANTIDADENTRADAS];
-};
+
+static Entrada TABLAENTRADAS[CANTIDADENTRADAS];
+static Data STORAGE[CANTIDADENTRADAS];
+
 
 struct Entrada{
 	char* clave;
@@ -41,7 +42,6 @@ struct Data{
 	char* info;
 };
 
-struct Instancia typedef Instancia;
 struct Entrada typedef Entrada;
 struct Data typedef Data;
 
