@@ -417,6 +417,15 @@ void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int
 	enviarIDEsi(socket, idESI);
 }
 
+int verificarClaveTomada(int socket){
+	int* resultado = malloc(sizeof(int));
+	if(recv(socket, resultado, sizeof(int), 0) < 0){
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el resultado de la operacion por el planificador"ANSI_COLOR_RESET);
+		return -1;
+	}
+	return resultado;
+}
+
 
 /* Realiza GET, SET, STORE */
 void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlanificador){
@@ -433,12 +442,19 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			if(verificarSiExisteClave(bufferClave) < 0){
 				agregarClave(header->tamanioClave, bufferClave);
 			}
+			/* Si existe consultar al planificador */
 
 			mostrarClavesExistentes();
 
 			/* Avisa a Planificador */
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
+
+			if(verifcarClaveTomada(socketPlanificador) == 0){
+				log_error(logger, ANSI_COLOR_BOLDRED"La clave se encontraba tomada"ANSI_COLOR_RESET);
+			}
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET correctamente"ANSI_COLOR_RESET);
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
@@ -567,7 +583,6 @@ void aceptarCliente(int socket, cliente_t* socketCliente) {
 						if((socketPlanificador = buscarSocketPlanificador())< 0){
 							_exit_with_error(socketCliente[i].fd, "No se encontro el socket del Planificador");
 						}
-
 
 						crearHiloESI(&socketCliente[i], socketPlanificador);
 						break;

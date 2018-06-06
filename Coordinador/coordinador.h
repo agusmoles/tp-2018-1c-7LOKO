@@ -45,6 +45,7 @@ t_log* logOperaciones;
 t_config* config;
 cliente_t socketCliente[NUMEROCLIENTES];
 clave_t clavesExistentes[CANTIDADCLAVES];
+//t_list* clavesExistentes;
 
 /*FUNCIONES DE CONEXION */
 void _exit_with_error(int socket, char* mensaje);
