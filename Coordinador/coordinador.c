@@ -161,7 +161,7 @@ void recibirSentenciaESI(void* argumentos){
 
 						tratarSegunOperacion(buffer_header, args->socketCliente, args->socketPlanificador);
 
-						enviarMensaje(args->socketCliente->fd, "OPOK");
+						//enviarMensaje(args->socketCliente->fd, "OPOK");
 						break;
 			}
 		}
@@ -455,6 +455,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET correctamente"ANSI_COLOR_RESET);
+			enviarMensaje(socketESI->fd, "OPOK");
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
@@ -480,6 +481,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			enviarSentenciaESI(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
 
+			enviarMensaje(socketESI->fd, "OPOK");
+
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: SET %s %s",socketESI->identificadorESI, bufferClave, bufferValor);
 
@@ -497,6 +500,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			/* Avisa a Planificador */
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
+
+			enviarMensaje(socketESI->fd, "OPOK");
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
