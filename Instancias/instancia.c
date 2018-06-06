@@ -4,9 +4,6 @@
 
 #define CANTIDADENTRADAS 20
 
-static Entrada TABLAENTRADAS[CANTIDADENTRADAS];
-static Data STORAGE[CANTIDADENTRADAS];
-
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 	log_error(logger, mensaje);
@@ -127,58 +124,54 @@ void recibirInstruccion(int socket){ // aca se reciben los SETS del coordinador
 		recibirValor(socket, tamanioValor, bufferValor);
 	}
 
+	procesarInstruccion(*bufferClave, *tamanioValor, *bufferValor);
+
 	free(tamanioValor);
 	free(bufferClave);
 	free(bufferValor);
 }
 
-int procesarInstruccion(char* instruccion){
-	char** args;
-	args = string_split(instruccion, "_"); // separo la instruccion para obtener la clave
+int procesarInstruccion(char* clave, int tamanioValor, char* valor){
+	Entrada* entrada;
+	strcpy(entrada->clave, clave);
+	entrada->tamanio = tamanioValor;
 
-	Entrada entrada;
-	strcpy(entrada.clave, args[1]);
-	entrada.tamanio = sizeof(args[2]);
+	Data* data;
+	strcpy(data->info, valor);
 
-	Data data;
-	strcpy(data.info, args[2]);
-
-	for(int i=0; i<CANTIDADENTRADAS; i++){	// me fijo si ya existe una instancia con esa clave
-		if(strcmp(entrada.clave, TABLAENTRADAS[i].clave) == 0){
-			data.numeroEntrada = TABLAENTRADAS[i].numero;
-			guardarEnStorage(data);
-			return 0; // encuentra instancia con esa clave y guarda la info en storage
-		}
-	}
-
-	return asignarInstancia(entrada, data); // no encuentra una entrada con esa clave, procedemos a crear una nueva instancia
+	return agregarEntrada(entrada, data);
 }
 
-int asignarInstancia(Entrada nuevaEntrada, Data data){
+int agregarEntrada(Entrada* entrada, Data* data){
 
-	for(int i=0; i<CANTIDADENTRADAS; i++){ // recorro la tabla y meto la entrada en la primer instancia libre
-		if(TABLAENTRADAS[i].clave != NULL){
-
-			nuevaEntrada.numero = i;
-			data.numeroEntrada = i;
-
-			TABLAENTRADAS[i] = nuevaEntrada;
-			guardarEnStorage(data);
-
-			return 1; // asigna una instancia en la tabla de entradas
-		}
-	}
-
-	return -1; // la tabla esta llena y no puede asignar una nueva instancia
-}
-
-void guardarEnStorage(Data data){
+	Entrada* aux;
+	aux = malloc(sizeof(Entrada));
 
 	for(int i=0; i<CANTIDADENTRADAS; i++){
-		if(STORAGE[i].numeroEntrada == data.numeroEntrada){
-			STORAGE[i] = data;
+		aux = list_get(TABLAENTRADAS, i);
+
+		if(!strcmp(aux->clave, entrada.clave)){	// ya existe entrada con esa clave.
+			guardarEnStorage(data);
+			free(aux);
+			return 0;
 		}
 	}
+
+	if(list_size(TABLAENTRADAS) < CANTIDADENTRADAS){	// agrego la entrada si hay lugar
+		list_add(TABLAENTRADAS, entrada);				// falta contemplar para cuando se necesitan ocupar mas de una entrada
+		guardarEnStorage(data);
+		free(aux);
+		return 1;
+	}
+
+
+	// si no hay lugar ... APLICAR ALGORITMO DE REEMPLAZO
+
+}
+
+
+void guardarEnStorage(Data* data){
+	list_add(STORAGE, data);
 }
 
 void recibirClave(int socket, header_t* header, char* bufferClave){
@@ -221,6 +214,9 @@ int main(void) {
 	conectarConCoordinador(socket);
 
 	close(socket);
+
+	TABLAENTRADAS = list_create();
+	STORAGE = list_create();
 
 	return EXIT_SUCCESS;
 }

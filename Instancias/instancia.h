@@ -10,6 +10,7 @@
 #include <commons/string.h>
 #include <readline/readline.h> // Para usar readline
 #include <signal.h>
+#include <commons/collections/list.h>
 #include "../Colores.h"
 #include "sharedlib.h"
 
@@ -24,6 +25,10 @@ int CANTIDADENTRADAS;
 
 t_log* logger;
 t_config* config;
+
+t_list* TABLAENTRADAS;
+t_list* STORAGE;
+
 
 struct Entrada{
 	char* clave;
