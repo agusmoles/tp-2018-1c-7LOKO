@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <commons/log.h>
 #include <commons/string.h>
+#include <commons/collections/dictionary.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <signal.h>
@@ -21,7 +22,12 @@
 #define PUERTO "6666"
 
 t_log* logger;
+t_dictionary* diccionarioClaves;
 sem_t pausado;
+
+void bloquearESI(char* clave, int* IDESI);
+void desbloquearESI(char* clave);
+void listar(char* clave);
 
 int ejecutar_consola();
 int com_pausar(char **args);

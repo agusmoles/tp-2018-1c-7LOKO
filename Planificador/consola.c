@@ -139,9 +139,43 @@ int com_bloquear(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	// NO OLVIDARSE DE LIBERAR PARAMETROS
+	char* nombreESI = malloc(7);	// 7 PORQUE ES "ESI ID", DEJO ESPACIO PARA ESIS DE MAS DE DOS CIFRAS
 
-	puts("Estas en bloquear");
+	strcpy(nombreESI, "ESI ");
+
+	strcat(nombreESI, args[2]);	// CONCATENO "ESI" CON EL ID...
+
+	char* clave = malloc(strlen(args[1]) + 1);
+
+	strcpy(clave, args[1]);
+
+	int* IDESI = malloc(sizeof(int));
+
+	*IDESI = atoi(args[2]);
+
+	if (dictionary_has_key(diccionarioClaves, clave)) {
+		// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
+
+		bloquearESI(clave, IDESI);
+
+		char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+
+		log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el %s. Se bloqueo al %s"ANSI_COLOR_RESET, clave, IDEsiQueTieneLaClaveTomada, nombreESI);
+
+//					informarClaveTomada(); AL COORDINADOR
+	} else {
+
+		dictionary_put(diccionarioClaves, clave, nombreESI);
+
+		log_info(logger, ANSI_COLOR_BOLDCYAN"El %s tomo efectivamente la clave %s"ANSI_COLOR_RESET, nombreESI, clave);
+
+//					informarClaveTomada(); AL COORDINADOR
+	}
+
+	free(IDESI);
+	free(clave);
+	liberar_parametros(args);
+
 	return 1;
 
 }
@@ -156,9 +190,15 @@ int com_desbloquear(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	// NO OLVIDARSE DE LIBERAR PARAMETROS
+	if (dictionary_has_key(diccionarioClaves, args[1])) {
+		dictionary_remove(diccionarioClaves, args[1]);
+		desbloquearESI(args[1]);
 
-	puts("Estas en desbloquear");
+	} else {
+		printf(ANSI_COLOR_BOLDWHITE"La clave %s no se encontraba en el sistema\n"ANSI_COLOR_RESET, args[1]);
+	}
+
+	liberar_parametros(args);
 	return 1;
 
 }
@@ -173,9 +213,10 @@ int com_listar(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	// NO OLVIDARSE DE LIBERAR PARAMETROS
+	listar(args[1]);
 
-	puts("Estas en listar");
+	liberar_parametros(args);
+
 	return 1;
 }
 

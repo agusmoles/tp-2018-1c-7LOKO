@@ -33,5 +33,6 @@ COD. OP
 0. Para indicar que es una operacion de GET
 1. Para indicar que es una operacion de SET
 2. Para indicar que es una operacion de STR
-3. Para indicar que se va a enviar mensajes del estilo "OPOK", "OPBLOQ", ETC. 
+
+El Planificador, luego de recibir una sentencia por parte del Coordinador, le devuelve a éste un 0 si el ESI se bloqueo/aborto y un 1 si se ejecuto con normalidad.
 

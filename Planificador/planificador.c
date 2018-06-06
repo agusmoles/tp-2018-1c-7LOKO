@@ -31,10 +31,6 @@ void crearDiccionarioDeClaves() {
 	diccionarioClaves = dictionary_create();
 }
 
-void crearDiccionarioDeESIsBloqueados() {
-	bloqueados = dictionary_create();
-}
-
 void setearConfigEnVariables() {
 	PUERTOPLANIFICADOR = config_get_string_value(config, "Puerto Planificador");
 	PUERTOCOORDINADOR = config_get_string_value(config, "Puerto Coordinador");
@@ -197,22 +193,22 @@ void conectarConCoordinador() {
 			switch(buffer_header->codigoOperacion) {
 			case 0: // OPERACION GET
 				if (dictionary_has_key(diccionarioClaves, clave)) {
-					// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
 
 					bloquearESI(clave, IDESI);
+
+					informarAlCoordinador(socket, 0);	// 0 PORQUE SALIO MAL
 
 					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
 
 					log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el %s. Se bloqueo al %s"ANSI_COLOR_RESET, clave, IDEsiQueTieneLaClaveTomada, nombreESI);
 
-//					informarClaveTomada(); AL COORDINADOR
 				} else {
 
 					dictionary_put(diccionarioClaves, clave, nombreESI);
 
 					log_info(logger, ANSI_COLOR_BOLDCYAN"El %s tomo efectivamente la clave %s"ANSI_COLOR_RESET, nombreESI, clave);
 
-//					informarClaveTomada(); AL COORDINADOR
+					informarAlCoordinador(socket, 1); // 1 PORQUE SALIO BIEN
 				}
 				break;
 			case 2: //OPERACION STORE
@@ -223,6 +219,8 @@ void conectarConCoordinador() {
 						dictionary_remove(diccionarioClaves, clave);
 						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el %s"ANSI_COLOR_RESET, clave, nombreESI);
 
+						informarAlCoordinador(socket, 1); // 1 PORQUE SALIO BIEN
+
 						// DESBLOQUEO AL ESI QUE ESTA ESPERANDO POR ESTE RECURSO, SI LO HUBIESE
 
 						desbloquearESI(clave);
@@ -232,12 +230,16 @@ void conectarConCoordinador() {
 
 						log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s que no es de el"ANSI_COLOR_RESET, nombreESI, clave);
 
+						informarAlCoordinador(socket, 0); // 0 PORQUE SALIO MAL
+
 						ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 					}
 				} else {		// SI LA CLAVE NO ESTA EN EL DICCIONARIO...
 					abortarESI(IDESI, nombreESI);
 
 					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, nombreESI, clave);
+
+					informarAlCoordinador(socket, 0); // 0 PORQUE SALIO MAL
 
 					ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 				}
@@ -306,7 +308,34 @@ void bloquearESI(char* clave, int* IDESI) {
 	list_add(bloqueados, ESI);	// Y LO MUEVO A BLOQUEADOS
 	sem_post(&mutexBloqueados);
 
-	// FALTA MANEJAR LO DE LAS RAFAGAS, ETC.
+	if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) {	// SI ES SJF, SETEO VARIABLES DEL ESI EJECUTANDO
+		ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
+		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;
+		ESI->rafagaActual = 0; 	// LO SETEO EN 0 PORQUE FUE "DESALOJADO" PORQUE SE BLOQUEO
+	}
+
+	if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
+		ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
+		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;
+		ESI->tiempoDeEspera = 0;
+
+		sem_wait(&mutexListos);
+		list_iterate(listos, (void *) sumarUnoAlWaitingTime);
+		sem_post(&mutexListos);
+	}
+
+	if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
+		if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) { // SI ES SJF
+			ordenarColaDeListosPorSJF();
+		}
+
+		else if (strcmp(algoritmoPlanificacion, "HRRN") == 0) { //SI ES HRRN
+			sem_wait(&mutexListos);
+			list_iterate(listos, (void*) calcularResponseRatio);	// CALCULO LA TASA DE RESPUESTA DE TODOS LOS ESIS LISTOS
+			sem_post(&mutexListos);
+			ordenarColaDeListosPorHRRN();
+		}
+	}
 
 	ordenarProximoAEjecutar();	// COMO LO BLOQUEE, TENGO QUE MANDAR A OTRO A EJECUTAR
 }
@@ -324,13 +353,45 @@ void desbloquearESI(char* clave) {
 			list_remove(bloqueados, i);		// LO SACO DE BLOQUEADOS AL ESI
 			sem_post(&mutexBloqueados);
 
+			sem_wait(&mutexListos);
+			list_add(listos, primerESIBloqueadoEsperandoPorClave);	// LO MANDO A LISTOS
+			sem_post(&mutexListos);
+
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se desbloqueo al ESI %d ya que se libero la clave %s"ANSI_COLOR_RESET, primerESIBloqueadoEsperandoPorClave->identificadorESI, clave);
+
 			break;	// SALGO DEL FOR PORQUE YA ENCONTRE AL PRIMERO
 		}
 	}
 
-	sem_wait(&mutexListos);
-	list_add(listos, primerESIBloqueadoEsperandoPorClave);	// LO MANDO A LISTOS
-	sem_post(&mutexListos);
+	if(list_is_empty(ejecutando)) {
+		ordenarProximoAEjecutar();
+	}
+}
+
+void listar(char* clave) {
+	cliente* ESI;
+
+	printf(ANSI_COLOR_BOLDWHITE"-----ESIS ESPERANDO POR CLAVE %s-------\n\n"ANSI_COLOR_RESET, clave);
+
+	if (!list_is_empty(bloqueados)) {
+		for(int i=0; i<list_size(bloqueados); i++) {
+			ESI = list_get(bloqueados, i);
+
+			if (strcmp(ESI->recursoSolicitado, clave) == 0) {
+				printf(ANSI_COLOR_BOLDWHITE"ESI %d\n"ANSI_COLOR_RESET, ESI->identificadorESI);
+			}
+		}
+	}
+}
+
+void informarAlCoordinador(int socketCoordinador, int operacion) {
+	if (send(socketCoordinador, &operacion, sizeof(int), 0) < 0) {
+		_exit_with_error("No se pudo enviar el resultado de la operacion al Coordinador");
+	}
+
+	if(DEBUG) {
+		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio el resultado de la operacion al Coordinador");
+	}
 }
 
 /******************************************************** CONEXION COORDINADOR FIN *****************************************************/
@@ -363,14 +424,14 @@ void manejoDeClientes(int socket, cliente* socketCliente) {
 		case -1: _exit_with_error(ANSI_COLOR_BOLDRED"Fallo el manejo de clientes"ANSI_COLOR_RESET);
 				break;
 
-		default: sem_wait(&pausado);			// SI EL PLANIFICADOR ESTA PAUSADO, NO HACE NADA...
+		default:sem_wait(&pausado);			// SI EL PLANIFICADOR ESTA PAUSADO, NO HACE NADA...
 				sem_post(&pausado);				// SI PASO, LO LIBERO...
 
 				if (FD_ISSET(socket, &descriptoresLectura)) { //ACA SE TRATA AL SOCKET SERVIDOR, SI DA TRUE ES PORQUE TIENE UN CLIENTE ESPERANDO EN COLA
 					aceptarCliente(socket, socketCliente);
 
 					if(list_is_empty(ejecutando)) {			// SI LA LISTA DE EJECUTANDO ESTA VACIA, ENTONCES MANDO ORDEN DE EJECUTAR
-						ordenarProximoAEjecutar(socket);	// PORQUE SINO MANDABA DOS EXEOR AL MISMO ESI CUANDO ESTE NO LO ESPERA
+						ordenarProximoAEjecutar();	// PORQUE SINO MANDABA DOS EXEOR AL MISMO ESI CUANDO ESTE NO LO ESPERA
 					}
 				}
 
@@ -504,12 +565,18 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 
 					if (strcmp(algoritmoPlanificacion, "SJF-CD") == 0) {	//SI ES CON DESALOJO DEBO ORDENAR LA COLA CADA VEZ QUE EJECUTA UNA SENTENCIA
 						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
-						printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, socketCliente[posicion].identificadorESI,socketCliente[posicion].estimacionProximaRafaga, socketCliente[posicion].estimacionRafagaActual);
+
+						if(DEBUG) {
+							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, socketCliente[posicion].identificadorESI,socketCliente[posicion].estimacionProximaRafaga, socketCliente[posicion].estimacionRafagaActual);
+						}
+
 						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
 
 						if (list_size(listos) >= 2) {			//SI HAY MAS DOS ESIS EN LISTOS ORDENO
-							ordenarColaDeListosPorSJF(&socketCliente[posicion]);
+							ordenarColaDeListosPorSJF();
 						}
+
+						verificarDesalojoPorSJF(&socketCliente[posicion]);	// Y VERIFICO SI HAY QUE DESALOJAR AL ACTUAL
 					}
 
 					if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
@@ -517,7 +584,9 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
 						socketCliente[posicion].tiempoDeEspera = 0; 	// LO REINICIO CADA VEZ QUE DEVUELVE OPOK (DEBERIA SER SOLO UNA VEZ CUANDO ENTRA A EJECUTAR PERO BUE)
 
+						sem_wait(&mutexListos);
 						list_iterate(listos, (void *) sumarUnoAlWaitingTime);
+						sem_post(&mutexListos);
 					}
 
 					ordenarProximoAEjecutar();
@@ -541,7 +610,7 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 							sem_wait(&mutexListos);
 							list_iterate(listos, (void*) calcularResponseRatio);	// CALCULO LA TASA DE RESPUESTA DE TODOS LOS ESIS LISTOS
 							sem_post(&mutexListos);
-							ordenarColaDeListosPorHRRN(&socketCliente[posicion]);
+							ordenarColaDeListosPorHRRN();
 						}
 					}
 
@@ -585,12 +654,29 @@ cliente* getPrimerESIListo() {
 	return cliente;
 }
 
-void ordenarColaDeListosPorSJF(cliente* ESIEjecutando) {
-	struct Cliente* primerESIListo;
-
+void ordenarColaDeListosPorSJF() {
 	sem_wait(&mutexListos);
 	list_sort(listos, (void*) comparadorRafaga);
 	sem_post(&mutexListos);
+
+	if(DEBUG) {
+		/*************************** PARA VER COMO QUEDO ORDENADA LA LISTA ***********************/
+
+		printf(ANSI_COLOR_BOLDWHITE"\n\n\n--------------------SE ORDENO LA COLA DE LISTOS-----------------------\n\n\n"ANSI_COLOR_RESET);
+
+		for (int i=0; i<list_size(listos); i++) {
+			struct Cliente* esi = list_get(listos, i);
+			printf(ANSI_COLOR_BOLDWHITE"ESI %d ------ Rafaga: %f\n"ANSI_COLOR_RESET, esi->identificadorESI, esi->estimacionProximaRafaga);
+		}
+
+		printf("\n\n\n");
+
+		/*****************************************************************************************/
+	}
+}
+
+void verificarDesalojoPorSJF(cliente* ESIEjecutando) {
+	struct Cliente* primerESIListo;
 
 	if(!list_is_empty(listos) && !list_is_empty(ejecutando)) {
 		primerESIListo = list_get(listos, 0);			//AGARRO EL QUE AHORA ESTA PRIMERO EN LA LISTA DE LISTOS
@@ -610,28 +696,27 @@ void ordenarColaDeListosPorSJF(cliente* ESIEjecutando) {
 			sem_post(&mutexEjecutando);
 		}
 	}
-
-	/*************************** PARA VER COMO QUEDO ORDENADA LA LISTA ***********************/
-
-	printf(ANSI_COLOR_BOLDWHITE"\n\n\n--------------------SE ORDENO LA COLA DE LISTOS-----------------------\n\n\n"ANSI_COLOR_RESET);
-
-	for (int i=0; i<list_size(listos); i++) {
-		struct Cliente* esi = list_get(listos, i);
-		printf(ANSI_COLOR_BOLDWHITE"ESI %d ------ Rafaga: %f\n"ANSI_COLOR_RESET, esi->identificadorESI, esi->estimacionProximaRafaga);
-	}
-
-	printf("\n\n\n");
-
-	/*****************************************************************************************/
-
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se ordeno satisfactoriamente la cola de listos"ANSI_COLOR_RESET);
 }
 
-void ordenarColaDeListosPorHRRN(cliente* ESIEjecutando) {
+void ordenarColaDeListosPorHRRN() {
 	sem_wait(&mutexListos);
 	list_sort(listos, (void*) comparadorResponseRatio);
 	sem_post(&mutexListos);
+
+	if(DEBUG) {
+		/*************************** PARA VER COMO QUEDO ORDENADA LA LISTA ***********************/
+
+		printf(ANSI_COLOR_BOLDWHITE"\n\n\n--------------------SE ORDENO LA COLA DE LISTOS-----------------------\n\n\n"ANSI_COLOR_RESET);
+
+		for (int i=0; i<list_size(listos); i++) {
+			struct Cliente* esi = list_get(listos, i);
+			printf(ANSI_COLOR_BOLDWHITE"ESI %d ------ Response ratio: %f\n"ANSI_COLOR_RESET, esi->identificadorESI, esi->tasaDeRespuesta);
+		}
+
+		printf("\n\n\n");
+
+		/*****************************************************************************************/
+	}
 }
 
 void enviarOrdenDeEjecucion(cliente* esiProximoAEjecutar, char* ordenEjecucion) {
@@ -677,7 +762,6 @@ int main(void) {
 	configurarLogger();
 	crearConfig();
 	crearDiccionarioDeClaves();
-	crearDiccionarioDeESIsBloqueados();
 	setearConfigEnVariables();
 	setearListaDeEstados();
 

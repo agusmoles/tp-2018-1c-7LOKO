@@ -23,6 +23,7 @@ int listenSocket;
 double alfaPlanificacion;
 int estimacionInicial;
 #define NUMEROCLIENTES 20
+#define DEBUG 1
 
 typedef struct Cliente{
 	char nombre[14];
@@ -36,13 +37,11 @@ typedef struct Cliente{
 	char recursoSolicitado[40];
 }cliente;
 
-t_log* logger;
 t_config* config;
 t_list* listos;
 t_list* ejecutando;
 t_list* finalizados;
 t_list* bloqueados;
-t_dictionary* diccionarioClaves;
 sem_t mutexListos;
 sem_t mutexEjecutando;
 sem_t mutexBloqueados;
@@ -55,7 +54,6 @@ char* ESIABuscarEnDiccionario;
 void configurarLogger();
 void crearConfig();
 void crearDiccionarioDeClaves();
-void crearDiccionarioDeESIsBloqueados();
 void setearConfigEnVariables();
 int conectarSocketYReservarPuerto();
 int conectarSocketCoordinador();
@@ -65,8 +63,7 @@ void conectarConCoordinador();
 void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI);
 cliente* buscarESI(int* IDESI);
 void abortarESI(int* IDESI, char* nombreESI);
-void bloquearESI(char* clave, int* IDESI);
-void desbloquearESI(char* clave);
+void informarAlCoordinador(int socketCoordinador, int operacion);
 void escuchar(int socket);
 int envioHandshake(int socketCliente);
 int envioIDDeESI(int socketCliente, int identificador);
@@ -78,8 +75,9 @@ void recibirIDDeESI(int socket, int* ID);
 void recibirMensaje(cliente* socketCliente, int posicion);
 void ordenarProximoAEjecutar();
 cliente* getPrimerESIListo();
-void ordenarColaDeListosPorSJF(cliente* ESIEjecutando);
-void ordenarColaDeListosPorHRRN(cliente* ESIEjecutando);
+void ordenarColaDeListosPorSJF();
+void verificarDesalojoPorSJF(cliente* ESIEjecutando);
+void ordenarColaDeListosPorHRRN();
 void enviarOrdenDeEjecucion(cliente* esiProximoAEjecutar, char* ordenEjecucion);
 int comparadorRafaga(cliente* cliente, struct Cliente* cliente2);
 int comparadorResponseRatio(cliente* cliente, struct Cliente* cliente2);

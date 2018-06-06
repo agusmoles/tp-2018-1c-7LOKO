@@ -103,6 +103,8 @@ int reciboIdentificacion(int socketCliente);
 
 void intHandler();
 
+void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int idESI);
+
 void tratarSegunOperacion(header_t* header, cliente_t* socket, int socketPlanificador);
 
 void actualizarVectorInstanciasConectadas();

@@ -423,7 +423,7 @@ int verificarClaveTomada(int socket){
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el resultado de la operacion por el planificador"ANSI_COLOR_RESET);
 		return -1;
 	}
-	return resultado;
+	return *resultado;
 }
 
 
@@ -450,13 +450,12 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
 
-			if(verifcarClaveTomada(socketPlanificador) == 0){
+			if(verificarClaveTomada(socketPlanificador) == 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"La clave se encontraba tomada"ANSI_COLOR_RESET);
+			} else {
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET correctamente"ANSI_COLOR_RESET);
+				enviarMensaje(socketESI->fd, "OPOK");
 			}
-
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET correctamente"ANSI_COLOR_RESET);
-			enviarMensaje(socketESI->fd, "OPOK");
-
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
 			break;
@@ -501,7 +500,12 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
 
-			enviarMensaje(socketESI->fd, "OPOK");
+			if(verificarClaveTomada(socketPlanificador) == 0){
+				log_error(logger, ANSI_COLOR_BOLDRED"La clave se encontraba tomada"ANSI_COLOR_RESET);
+			} else {
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET correctamente"ANSI_COLOR_RESET);
+				enviarMensaje(socketESI->fd, "OPOK");
+			}
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
