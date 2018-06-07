@@ -18,15 +18,11 @@
 #include <semaphore.h>
 #include "../Colores.h"
 
-#define IP "127.0.0.1"
-#define PUERTO "6666"
-
-t_log* logger;
+t_log* loggerConsola;
 t_dictionary* diccionarioClaves;
 sem_t pausado;
 
 void bloquearESI(char* clave, int* IDESI);
-void desbloquearESI(char* clave);
 void listar(char* clave);
 
 int ejecutar_consola();

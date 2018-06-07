@@ -37,6 +37,7 @@ typedef struct Cliente{
 	char recursoSolicitado[40];
 }cliente;
 
+t_log* logger;
 t_config* config;
 t_list* listos;
 t_list* ejecutando;
@@ -46,10 +47,11 @@ sem_t mutexListos;
 sem_t mutexEjecutando;
 sem_t mutexBloqueados;
 sem_t mutexFinalizados;
+sem_t mutexDiccionarioClaves;
 fd_set descriptoresLectura;
 cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
 int fdmax = 10;
-char* ESIABuscarEnDiccionario;
+int* ESIABuscarEnDiccionario;
 
 void configurarLogger();
 void crearConfig();
@@ -62,7 +64,8 @@ void envioIdentificador(int socket);
 void conectarConCoordinador();
 void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI);
 cliente* buscarESI(int* IDESI);
-void abortarESI(int* IDESI, char* nombreESI);
+void abortarESI(int* IDESI);
+cliente* desbloquearESI(char* clave);
 void informarAlCoordinador(int socketCoordinador, int operacion);
 void escuchar(int socket);
 int envioHandshake(int socketCliente);

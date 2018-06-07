@@ -43,16 +43,21 @@ void setearConfigEnVariables() {
 	sem_init(&mutexEjecutando, 0, 1);
 	sem_init(&mutexBloqueados, 0, 1);
 	sem_init(&mutexFinalizados, 0, 1);
+	sem_init(&mutexDiccionarioClaves, 0, 1);
 
 	/************************ SETEO CLAVES BLOQUEADAS ******************/
 
 	char* claves = config_get_string_value(config, "Claves inicialmente bloqueadas");
+	int* IDSistema = malloc(sizeof(int));
+	*IDSistema = -1;
 
 	if (claves != NULL) {
 		char** clavesSeparadas = string_split(claves, ",");
 
 		for (int i=0; clavesSeparadas[i] != NULL; i++) {		// SIGO HASTA QUE SEA NULL EL ARRAY
-			dictionary_put(diccionarioClaves, clavesSeparadas[i], "SISTEMA");	// AGREGO LA CLAVE Y QUIEN LA TOMA ES EL "SISTEMA"
+			sem_wait(&mutexDiccionarioClaves);
+			dictionary_put(diccionarioClaves, clavesSeparadas[i], IDSistema);	// AGREGO LA CLAVE Y QUIEN LA TOMA ES EL "SISTEMA"
+			sem_post(&mutexDiccionarioClaves);
 			free(clavesSeparadas[i]);							// LIBERO LA MEMORIA TOMADA DE LA CLAVE
 		}
 
@@ -180,64 +185,97 @@ void conectarConCoordinador() {
 
 			recibirIDDeESI(socket, IDESI);
 
-			char* nombreESI = malloc(7);	// 7 PORQUE ES "ESI ID", DEJO ESPACIO PARA ESIS DE MAS DE DOS CIFRAS
+			int* idEsiParaDiccionario = malloc(sizeof(int));
 
-			strcpy(nombreESI, "ESI ");
-
-			char* idEsi = string_itoa(*IDESI);  // PASO EL ID A STRING ASI LO CONCATENO
-
-			strcat(nombreESI, idEsi);	// CONCATENO "ESI" CON EL ID...
-
-			free(idEsi);	// LIBERO EL STRING QUE SOLO TIENE EL ID...
+			*idEsiParaDiccionario = *IDESI;
 
 			switch(buffer_header->codigoOperacion) {
 			case 0: // OPERACION GET
 				if (dictionary_has_key(diccionarioClaves, clave)) {
 
+					sem_wait(&mutexDiccionarioClaves);
+					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+					sem_post(&mutexDiccionarioClaves);
+
+					log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d"ANSI_COLOR_RESET, clave, *IDEsiQueTieneLaClaveTomada, *idEsiParaDiccionario);
+
 					bloquearESI(clave, IDESI);
 
 					informarAlCoordinador(socket, 0);	// 0 PORQUE SALIO MAL
-
-					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
-
-					log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el %s. Se bloqueo al %s"ANSI_COLOR_RESET, clave, IDEsiQueTieneLaClaveTomada, nombreESI);
-
 				} else {
 
-					dictionary_put(diccionarioClaves, clave, nombreESI);
+					sem_wait(&mutexDiccionarioClaves);
+					dictionary_put(diccionarioClaves, clave, idEsiParaDiccionario);
+					sem_post(&mutexDiccionarioClaves);
 
-					log_info(logger, ANSI_COLOR_BOLDCYAN"El %s tomo efectivamente la clave %s"ANSI_COLOR_RESET, nombreESI, clave);
+					log_info(logger, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, *idEsiParaDiccionario, clave);
 
 					informarAlCoordinador(socket, 1); // 1 PORQUE SALIO BIEN
 				}
 				break;
 			case 2: //OPERACION STORE
 				if (dictionary_has_key(diccionarioClaves, clave)) {
-					char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+					sem_wait(&mutexDiccionarioClaves);
+					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
+					sem_post(&mutexDiccionarioClaves);
 
-					if(strcmp(nombreESI, IDEsiQueTieneLaClaveTomada) == 0) {	// SI EL QUE QUIERE STOREAR ES EL MISMO QUE LA TIENE STOREADA, OK.
-						dictionary_remove(diccionarioClaves, clave);
-						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el %s"ANSI_COLOR_RESET, clave, nombreESI);
+					if(*idEsiParaDiccionario == *IDEsiQueTieneLaClaveTomada) {	// SI EL QUE QUIERE STOREAR ES EL MISMO QUE LA TIENE STOREADA, OK.
+						sem_wait(&mutexDiccionarioClaves);
+						int* value = dictionary_remove(diccionarioClaves, clave);
+						sem_post(&mutexDiccionarioClaves);
+						free(value);	// NO LO NECESITO MAS
+
+						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el ESI %d"ANSI_COLOR_RESET, clave, *idEsiParaDiccionario);
 
 						informarAlCoordinador(socket, 1); // 1 PORQUE SALIO BIEN
 
 						// DESBLOQUEO AL ESI QUE ESTA ESPERANDO POR ESTE RECURSO, SI LO HUBIESE
 
-						desbloquearESI(clave);
+						cliente* ESIDesbloqueado;
+						int* codigoOP = malloc(sizeof(int));
+						int* IDESIADesbloquear = malloc(sizeof(int));
+
+						ESIDesbloqueado = desbloquearESI(clave);
+
+						if (ESIDesbloqueado != NULL) {
+							*codigoOP = 1;
+							*IDESIADesbloquear = ESIDesbloqueado->identificadorESI;
+
+							if(send(socket, codigoOP, sizeof(int), 0) < 0) {
+								_exit_with_error("No se pudo enviar el codigo de OP para desbloquear ESI");
+							}
+
+							if(send(socket, IDESIADesbloquear, sizeof(int), 0) < 0) {
+								_exit_with_error("No se pudo enviar el ID de ESI al Coordinador para desbloquearlo");
+							}
+						} else {
+							*codigoOP = 0;
+
+							if(send(socket, codigoOP, sizeof(int), 0) < 0) {
+								_exit_with_error("No se pudo enviar el codigo de OP para desbloquear ESI");
+							}
+						}
+
+						free(codigoOP);
+						free(IDESIADesbloquear);
 
 					} else {		// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
-						abortarESI(IDESI, nombreESI);
+						abortarESI(IDESI);
 
-						log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s que no es de el"ANSI_COLOR_RESET, nombreESI, clave);
+						log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por querer hacer STORE de la clave %s que no es de el"ANSI_COLOR_RESET, *idEsiParaDiccionario, clave);
+
+						free(idEsiParaDiccionario);	// NO LA NECESITO
 
 						informarAlCoordinador(socket, 0); // 0 PORQUE SALIO MAL
 
 						ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 					}
 				} else {		// SI LA CLAVE NO ESTA EN EL DICCIONARIO...
-					abortarESI(IDESI, nombreESI);
+					abortarESI(IDESI);
 
-					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el %s por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, nombreESI, clave);
+					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, *idEsiParaDiccionario, clave);
+
+					free(idEsiParaDiccionario);	// NO LA NECESITO
 
 					informarAlCoordinador(socket, 0); // 0 PORQUE SALIO MAL
 
@@ -251,6 +289,7 @@ void conectarConCoordinador() {
 			}
 
 			free(clave);
+
 		}
 	}
 
@@ -258,9 +297,10 @@ void conectarConCoordinador() {
 }
 
 void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI) {
-	if(strcmp(ESI, ESIABuscarEnDiccionario) == 0) {
-		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el %s ya que fue abortado"ANSI_COLOR_RESET, clave, (char*) ESI);
-		dictionary_remove(diccionarioClaves, clave);
+	if( *(int*)ESI == *ESIABuscarEnDiccionario) {
+		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el ESI %d ya que fue abortado"ANSI_COLOR_RESET, clave, (int*) ESI);
+		int* value = dictionary_remove(diccionarioClaves, clave);
+		free(value);
 	}
 }
 
@@ -273,12 +313,14 @@ cliente* buscarESI(int* IDESI) {
 	return NULL;
 }
 
-void abortarESI(int* IDESI, char* nombreESI) {
-	ESIABuscarEnDiccionario = malloc(strlen(nombreESI)+1);
+void abortarESI(int* IDESI) {
+	ESIABuscarEnDiccionario = malloc(sizeof(int));
 
-	strcpy(ESIABuscarEnDiccionario, nombreESI);		// SETEO LA VARIABLE GLOBAL
+	*ESIABuscarEnDiccionario = *IDESI;	// SETEO LA VARIABLE GLOBAL
 
+	sem_wait(&mutexDiccionarioClaves);
 	dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+	sem_post(&mutexDiccionarioClaves);
 
 	free(ESIABuscarEnDiccionario);
 
@@ -340,7 +382,7 @@ void bloquearESI(char* clave, int* IDESI) {
 	ordenarProximoAEjecutar();	// COMO LO BLOQUEE, TENGO QUE MANDAR A OTRO A EJECUTAR
 }
 
-void desbloquearESI(char* clave) {
+cliente* desbloquearESI(char* clave) {
 	cliente* primerESIBloqueadoEsperandoPorClave;
 
 	for(int i=0; i<list_size(bloqueados); i++) {
@@ -353,19 +395,28 @@ void desbloquearESI(char* clave) {
 			list_remove(bloqueados, i);		// LO SACO DE BLOQUEADOS AL ESI
 			sem_post(&mutexBloqueados);
 
+			int* IDESIDesbloqueado = malloc(sizeof(int));	// CREO VARIABLE PARA AGREGARLA AL DICCIONARIO
+			*IDESIDesbloqueado = primerESIBloqueadoEsperandoPorClave->identificadorESI;	// LA SETEO CON LA ID DEL ESI
+
+			sem_wait(&mutexDiccionarioClaves);
+			dictionary_put(diccionarioClaves, clave, IDESIDesbloqueado);	// AGREGO LA CLAVE AL ESI
+			sem_post(&mutexDiccionarioClaves);
+
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se desbloqueo al ESI %d ya que se libero la clave %s"ANSI_COLOR_RESET, *IDESIDesbloqueado, clave);
+
 			sem_wait(&mutexListos);
 			list_add(listos, primerESIBloqueadoEsperandoPorClave);	// LO MANDO A LISTOS
 			sem_post(&mutexListos);
 
-			log_info(logger, ANSI_COLOR_BOLDCYAN"Se desbloqueo al ESI %d ya que se libero la clave %s"ANSI_COLOR_RESET, primerESIBloqueadoEsperandoPorClave->identificadorESI, clave);
-
-			break;	// SALGO DEL FOR PORQUE YA ENCONTRE AL PRIMERO
+			return primerESIBloqueadoEsperandoPorClave;
 		}
 	}
 
-	if(list_is_empty(ejecutando)) {
-		ordenarProximoAEjecutar();
-	}
+//	if(list_is_empty(ejecutando)) {
+//		ordenarProximoAEjecutar();
+//	}
+
+	return NULL;
 }
 
 void listar(char* clave) {
@@ -601,6 +652,8 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 					list_add(finalizados, &socketCliente[posicion]);
 					sem_post(&mutexFinalizados);
 
+					socketCliente[posicion].fd = -1;	// LO SETEO EN -1 PORQUE YA SE DESCONECTO
+
 					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
 						if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) { // SI ES SJF
 							ordenarColaDeListosPorSJF(&socketCliente[posicion]);
@@ -688,6 +741,7 @@ void verificarDesalojoPorSJF(cliente* ESIEjecutando) {
 
 			sem_wait(&mutexListos);
 			list_add(listos, ESIEjecutando);	// LO AGREGO AL FINAL DE LA LISTA DE LISTOS
+			list_remove(listos, 0);		// Y SACO DE LISTOS AL QUE VA A EJECUTAR
 			sem_post(&mutexListos);
 			ESIEjecutando->rafagaActual = 0;	// SE RESETEA LA RAFAGA ACTUAL (PORQUE FUE DESALOJADO)
 
@@ -767,12 +821,12 @@ int main(void) {
 
 	/************************************** MUESTRO CLAVES INICIALMENTE BLOQUEADAS *************************/
 
-	char* IDEsi;
+	int* IDEsi;
 
 	IDEsi = dictionary_get(diccionarioClaves, "futbol:messi");
 
 	for (int i=0; i<dictionary_size(diccionarioClaves); i++) {
-		printf("%s \n", IDEsi);
+		printf("%d \n", *IDEsi);
 	}
 
 	/************************************** CONEXION CON COORDINADOR **********************************/

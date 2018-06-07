@@ -107,6 +107,8 @@ void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int
 
 void tratarSegunOperacion(header_t* header, cliente_t* socket, int socketPlanificador);
 
+void desbloquearESI(int socketPlanificador);
+
 void actualizarVectorInstanciasConectadas();
 
 /* Envios header, clave, valor, idESI */
@@ -119,3 +121,5 @@ void enviarValor(int socket, char* valor);
 void enviarIDEsi(int socket, int idESI);
 
 int buscarSocketPlanificador();
+
+cliente_t* buscarESI(int* IDESI);

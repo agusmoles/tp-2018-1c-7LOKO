@@ -160,14 +160,14 @@ int com_bloquear(char **args){
 
 		char* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
 
-		log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el %s. Se bloqueo al %s"ANSI_COLOR_RESET, clave, IDEsiQueTieneLaClaveTomada, nombreESI);
+		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el %s. Se bloqueo al %s"ANSI_COLOR_RESET, clave, IDEsiQueTieneLaClaveTomada, nombreESI);
 
 //					informarClaveTomada(); AL COORDINADOR
 	} else {
 
 		dictionary_put(diccionarioClaves, clave, nombreESI);
 
-		log_info(logger, ANSI_COLOR_BOLDCYAN"El %s tomo efectivamente la clave %s"ANSI_COLOR_RESET, nombreESI, clave);
+		log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"El %s tomo efectivamente la clave %s"ANSI_COLOR_RESET, nombreESI, clave);
 
 //					informarClaveTomada(); AL COORDINADOR
 	}
@@ -190,15 +190,15 @@ int com_desbloquear(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	if (dictionary_has_key(diccionarioClaves, args[1])) {
-		dictionary_remove(diccionarioClaves, args[1]);
-		desbloquearESI(args[1]);
-
-	} else {
-		printf(ANSI_COLOR_BOLDWHITE"La clave %s no se encontraba en el sistema\n"ANSI_COLOR_RESET, args[1]);
-	}
-
-	liberar_parametros(args);
+//	if (dictionary_has_key(diccionarioClaves, args[1])) {
+//		dictionary_remove(diccionarioClaves, args[1]);
+//		desbloquearESI(args[1]);
+//
+//	} else {
+//		printf(ANSI_COLOR_BOLDWHITE"La clave %s no se encontraba en el sistema\n"ANSI_COLOR_RESET, args[1]);
+//	}
+//
+//	liberar_parametros(args);
 	return 1;
 
 }
