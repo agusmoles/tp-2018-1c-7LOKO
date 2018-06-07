@@ -2,8 +2,7 @@
 
 #include "instancia.h"
 
-#define CANTIDADENTRADAS 20
-
+/* CONEXIONES */
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 	log_error(logger, mensaje);
@@ -102,7 +101,8 @@ void pipeHandler() {
 	exit(1);
 }
 
-void recibirInstruccion(int socket){ // aca se reciben los SETS del coordinador
+/* Recibir operacion de Coordinador */
+void recibirInstruccion(int socket){
 	header_t* buffer_header = malloc(sizeof(header_t));
 	char* bufferClave;
 	char* bufferValor;
@@ -115,63 +115,76 @@ void recibirInstruccion(int socket){ // aca se reciben los SETS del coordinador
 	bufferClave = malloc(buffer_header->tamanioClave);
 	tamanioValor = malloc(sizeof(int32_t));
 
-	if(buffer_header->codigoOperacion == 1){  /* SET */
+	switch(buffer_header->codigoOperacion){
+	case 1: /* SET */
+		/* Recibo clave y valor */
 		recibirClave(socket, buffer_header, bufferClave);
 		recibirTamanioValor(socket, tamanioValor);
-
 		bufferValor = malloc(*tamanioValor);
-
 		recibirValor(socket, tamanioValor, bufferValor);
-	}
 
-	procesarInstruccion(*bufferClave, *tamanioValor, *bufferValor);
+		set(bufferClave, bufferValor);
+		break;
+	case 2: /* STORE */
+		/* Recibo clave */
+		recibirClave(socket, buffer_header, bufferClave);
+
+		//store(bufferClave);
+		break;
+	default:
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No existe el codigo de operacion"ANSI_COLOR_RESET);
+		break;
+	}
 
 	free(tamanioValor);
 	free(bufferClave);
 	free(bufferValor);
+	free(buffer_header);
 }
 
-int procesarInstruccion(char* clave, int tamanioValor, char* valor){
-	Entrada* entrada;
+
+/* lo hice como si fuese la primera vez que setea */
+void set(char* clave, char* valor){
+	entrada_t* entrada = malloc(sizeof(entrada_t));
+	data_t* data = malloc(sizeof(data_t));
+	int cantidadEntradas;
+
+	/* Creo entrada */
+	entrada->tamanio_valor = strlen(valor) + 1;
+	entrada->clave = malloc(strlen(clave) + 1);
 	strcpy(entrada->clave, clave);
-	entrada->tamanio = tamanioValor;
 
-	Data* data;
-	strcpy(data->info, valor);
+	if(list_is_empty(tablaEntradas)){
+		entrada->numero = 0;
+	} else{
+		cantidadEntradas = list_size(tablaEntradas);
 
-	return agregarEntrada(entrada, data);
-}
-
-int agregarEntrada(Entrada* entrada, Data* data){
-
-	Entrada* aux;
-	aux = malloc(sizeof(Entrada));
-
-	for(int i=0; i<CANTIDADENTRADAS; i++){
-		aux = list_get(TABLAENTRADAS, i);
-
-		if(!strcmp(aux->clave, entrada.clave)){	// ya existe entrada con esa clave.
-			guardarEnStorage(data);
-			free(aux);
-			return 0;
-		}
+		entrada->numero = cantidadEntradas ;
 	}
 
-	if(list_size(TABLAENTRADAS) < CANTIDADENTRADAS){	// agrego la entrada si hay lugar
-		list_add(TABLAENTRADAS, entrada);				// falta contemplar para cuando se necesitan ocupar mas de una entrada
-		guardarEnStorage(data);
-		free(aux);
-		return 1;
-	}
+	list_add(tablaEntradas, entrada);
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
 
 
-	// si no hay lugar ... APLICAR ALGORITMO DE REEMPLAZO
+	/*Creo data */
+	data->numeroEntrada = entrada->numero;
+	data->valor = malloc(entrada->tamanio_valor);
+	strcpy(data->valor, valor);
 
+	list_add(storage, data);
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
+
+	free(entrada);
+	free(data);
 }
 
+void store(char* clave){
+	claveBuscada = malloc(strlen(clave)+ 1);
+	strcpy(claveBuscada, clave);
 
-void guardarEnStorage(Data* data){
-	list_add(STORAGE, data);
+
 }
 
 void recibirClave(int socket, header_t* header, char* bufferClave){
@@ -209,14 +222,16 @@ int main(void) {
 	setearConfigEnVariables();
 	int socket = conectarSocket();
 
+	tablaEntradas = list_create();
+	storage = list_create();
+
 	reciboHandshake(socket);
 	envioIdentificador(socket);
+
+
 	conectarConCoordinador(socket);
 
 	close(socket);
-
-	TABLAENTRADAS = list_create();
-	STORAGE = list_create();
 
 	return EXIT_SUCCESS;
 }

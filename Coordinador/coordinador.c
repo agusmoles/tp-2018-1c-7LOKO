@@ -177,7 +177,7 @@ void asignarIDdeInstancia(cliente_t* socketCliente, int id){
 }
 
 
-void recibirMensaje(void* argumentos) {
+void recibirMensaje_Instancias(void* argumentos) {
 	arg_t* args = argumentos;
 	fd_set descriptoresLectura;
 	int fdmax = args->socketCliente.fd + 1;
@@ -198,19 +198,46 @@ void recibirMensaje(void* argumentos) {
 						break;
 
 				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %s"ANSI_COLOR_RESET, args->socketCliente.nombre);
+
 						if(strcmp(args->socketCliente.nombre, "Instancia") == 0){
 							cantidadInstanciasConectadas--;
 							instanciasConectadas();
 						}
+
 						close(args->socketCliente.fd); 		//CIERRO EL SOCKET
 						free(args);							//LIBERO MEMORIA CUANDO SE DESCONECTA
 						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
 						break;
 
-				default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente %s de %d bytes y dice: %s\n"ANSI_COLOR_RESET, args->socketCliente.nombre, resultado_recv, (char*) buffer);
+				default:
+						printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente %s de %d bytes y dice: %s\n"ANSI_COLOR_RESET, args->socketCliente.nombre, resultado_recv, (char*) buffer);
 						break;
 
 			}
+		}
+	}
+
+	free(buffer);
+	pthread_exit(NULL);
+}
+
+void recibirMensaje_Planificador(void* argumentos) {
+	arg_t* args = argumentos;
+	fd_set descriptoresLectura;
+	int fdmax = args->socketCliente.fd + 1;
+	int flag = 1;
+
+	void* buffer = malloc(1024);
+	int resultado_recv;
+
+	while(flag) {
+		FD_ZERO(&descriptoresLectura);
+		FD_SET(args->socketCliente.fd, &descriptoresLectura);
+
+		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
+
+		if (FD_ISSET(args->socketCliente.fd, &descriptoresLectura)) {
+			/* Recibe en otro lado */
 		}
 	}
 
@@ -228,7 +255,7 @@ void crearHiloPlanificador(cliente_t socketCliente){
 	args->socketCliente.fd = socketCliente.fd;
 	strcpy(args->socketCliente.nombre, socketCliente.nombre);
 
-	if(pthread_create(&threadPlanificador, NULL, (void *) recibirMensaje, args)!=0){
+	if(pthread_create(&threadPlanificador, NULL, (void *) recibirMensaje_Planificador, args)!=0){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo planificador"ANSI_COLOR_RESET);
 		exit(-1);
 	}
@@ -245,7 +272,7 @@ void crearHiloInstancia(cliente_t socketCliente){
 	args->socketCliente.fd = socketCliente.fd;
 	strcpy(args->socketCliente.nombre, socketCliente.nombre);
 
-	if(pthread_create(&threadInstancia, NULL, (void *) recibirMensaje, args)!=0){
+	if(pthread_create(&threadInstancia, NULL, (void *) recibirMensaje_Instancias, args)!=0){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo instancia"ANSI_COLOR_RESET);
 		exit(-1);
 	}
@@ -456,6 +483,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET correctamente"ANSI_COLOR_RESET);
 				enviarMensaje(socketESI->fd, "OPOK");
 			}
+
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
 			break;

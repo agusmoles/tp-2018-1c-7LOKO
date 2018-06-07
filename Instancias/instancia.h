@@ -26,23 +26,21 @@ int CANTIDADENTRADAS;
 t_log* logger;
 t_config* config;
 
-t_list* TABLAENTRADAS;
-t_list* STORAGE;
+t_list* tablaEntradas;
+t_list* storage;
 
+char* claveBuscada;
 
-struct Entrada{
+typedef struct Entrada{
 	char* clave;
 	int numero;
-	int tamanio;
-};
+	int tamanio_valor;
+}entrada_t ;
 
-struct Data{
+typedef struct Data{
 	int numeroEntrada;
-	char* info;
-};
-
-struct Entrada typedef Entrada;
-struct Data typedef Data;
+	char* valor;
+}data_t;
 
 void _exit_with_error(int socket, char* mensaje);
 void configurarLogger();
@@ -54,9 +52,8 @@ void reciboHandshake(int socket);
 void envioIdentificador(int socket);
 void pipeHandler();
 void recibirInstruccion(int socket);
-int procesarInstruccion(char* instruccion);
-int asignarInstancia(Entrada nuevaEntrada, Data data);
-void guardarEnStorage(Data data);
+void set(char* clave, char* valor);
+void store(char* clave);
 void recibirClave(int socket, header_t* header, char* bufferClave);
 void recibirTamanioValor(int socket, int32_t* tamanioValor);
 void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor);
