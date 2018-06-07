@@ -1,0 +1,445 @@
+[INFO] 15:18:33:781 coordinador/(25145:25145): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:18:33:781 coordinador/(25145:25145): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:18:33:781 coordinador/(25145:25145): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:18:33:781 coordinador/(25145:25145): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:18:41:637 coordinador/(25145:25145): [1m[33mEnviando handshake...[0m
+[INFO] 15:18:41:637 coordinador/(25145:25145): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:18:41:686 coordinador/(25145:25145): [1m[36mSe creo el hilo planificador[0m
+[INFO] 15:18:41:686 coordinador/(25145:25145): [1m[36mSe pudo conectar el/la Planificador (FD 7) y esta en la posicion 0 del array[0m
+[INFO] 15:18:41:686 coordinador/(25145:25145): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:18:50:724 coordinador/(25145:25145): [1m[33mEnviando handshake...[0m
+[INFO] 15:18:50:724 coordinador/(25145:25145): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:18:50:725 coordinador/(25145:25145): [1m[36mSe recibio el identificador de la Instancia 0[0m
+[INFO] 15:18:50:725 coordinador/(25145:25145): [1m[36mSe creo el hilo instancia[0m
+[INFO] 15:18:50:725 coordinador/(25145:25145): [1m[36mSe pudo conectar el/la Instancia (FD 8) y esta en la posicion 1 del array[0m
+[INFO] 15:18:50:725 coordinador/(25145:25145): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:20:02:249 coordinador/(25145:25145): [1m[33mEnviando handshake...[0m
+[INFO] 15:20:02:249 coordinador/(25145:25145): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:20:02:252 coordinador/(25145:25145): [1m[36mSe recibio el identificador del ESI 0[0m
+[INFO] 15:20:02:252 coordinador/(25145:25145): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:20:02:252 coordinador/(25145:25145): [1m[36mSe pudo conectar el/la ESI (FD 9) y esta en la posicion 2 del array[0m
+[INFO] 15:20:02:252 coordinador/(25145:25145): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:20:02:259 coordinador/(25145:25213): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:20:02:259 coordinador/(25145:25213): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:20:02:259 coordinador/(25145:25213): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:20:02:272 coordinador/(25145:25213): [1m[31mLa clave se encontraba tomada[0m
+[INFO] 15:20:13:567 coordinador/(25145:25213): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:20:14:220 coordinador/(25145:25183): [1m[31mSe desconecto el cliente Instancia[0m
+[INFO] 15:20:32:366 coordinador/(25217:25217): [1m[32mSe pudo conectar el socket con éxito[0m
+[ERROR] 15:20:32:366 coordinador/(25217:25217): No se pudo reservar correctamente el puerto de escucha
+[INFO] 15:27:38:142 coordinador/(25248:25248): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:27:38:142 coordinador/(25248:25248): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:27:38:143 coordinador/(25248:25248): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:27:38:143 coordinador/(25248:25248): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:27:45:18 coordinador/(25248:25248): [1m[33mEnviando handshake...[0m
+[INFO] 15:27:45:18 coordinador/(25248:25248): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:27:45:75 coordinador/(25248:25248): [1m[36mSe creo el hilo planificador[0m
+[INFO] 15:27:45:76 coordinador/(25248:25248): [1m[36mSe pudo conectar el/la Planificador (FD 7) y esta en la posicion 0 del array[0m
+[INFO] 15:27:45:76 coordinador/(25248:25248): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:27:51:159 coordinador/(25248:25248): [1m[33mEnviando handshake...[0m
+[INFO] 15:27:51:160 coordinador/(25248:25248): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:27:51:160 coordinador/(25248:25248): [1m[36mSe recibio el identificador de la Instancia 0[0m
+[INFO] 15:27:51:160 coordinador/(25248:25248): [1m[36mSe creo el hilo instancia[0m
+[INFO] 15:27:51:160 coordinador/(25248:25248): [1m[36mSe pudo conectar el/la Instancia (FD 8) y esta en la posicion 1 del array[0m
+[INFO] 15:27:51:160 coordinador/(25248:25248): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:27:58:53 coordinador/(25248:25248): [1m[33mEnviando handshake...[0m
+[INFO] 15:27:58:53 coordinador/(25248:25248): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:27:58:61 coordinador/(25248:25248): [1m[36mSe recibio el identificador del ESI 0[0m
+[INFO] 15:27:58:62 coordinador/(25248:25248): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:27:58:62 coordinador/(25248:25248): [1m[36mSe pudo conectar el/la ESI (FD 9) y esta en la posicion 2 del array[0m
+[INFO] 15:27:58:62 coordinador/(25248:25248): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:27:58:70 coordinador/(25248:25260): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:27:58:70 coordinador/(25248:25260): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:27:58:70 coordinador/(25248:25260): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:27:58:74 coordinador/(25248:25260): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:27:58:102 coordinador/(25248:25260): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:27:58:139 coordinador/(25248:25260): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:27:58:139 coordinador/(25248:25260): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:27:58:180 coordinador/(25248:25260): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:27:58:181 coordinador/(25248:25260): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:27:58:181 coordinador/(25248:25260): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:27:58:181 coordinador/(25248:25260): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:27:58:221 coordinador/(25248:25260): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:27:58:223 coordinador/(25248:25260): [1m[37mHeader recibido. COD OP: 1 - TAM: 15[0m
+[INFO] 15:27:58:223 coordinador/(25248:25260): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:27:58:223 coordinador/(25248:25260): [1m[32mSe recibio el tamaño del valor de la clave (5 bytes)[0m
+[INFO] 15:27:58:224 coordinador/(25248:25260): [1m[32mSe recibio el valor de la clave asdd[0m
+[INFO] 15:27:58:224 coordinador/(25248:25260): [1m[32mSe enviaron correctamente a la instancia: header - clave - tamanio_valor - valor[0m
+[INFO] 15:27:58:225 coordinador/(25248:25260): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:27:58:263 coordinador/(25248:25260): [1m[32mSe recibio la clave tennis:nadal[0m
+[INFO] 15:27:58:263 coordinador/(25248:25260): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:27:58:305 coordinador/(25248:25260): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:27:58:308 coordinador/(25248:25260): [1m[37mHeader recibido. COD OP: 2 - TAM: 15[0m
+[INFO] 15:27:58:308 coordinador/(25248:25260): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:27:58:308 coordinador/(25248:25260): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:27:58:350 coordinador/(25248:25260): [1m[32mSe pudo realizar el STORE correctamente[0m
+[INFO] 15:27:58:388 coordinador/(25248:25260): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:28:23:825 coordinador/(25248:25248): [1m[33mEnviando handshake...[0m
+[INFO] 15:28:23:825 coordinador/(25248:25248): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:28:23:826 coordinador/(25248:25248): [1m[36mSe recibio el identificador del ESI 1[0m
+[INFO] 15:28:23:826 coordinador/(25248:25248): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:28:23:826 coordinador/(25248:25248): [1m[36mSe pudo conectar el/la ESI (FD 9) y esta en la posicion 3 del array[0m
+[INFO] 15:28:23:826 coordinador/(25248:25248): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:28:23:827 coordinador/(25248:25268): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:28:23:827 coordinador/(25248:25268): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:28:23:827 coordinador/(25248:25268): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:28:23:872 coordinador/(25248:25268): [1m[31mLa clave se encontraba tomada[0m
+[INFO] 15:28:30:153 coordinador/(25248:25268): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:28:30:486 coordinador/(25248:25256): [1m[31mSe desconecto el cliente Instancia[0m
+[INFO] 15:28:31:539 coordinador/(25248:25253): [1m[31mSe desconecto el cliente Planificador[0m
+[INFO] 15:28:37:677 coordinador/(25271:25271): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:28:37:677 coordinador/(25271:25271): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:28:37:677 coordinador/(25271:25271): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:28:37:677 coordinador/(25271:25271): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:28:42:693 coordinador/(25271:25271): [1m[33mEnviando handshake...[0m
+[INFO] 15:28:42:694 coordinador/(25271:25271): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:28:42:751 coordinador/(25271:25271): [1m[36mSe creo el hilo planificador[0m
+[INFO] 15:28:42:751 coordinador/(25271:25271): [1m[36mSe pudo conectar el/la Planificador (FD 7) y esta en la posicion 0 del array[0m
+[INFO] 15:28:42:751 coordinador/(25271:25271): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:28:47:483 coordinador/(25271:25271): [1m[33mEnviando handshake...[0m
+[INFO] 15:28:47:483 coordinador/(25271:25271): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:28:47:484 coordinador/(25271:25271): [1m[36mSe recibio el identificador de la Instancia 0[0m
+[INFO] 15:28:47:484 coordinador/(25271:25271): [1m[36mSe creo el hilo instancia[0m
+[INFO] 15:28:47:484 coordinador/(25271:25271): [1m[36mSe pudo conectar el/la Instancia (FD 8) y esta en la posicion 1 del array[0m
+[INFO] 15:28:47:484 coordinador/(25271:25271): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:29:10:901 coordinador/(25271:25271): [1m[33mEnviando handshake...[0m
+[INFO] 15:29:10:901 coordinador/(25271:25271): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:29:10:907 coordinador/(25271:25271): [1m[36mSe recibio el identificador del ESI 0[0m
+[INFO] 15:29:10:907 coordinador/(25271:25271): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:29:10:908 coordinador/(25271:25271): [1m[36mSe pudo conectar el/la ESI (FD 9) y esta en la posicion 2 del array[0m
+[INFO] 15:29:10:908 coordinador/(25271:25271): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:29:10:916 coordinador/(25271:25287): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:29:10:917 coordinador/(25271:25287): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:29:10:917 coordinador/(25271:25287): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:29:10:920 coordinador/(25271:25287): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:29:10:952 coordinador/(25271:25287): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:29:10:992 coordinador/(25271:25287): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:29:10:992 coordinador/(25271:25287): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:29:11:32 coordinador/(25271:25287): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:29:11:32 coordinador/(25271:25287): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:29:11:32 coordinador/(25271:25287): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:29:11:32 coordinador/(25271:25287): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:29:11:72 coordinador/(25271:25287): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:29:11:72 coordinador/(25271:25287): [1m[37mHeader recibido. COD OP: 1 - TAM: 15[0m
+[INFO] 15:29:11:72 coordinador/(25271:25287): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:29:11:72 coordinador/(25271:25287): [1m[32mSe recibio el tamaño del valor de la clave (5 bytes)[0m
+[INFO] 15:29:11:72 coordinador/(25271:25287): [1m[32mSe recibio el valor de la clave asdd[0m
+[INFO] 15:29:11:73 coordinador/(25271:25287): [1m[32mSe enviaron correctamente a la instancia: header - clave - tamanio_valor - valor[0m
+[INFO] 15:29:11:76 coordinador/(25271:25287): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:29:11:111 coordinador/(25271:25287): [1m[32mSe recibio la clave tennis:nadal[0m
+[INFO] 15:29:11:112 coordinador/(25271:25287): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:29:11:153 coordinador/(25271:25287): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:29:11:153 coordinador/(25271:25287): [1m[37mHeader recibido. COD OP: 2 - TAM: 14[0m
+[INFO] 15:29:11:153 coordinador/(25271:25287): [1m[32mSe recibio la clave futbol:ricota[0m
+[ERROR] 15:29:11:153 coordinador/(25271:25287): [1m[31mError de Clave no Identificada[0m
+[INFO] 15:29:11:153 coordinador/(25271:25287): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:29:11:200 coordinador/(25271:25287): [1m[31mEl ESI 0 fue abortado por error de STORE[0m
+[INFO] 15:31:20:639 coordinador/(25271:25278): [1m[31mSe desconecto el cliente Instancia[0m
+[INFO] 15:31:26:380 coordinador/(25271:25287): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:31:26:380 coordinador/(25271:25275): [1m[31mSe desconecto el cliente Planificador[0m
+[INFO] 15:31:31:630 coordinador/(25315:25315): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:31:31:630 coordinador/(25315:25315): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:31:31:630 coordinador/(25315:25315): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:31:31:630 coordinador/(25315:25315): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:31:38:722 coordinador/(25315:25315): [1m[33mEnviando handshake...[0m
+[INFO] 15:31:38:722 coordinador/(25315:25315): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:31:38:780 coordinador/(25315:25315): [1m[36mSe creo el hilo planificador[0m
+[INFO] 15:31:38:780 coordinador/(25315:25315): [1m[36mSe pudo conectar el/la Planificador (FD 7) y esta en la posicion 0 del array[0m
+[INFO] 15:31:38:780 coordinador/(25315:25315): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:31:49:85 coordinador/(25315:25315): [1m[33mEnviando handshake...[0m
+[INFO] 15:31:49:85 coordinador/(25315:25315): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:31:49:85 coordinador/(25315:25315): [1m[36mSe recibio el identificador de la Instancia 0[0m
+[INFO] 15:31:49:86 coordinador/(25315:25315): [1m[36mSe creo el hilo instancia[0m
+[INFO] 15:31:49:86 coordinador/(25315:25315): [1m[36mSe pudo conectar el/la Instancia (FD 8) y esta en la posicion 1 del array[0m
+[INFO] 15:31:49:86 coordinador/(25315:25315): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:31:50:362 coordinador/(25315:25315): [1m[33mEnviando handshake...[0m
+[INFO] 15:31:50:362 coordinador/(25315:25315): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:31:50:364 coordinador/(25315:25315): [1m[36mSe recibio el identificador del ESI 0[0m
+[INFO] 15:31:50:364 coordinador/(25315:25315): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:31:50:365 coordinador/(25315:25315): [1m[36mSe pudo conectar el/la ESI (FD 9) y esta en la posicion 2 del array[0m
+[INFO] 15:31:50:365 coordinador/(25315:25315): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:31:50:371 coordinador/(25315:25359): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:31:50:371 coordinador/(25315:25359): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:31:50:371 coordinador/(25315:25359): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:31:50:376 coordinador/(25315:25359): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:31:50:405 coordinador/(25315:25359): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:31:50:443 coordinador/(25315:25359): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:31:50:443 coordinador/(25315:25359): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:31:50:483 coordinador/(25315:25359): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:31:50:484 coordinador/(25315:25359): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:31:50:484 coordinador/(25315:25359): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:31:50:484 coordinador/(25315:25359): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:31:50:524 coordinador/(25315:25359): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:31:50:524 coordinador/(25315:25359): [1m[37mHeader recibido. COD OP: 1 - TAM: 15[0m
+[INFO] 15:31:50:524 coordinador/(25315:25359): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:31:50:525 coordinador/(25315:25359): [1m[32mSe recibio el tamaño del valor de la clave (5 bytes)[0m
+[INFO] 15:31:50:525 coordinador/(25315:25359): [1m[32mSe recibio el valor de la clave asdd[0m
+[INFO] 15:31:50:525 coordinador/(25315:25359): [1m[32mSe enviaron correctamente a la instancia: header - clave - tamanio_valor - valor[0m
+[INFO] 15:31:50:526 coordinador/(25315:25359): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:31:50:563 coordinador/(25315:25359): [1m[32mSe recibio la clave tennis:nadal[0m
+[INFO] 15:31:50:564 coordinador/(25315:25359): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:31:50:604 coordinador/(25315:25359): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:31:50:605 coordinador/(25315:25359): [1m[37mHeader recibido. COD OP: 2 - TAM: 14[0m
+[INFO] 15:31:50:605 coordinador/(25315:25359): [1m[32mSe recibio la clave futbol:ricota[0m
+[ERROR] 15:31:50:605 coordinador/(25315:25359): [1m[31mError de Clave no Identificada[0m
+[INFO] 15:31:50:605 coordinador/(25315:25359): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:31:50:653 coordinador/(25315:25359): [1m[31mEl ESI 0 fue abortado por error de STORE[0m
+[INFO] 15:33:08:421 coordinador/(25315:25315): [1m[33mEnviando handshake...[0m
+[INFO] 15:33:08:421 coordinador/(25315:25315): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:33:08:422 coordinador/(25315:25315): [1m[36mSe recibio el identificador del ESI 1[0m
+[INFO] 15:33:08:422 coordinador/(25315:25315): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:33:08:422 coordinador/(25315:25315): [1m[36mSe pudo conectar el/la ESI (FD 10) y esta en la posicion 3 del array[0m
+[INFO] 15:33:08:422 coordinador/(25315:25315): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:33:08:422 coordinador/(25315:25368): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:33:08:423 coordinador/(25315:25368): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:33:08:423 coordinador/(25315:25368): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:33:44:216 coordinador/(25315:25356): [1m[31mSe desconecto el cliente Instancia[0m
+[INFO] 15:33:48:223 coordinador/(25315:25368): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:33:48:223 coordinador/(25315:25359): [1m[36mSe envio un OPOK al ESI 0 desbloqueado[0m
+[INFO] 15:33:48:223 coordinador/(25315:25327): [1m[31mSe desconecto el cliente Planificador[0m
+[INFO] 15:33:48:223 coordinador/(25315:25368): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:33:48:223 coordinador/(25315:25359): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:33:52:692 coordinador/(25374:25374): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:33:52:692 coordinador/(25374:25374): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:33:52:692 coordinador/(25374:25374): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:33:52:692 coordinador/(25374:25374): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:33:57:551 coordinador/(25374:25374): [1m[33mEnviando handshake...[0m
+[INFO] 15:33:57:551 coordinador/(25374:25374): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:33:57:551 coordinador/(25374:25374): [1m[36mSe creo el hilo planificador[0m
+[INFO] 15:33:57:551 coordinador/(25374:25374): [1m[36mSe pudo conectar el/la Planificador (FD 7) y esta en la posicion 0 del array[0m
+[INFO] 15:33:57:552 coordinador/(25374:25374): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:34:01:811 coordinador/(25374:25374): [1m[33mEnviando handshake...[0m
+[INFO] 15:34:01:811 coordinador/(25374:25374): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:34:01:811 coordinador/(25374:25374): [1m[36mSe recibio el identificador de la Instancia 0[0m
+[INFO] 15:34:01:811 coordinador/(25374:25374): [1m[36mSe creo el hilo instancia[0m
+[INFO] 15:34:01:811 coordinador/(25374:25374): [1m[36mSe pudo conectar el/la Instancia (FD 8) y esta en la posicion 1 del array[0m
+[INFO] 15:34:01:811 coordinador/(25374:25374): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:34:03:350 coordinador/(25374:25374): [1m[33mEnviando handshake...[0m
+[INFO] 15:34:03:350 coordinador/(25374:25374): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:34:03:351 coordinador/(25374:25374): [1m[36mSe recibio el identificador del ESI 0[0m
+[INFO] 15:34:03:351 coordinador/(25374:25374): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:34:03:351 coordinador/(25374:25374): [1m[36mSe pudo conectar el/la ESI (FD 9) y esta en la posicion 2 del array[0m
+[INFO] 15:34:03:351 coordinador/(25374:25374): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:34:03:351 coordinador/(25374:25389): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:34:03:351 coordinador/(25374:25389): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:34:03:352 coordinador/(25374:25389): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:34:03:391 coordinador/(25374:25389): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:34:03:392 coordinador/(25374:25389): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:34:03:392 coordinador/(25374:25389): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:34:03:392 coordinador/(25374:25389): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:34:03:431 coordinador/(25374:25389): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:34:03:431 coordinador/(25374:25389): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:34:03:431 coordinador/(25374:25389): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:34:03:432 coordinador/(25374:25389): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:34:03:471 coordinador/(25374:25389): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:34:03:471 coordinador/(25374:25389): [1m[37mHeader recibido. COD OP: 1 - TAM: 15[0m
+[INFO] 15:34:03:471 coordinador/(25374:25389): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:34:03:471 coordinador/(25374:25389): [1m[32mSe recibio el tamaño del valor de la clave (5 bytes)[0m
+[INFO] 15:34:03:471 coordinador/(25374:25389): [1m[32mSe recibio el valor de la clave asdd[0m
+[INFO] 15:34:03:472 coordinador/(25374:25389): [1m[32mSe enviaron correctamente a la instancia: header - clave - tamanio_valor - valor[0m
+[INFO] 15:34:03:472 coordinador/(25374:25389): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:34:03:512 coordinador/(25374:25389): [1m[32mSe recibio la clave tennis:nadal[0m
+[INFO] 15:34:03:512 coordinador/(25374:25389): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:34:03:551 coordinador/(25374:25389): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:34:03:551 coordinador/(25374:25389): [1m[37mHeader recibido. COD OP: 2 - TAM: 14[0m
+[INFO] 15:34:03:551 coordinador/(25374:25389): [1m[32mSe recibio la clave futbol:ricota[0m
+[ERROR] 15:34:03:551 coordinador/(25374:25389): [1m[31mError de Clave no Identificada[0m
+[INFO] 15:34:03:551 coordinador/(25374:25389): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:34:03:592 coordinador/(25374:25389): [1m[31mEl ESI 0 fue abortado por error de STORE[0m
+[INFO] 15:34:14:345 coordinador/(25374:25374): [1m[33mEnviando handshake...[0m
+[INFO] 15:34:14:345 coordinador/(25374:25374): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:34:14:346 coordinador/(25374:25374): [1m[36mSe recibio el identificador del ESI 1[0m
+[INFO] 15:34:14:346 coordinador/(25374:25374): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:34:14:346 coordinador/(25374:25374): [1m[36mSe pudo conectar el/la ESI (FD 10) y esta en la posicion 3 del array[0m
+[INFO] 15:34:14:346 coordinador/(25374:25374): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:34:14:347 coordinador/(25374:25476): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:34:14:347 coordinador/(25374:25476): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:34:14:348 coordinador/(25374:25476): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:37:27:172 coordinador/(25374:25386): [1m[31mSe desconecto el cliente Instancia[0m
+[INFO] 15:37:30:365 coordinador/(25374:25476): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:37:30:365 coordinador/(25374:25476): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:37:30:365 coordinador/(25374:25389): [1m[36mSe envio un OPOK al ESI 0 desbloqueado[0m
+[INFO] 15:37:30:365 coordinador/(25374:25389): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:37:30:365 coordinador/(25374:25378): [1m[31mSe desconecto el cliente Planificador[0m
+[INFO] 15:37:33:921 coordinador/(25517:25517): [1m[32mSe pudo conectar el socket con éxito[0m
+[INFO] 15:37:33:921 coordinador/(25517:25517): [1m[32mSe pudo reservar correctamente el puerto de escucha del servidor[0m
+[INFO] 15:37:33:921 coordinador/(25517:25517): [1m[32mSe esta escuchando correctamente en el puerto[0m
+[INFO] 15:37:33:921 coordinador/(25517:25517): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:37:38:8 coordinador/(25517:25517): [1m[33mEnviando handshake...[0m
+[INFO] 15:37:38:8 coordinador/(25517:25517): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:37:38:8 coordinador/(25517:25517): [1m[36mSe creo el hilo planificador[0m
+[INFO] 15:37:38:8 coordinador/(25517:25517): [1m[36mSe pudo conectar el/la Planificador (FD 7) y esta en la posicion 0 del array[0m
+[INFO] 15:37:38:8 coordinador/(25517:25517): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:37:45:475 coordinador/(25517:25517): [1m[33mEnviando handshake...[0m
+[INFO] 15:37:45:475 coordinador/(25517:25517): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:37:45:476 coordinador/(25517:25517): [1m[36mSe recibio el identificador de la Instancia 0[0m
+[INFO] 15:37:45:476 coordinador/(25517:25517): [1m[36mSe creo el hilo instancia[0m
+[INFO] 15:37:45:476 coordinador/(25517:25517): [1m[36mSe pudo conectar el/la Instancia (FD 8) y esta en la posicion 1 del array[0m
+[INFO] 15:37:45:476 coordinador/(25517:25517): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:37:47:864 coordinador/(25517:25517): [1m[33mEnviando handshake...[0m
+[INFO] 15:37:47:864 coordinador/(25517:25517): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:37:47:865 coordinador/(25517:25517): [1m[36mSe recibio el identificador del ESI 0[0m
+[INFO] 15:37:47:865 coordinador/(25517:25517): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:37:47:865 coordinador/(25517:25517): [1m[36mSe pudo conectar el/la ESI (FD 9) y esta en la posicion 2 del array[0m
+[INFO] 15:37:47:865 coordinador/(25517:25517): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:37:47:865 coordinador/(25517:25528): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:37:47:865 coordinador/(25517:25528): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:37:47:866 coordinador/(25517:25528): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:37:47:903 coordinador/(25517:25528): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:37:47:903 coordinador/(25517:25528): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:37:47:903 coordinador/(25517:25528): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:37:47:904 coordinador/(25517:25528): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:37:47:944 coordinador/(25517:25528): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:37:47:945 coordinador/(25517:25528): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:37:47:945 coordinador/(25517:25528): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:37:47:945 coordinador/(25517:25528): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:37:47:983 coordinador/(25517:25528): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:37:47:983 coordinador/(25517:25528): [1m[37mHeader recibido. COD OP: 1 - TAM: 15[0m
+[INFO] 15:37:47:983 coordinador/(25517:25528): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:37:47:983 coordinador/(25517:25528): [1m[32mSe recibio el tamaño del valor de la clave (5 bytes)[0m
+[INFO] 15:37:47:983 coordinador/(25517:25528): [1m[32mSe recibio el valor de la clave asdd[0m
+[INFO] 15:37:47:984 coordinador/(25517:25528): [1m[32mSe enviaron correctamente a la instancia: header - clave - tamanio_valor - valor[0m
+[INFO] 15:37:47:984 coordinador/(25517:25528): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:37:48:23 coordinador/(25517:25528): [1m[32mSe recibio la clave tennis:nadal[0m
+[INFO] 15:37:48:23 coordinador/(25517:25528): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:37:48:63 coordinador/(25517:25528): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:37:48:63 coordinador/(25517:25528): [1m[37mHeader recibido. COD OP: 2 - TAM: 14[0m
+[INFO] 15:37:48:64 coordinador/(25517:25528): [1m[32mSe recibio la clave futbol:ricota[0m
+[ERROR] 15:37:48:64 coordinador/(25517:25528): [1m[31mError de Clave no Identificada[0m
+[INFO] 15:37:48:64 coordinador/(25517:25528): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:37:48:103 coordinador/(25517:25528): [1m[31mEl ESI 0 fue abortado por error de STORE[0m
+[INFO] 15:38:16:824 coordinador/(25517:25517): [1m[33mEnviando handshake...[0m
+[INFO] 15:38:16:824 coordinador/(25517:25517): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:38:16:825 coordinador/(25517:25517): [1m[36mSe recibio el identificador del ESI 1[0m
+[INFO] 15:38:16:825 coordinador/(25517:25517): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:38:16:825 coordinador/(25517:25517): [1m[36mSe pudo conectar el/la ESI (FD 10) y esta en la posicion 3 del array[0m
+[INFO] 15:38:16:825 coordinador/(25517:25517): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:38:16:825 coordinador/(25517:25534): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:38:16:825 coordinador/(25517:25534): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:38:16:826 coordinador/(25517:25534): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:16:863 coordinador/(25517:25534): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:16:863 coordinador/(25517:25534): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:38:16:863 coordinador/(25517:25534): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:38:16:863 coordinador/(25517:25534): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:16:903 coordinador/(25517:25534): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:16:903 coordinador/(25517:25534): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:38:16:903 coordinador/(25517:25534): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:38:16:903 coordinador/(25517:25534): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:16:943 coordinador/(25517:25534): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:16:943 coordinador/(25517:25534): [1m[37mHeader recibido. COD OP: 1 - TAM: 15[0m
+[INFO] 15:38:16:943 coordinador/(25517:25534): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:38:16:943 coordinador/(25517:25534): [1m[32mSe recibio el tamaño del valor de la clave (5 bytes)[0m
+[INFO] 15:38:16:943 coordinador/(25517:25534): [1m[32mSe recibio el valor de la clave asdd[0m
+[INFO] 15:38:16:943 coordinador/(25517:25534): [1m[32mSe enviaron correctamente a la instancia: header - clave - tamanio_valor - valor[0m
+[INFO] 15:38:16:944 coordinador/(25517:25534): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:38:16:983 coordinador/(25517:25534): [1m[32mSe recibio la clave tennis:nadal[0m
+[INFO] 15:38:16:983 coordinador/(25517:25534): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:17:24 coordinador/(25517:25534): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:17:24 coordinador/(25517:25534): [1m[37mHeader recibido. COD OP: 2 - TAM: 14[0m
+[INFO] 15:38:17:24 coordinador/(25517:25534): [1m[32mSe recibio la clave futbol:ricota[0m
+[ERROR] 15:38:17:24 coordinador/(25517:25534): [1m[31mError de Clave no Identificada[0m
+[INFO] 15:38:17:24 coordinador/(25517:25534): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:38:17:64 coordinador/(25517:25534): [1m[31mEl ESI 1 fue abortado por error de STORE[0m
+[INFO] 15:38:21:590 coordinador/(25517:25534): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:38:23:218 coordinador/(25517:25517): [1m[33mEnviando handshake...[0m
+[INFO] 15:38:23:218 coordinador/(25517:25517): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:38:23:218 coordinador/(25517:25517): [1m[36mSe recibio el identificador del ESI 2[0m
+[INFO] 15:38:23:218 coordinador/(25517:25517): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:38:23:218 coordinador/(25517:25517): [1m[36mSe pudo conectar el/la ESI (FD 10) y esta en la posicion 4 del array[0m
+[INFO] 15:38:23:218 coordinador/(25517:25517): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:38:23:219 coordinador/(25517:25541): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:38:23:219 coordinador/(25517:25541): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:38:23:220 coordinador/(25517:25541): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:23:259 coordinador/(25517:25541): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:23:259 coordinador/(25517:25541): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:38:23:259 coordinador/(25517:25541): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:38:23:259 coordinador/(25517:25541): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:23:299 coordinador/(25517:25541): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:23:299 coordinador/(25517:25541): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:38:23:299 coordinador/(25517:25541): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:38:23:299 coordinador/(25517:25541): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:23:339 coordinador/(25517:25541): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:23:339 coordinador/(25517:25541): [1m[37mHeader recibido. COD OP: 1 - TAM: 15[0m
+[INFO] 15:38:23:339 coordinador/(25517:25541): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:38:23:339 coordinador/(25517:25541): [1m[32mSe recibio el tamaño del valor de la clave (5 bytes)[0m
+[INFO] 15:38:23:339 coordinador/(25517:25541): [1m[32mSe recibio el valor de la clave asdd[0m
+[INFO] 15:38:23:339 coordinador/(25517:25541): [1m[32mSe enviaron correctamente a la instancia: header - clave - tamanio_valor - valor[0m
+[INFO] 15:38:23:340 coordinador/(25517:25541): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:38:23:379 coordinador/(25517:25541): [1m[32mSe recibio la clave tennis:nadal[0m
+[INFO] 15:38:23:380 coordinador/(25517:25541): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:23:419 coordinador/(25517:25541): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:23:419 coordinador/(25517:25541): [1m[37mHeader recibido. COD OP: 2 - TAM: 14[0m
+[INFO] 15:38:23:419 coordinador/(25517:25541): [1m[32mSe recibio la clave futbol:ricota[0m
+[ERROR] 15:38:23:419 coordinador/(25517:25541): [1m[31mError de Clave no Identificada[0m
+[INFO] 15:38:23:419 coordinador/(25517:25541): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:38:23:459 coordinador/(25517:25541): [1m[31mEl ESI 2 fue abortado por error de STORE[0m
+[INFO] 15:38:24:789 coordinador/(25517:25541): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:38:25:192 coordinador/(25517:25517): [1m[33mEnviando handshake...[0m
+[INFO] 15:38:25:192 coordinador/(25517:25517): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:38:25:192 coordinador/(25517:25517): [1m[36mSe recibio el identificador del ESI 3[0m
+[INFO] 15:38:25:192 coordinador/(25517:25517): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:38:25:192 coordinador/(25517:25517): [1m[36mSe pudo conectar el/la ESI (FD 10) y esta en la posicion 5 del array[0m
+[INFO] 15:38:25:192 coordinador/(25517:25517): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:38:25:193 coordinador/(25517:25549): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:38:25:193 coordinador/(25517:25549): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:38:25:194 coordinador/(25517:25549): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:25:231 coordinador/(25517:25549): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:25:232 coordinador/(25517:25549): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:38:25:232 coordinador/(25517:25549): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:38:25:233 coordinador/(25517:25549): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:25:271 coordinador/(25517:25549): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:25:272 coordinador/(25517:25549): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:38:25:272 coordinador/(25517:25549): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:38:25:272 coordinador/(25517:25549): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:25:312 coordinador/(25517:25549): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:25:312 coordinador/(25517:25549): [1m[37mHeader recibido. COD OP: 1 - TAM: 15[0m
+[INFO] 15:38:25:312 coordinador/(25517:25549): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:38:25:312 coordinador/(25517:25549): [1m[32mSe recibio el tamaño del valor de la clave (5 bytes)[0m
+[INFO] 15:38:25:312 coordinador/(25517:25549): [1m[32mSe recibio el valor de la clave asdd[0m
+[INFO] 15:38:25:312 coordinador/(25517:25549): [1m[32mSe enviaron correctamente a la instancia: header - clave - tamanio_valor - valor[0m
+[INFO] 15:38:25:313 coordinador/(25517:25549): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:38:25:352 coordinador/(25517:25549): [1m[32mSe recibio la clave tennis:nadal[0m
+[INFO] 15:38:25:352 coordinador/(25517:25549): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:25:392 coordinador/(25517:25549): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:25:392 coordinador/(25517:25549): [1m[37mHeader recibido. COD OP: 2 - TAM: 14[0m
+[INFO] 15:38:25:392 coordinador/(25517:25549): [1m[32mSe recibio la clave futbol:ricota[0m
+[ERROR] 15:38:25:392 coordinador/(25517:25549): [1m[31mError de Clave no Identificada[0m
+[INFO] 15:38:25:392 coordinador/(25517:25549): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:38:25:432 coordinador/(25517:25549): [1m[31mEl ESI 3 fue abortado por error de STORE[0m
+[INFO] 15:38:26:24 coordinador/(25517:25549): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:38:26:389 coordinador/(25517:25517): [1m[33mEnviando handshake...[0m
+[INFO] 15:38:26:389 coordinador/(25517:25517): [1m[32mSe pudo enviar el handshake correctamente[0m
+[INFO] 15:38:26:390 coordinador/(25517:25517): [1m[36mSe recibio el identificador del ESI 4[0m
+[INFO] 15:38:26:390 coordinador/(25517:25517): [1m[36mSe creo el hilo ESI[0m
+[INFO] 15:38:26:390 coordinador/(25517:25517): [1m[36mSe pudo conectar el/la ESI (FD 10) y esta en la posicion 6 del array[0m
+[INFO] 15:38:26:390 coordinador/(25517:25517): [1m[33mSe esta esperando por nuevas conexiones...[0m
+[INFO] 15:38:26:390 coordinador/(25517:25552): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:38:26:390 coordinador/(25517:25552): [1m[32mSe recibio la clave futbol:messi[0m
+[INFO] 15:38:26:391 coordinador/(25517:25552): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:26:431 coordinador/(25517:25552): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:26:432 coordinador/(25517:25552): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:38:26:432 coordinador/(25517:25552): [1m[32mSe recibio la clave futbol:andrade[0m
+[INFO] 15:38:26:432 coordinador/(25517:25552): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:26:471 coordinador/(25517:25552): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:26:471 coordinador/(25517:25552): [1m[37mHeader recibido. COD OP: 0 - TAM: 15[0m
+[INFO] 15:38:26:471 coordinador/(25517:25552): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:38:26:471 coordinador/(25517:25552): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:26:511 coordinador/(25517:25552): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:26:512 coordinador/(25517:25552): [1m[37mHeader recibido. COD OP: 1 - TAM: 15[0m
+[INFO] 15:38:26:513 coordinador/(25517:25552): [1m[32mSe recibio la clave futbol:diegote[0m
+[INFO] 15:38:26:513 coordinador/(25517:25552): [1m[32mSe recibio el tamaño del valor de la clave (5 bytes)[0m
+[INFO] 15:38:26:513 coordinador/(25517:25552): [1m[32mSe recibio el valor de la clave asdd[0m
+[INFO] 15:38:26:516 coordinador/(25517:25552): [1m[32mSe enviaron correctamente a la instancia: header - clave - tamanio_valor - valor[0m
+[INFO] 15:38:26:516 coordinador/(25517:25552): [1m[37mHeader recibido. COD OP: 0 - TAM: 13[0m
+[INFO] 15:38:26:555 coordinador/(25517:25552): [1m[32mSe recibio la clave tennis:nadal[0m
+[INFO] 15:38:26:555 coordinador/(25517:25552): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[INFO] 15:38:26:595 coordinador/(25517:25552): [1m[32mSe pudo realizar el GET correctamente[0m
+[INFO] 15:38:26:596 coordinador/(25517:25552): [1m[37mHeader recibido. COD OP: 2 - TAM: 14[0m
+[INFO] 15:38:26:596 coordinador/(25517:25552): [1m[32mSe recibio la clave futbol:ricota[0m
+[ERROR] 15:38:26:596 coordinador/(25517:25552): [1m[31mError de Clave no Identificada[0m
+[INFO] 15:38:26:596 coordinador/(25517:25552): [1m[32mSe enviaron correctamente al Planificador: header - clave - idESI[0m
+[ERROR] 15:38:26:635 coordinador/(25517:25552): [1m[31mEl ESI 4 fue abortado por error de STORE[0m
+[INFO] 15:38:27:88 coordinador/(25517:25552): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:38:30:266 coordinador/(25517:25525): [1m[31mSe desconecto el cliente Instancia[0m
+[INFO] 15:38:30:614 coordinador/(25517:25528): [1m[31mSe desconecto el ESI[0m
+[INFO] 15:38:31:236 coordinador/(25517:25522): [1m[31mSe desconecto el cliente Planificador[0m

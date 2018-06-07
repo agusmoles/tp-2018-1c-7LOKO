@@ -1,0 +1,58 @@
+[INFO] 15:20:02:272 coordinador/(25145:25213): ESI 0: OPERACION: GET futbol:messi
+[INFO] 15:27:58:74 coordinador/(25248:25260): ESI 0: OPERACION: GET futbol:messi
+[INFO] 15:27:58:180 coordinador/(25248:25260): ESI 0: OPERACION: GET futbol:andrade
+[INFO] 15:27:58:222 coordinador/(25248:25260): ESI 0: OPERACION: GET futbol:diegote
+[INFO] 15:27:58:224 coordinador/(25248:25260): ESI 0: OPERACION: SET futbol:diegote asdd
+[INFO] 15:27:58:305 coordinador/(25248:25260): ESI 0: OPERACION: GET tennis:nadal
+[INFO] 15:27:58:388 coordinador/(25248:25260): ESI 0: OPERACION: STORE futbol:andrade
+[INFO] 15:28:23:872 coordinador/(25248:25268): ESI 1: OPERACION: GET futbol:messi
+[INFO] 15:29:10:920 coordinador/(25271:25287): ESI 0: OPERACION: GET futbol:messi
+[INFO] 15:29:11:32 coordinador/(25271:25287): ESI 0: OPERACION: GET futbol:andrade
+[INFO] 15:29:11:72 coordinador/(25271:25287): ESI 0: OPERACION: GET futbol:diegote
+[INFO] 15:29:11:73 coordinador/(25271:25287): ESI 0: OPERACION: SET futbol:diegote asdd
+[INFO] 15:29:11:153 coordinador/(25271:25287): ESI 0: OPERACION: GET tennis:nadal
+[INFO] 15:31:26:380 coordinador/(25271:25287): ESI 0: OPERACION: STORE futbol:ricota
+[INFO] 15:31:50:376 coordinador/(25315:25359): ESI 0: OPERACION: GET futbol:messi
+[INFO] 15:31:50:484 coordinador/(25315:25359): ESI 0: OPERACION: GET futbol:andrade
+[INFO] 15:31:50:524 coordinador/(25315:25359): ESI 0: OPERACION: GET futbol:diegote
+[INFO] 15:31:50:525 coordinador/(25315:25359): ESI 0: OPERACION: SET futbol:diegote asdd
+[INFO] 15:31:50:604 coordinador/(25315:25359): ESI 0: OPERACION: GET tennis:nadal
+[INFO] 15:33:48:223 coordinador/(25315:25368): ESI 1: OPERACION: GET futbol:messi
+[INFO] 15:33:48:223 coordinador/(25315:25359): ESI 0: OPERACION: STORE futbol:ricota
+[INFO] 15:34:03:391 coordinador/(25374:25389): ESI 0: OPERACION: GET futbol:messi
+[INFO] 15:34:03:431 coordinador/(25374:25389): ESI 0: OPERACION: GET futbol:andrade
+[INFO] 15:34:03:471 coordinador/(25374:25389): ESI 0: OPERACION: GET futbol:diegote
+[INFO] 15:34:03:472 coordinador/(25374:25389): ESI 0: OPERACION: SET futbol:diegote asdd
+[INFO] 15:34:03:551 coordinador/(25374:25389): ESI 0: OPERACION: GET tennis:nadal
+[INFO] 15:37:30:365 coordinador/(25374:25476): ESI 1: OPERACION: GET futbol:messi
+[INFO] 15:37:30:365 coordinador/(25374:25389): ESI 0: OPERACION: STORE futbol:ricota
+[INFO] 15:37:47:903 coordinador/(25517:25528): ESI 0: OPERACION: GET futbol:messi
+[INFO] 15:37:47:944 coordinador/(25517:25528): ESI 0: OPERACION: GET futbol:andrade
+[INFO] 15:37:47:983 coordinador/(25517:25528): ESI 0: OPERACION: GET futbol:diegote
+[INFO] 15:37:47:984 coordinador/(25517:25528): ESI 0: OPERACION: SET futbol:diegote asdd
+[INFO] 15:37:48:63 coordinador/(25517:25528): ESI 0: OPERACION: GET tennis:nadal
+[INFO] 15:37:48:103 coordinador/(25517:25528): ESI 0: OPERACION: STORE futbol:ricota
+[INFO] 15:38:16:863 coordinador/(25517:25534): ESI 1: OPERACION: GET futbol:messi
+[INFO] 15:38:16:903 coordinador/(25517:25534): ESI 1: OPERACION: GET futbol:andrade
+[INFO] 15:38:16:943 coordinador/(25517:25534): ESI 1: OPERACION: GET futbol:diegote
+[INFO] 15:38:16:943 coordinador/(25517:25534): ESI 1: OPERACION: SET futbol:diegote asdd
+[INFO] 15:38:17:24 coordinador/(25517:25534): ESI 1: OPERACION: GET tennis:nadal
+[INFO] 15:38:17:64 coordinador/(25517:25534): ESI 1: OPERACION: STORE futbol:ricota
+[INFO] 15:38:23:259 coordinador/(25517:25541): ESI 2: OPERACION: GET futbol:messi
+[INFO] 15:38:23:299 coordinador/(25517:25541): ESI 2: OPERACION: GET futbol:andrade
+[INFO] 15:38:23:339 coordinador/(25517:25541): ESI 2: OPERACION: GET futbol:diegote
+[INFO] 15:38:23:339 coordinador/(25517:25541): ESI 2: OPERACION: SET futbol:diegote asdd
+[INFO] 15:38:23:419 coordinador/(25517:25541): ESI 2: OPERACION: GET tennis:nadal
+[INFO] 15:38:23:459 coordinador/(25517:25541): ESI 2: OPERACION: STORE futbol:ricota
+[INFO] 15:38:25:232 coordinador/(25517:25549): ESI 3: OPERACION: GET futbol:messi
+[INFO] 15:38:25:272 coordinador/(25517:25549): ESI 3: OPERACION: GET futbol:andrade
+[INFO] 15:38:25:312 coordinador/(25517:25549): ESI 3: OPERACION: GET futbol:diegote
+[INFO] 15:38:25:313 coordinador/(25517:25549): ESI 3: OPERACION: SET futbol:diegote asdd
+[INFO] 15:38:25:392 coordinador/(25517:25549): ESI 3: OPERACION: GET tennis:nadal
+[INFO] 15:38:25:432 coordinador/(25517:25549): ESI 3: OPERACION: STORE futbol:ricota
+[INFO] 15:38:26:432 coordinador/(25517:25552): ESI 4: OPERACION: GET futbol:messi
+[INFO] 15:38:26:471 coordinador/(25517:25552): ESI 4: OPERACION: GET futbol:andrade
+[INFO] 15:38:26:512 coordinador/(25517:25552): ESI 4: OPERACION: GET futbol:diegote
+[INFO] 15:38:26:516 coordinador/(25517:25552): ESI 4: OPERACION: SET futbol:diegote asdd
+[INFO] 15:38:26:595 coordinador/(25517:25552): ESI 4: OPERACION: GET tennis:nadal
+[INFO] 15:38:26:635 coordinador/(25517:25552): ESI 4: OPERACION: STORE futbol:ricota

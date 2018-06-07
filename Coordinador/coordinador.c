@@ -505,9 +505,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			} else {
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el STORE correctamente"ANSI_COLOR_RESET);
 				enviarMensaje(socketESI->fd, "OPOK");
+				desbloquearESI(socketPlanificador);
 			}
-
-			desbloquearESI(socketPlanificador);
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
