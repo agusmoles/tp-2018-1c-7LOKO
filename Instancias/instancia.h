@@ -27,7 +27,7 @@ t_log* logger;
 t_config* config;
 
 t_list* tablaEntradas;
-t_list* storage;
+t_list* listaStorage;
 
 char* claveBuscada;
 
@@ -57,6 +57,8 @@ void store(char* clave);
 void recibirClave(int socket, header_t* header, char* bufferClave);
 void recibirTamanioValor(int socket, int32_t* tamanioValor);
 void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor);
+entrada_t* buscarEnTablaDeEntradas(char* clave);
+data_t* buscarEnStorage(int entrada);
 
 
 

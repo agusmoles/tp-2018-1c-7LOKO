@@ -142,49 +142,104 @@ void recibirInstruccion(int socket){
 	free(buffer_header);
 }
 
-
-/* lo hice como si fuese la primera vez que setea */
 void set(char* clave, char* valor){
-	entrada_t* entrada = malloc(sizeof(entrada_t));
-	data_t* data = malloc(sizeof(data_t));
+	entrada_t* entrada;
+	data_t* data;
 	int cantidadEntradas;
 
-	/* Creo entrada */
-	entrada->tamanio_valor = strlen(valor) + 1;
-	entrada->clave = malloc(strlen(clave) + 1);
-	strcpy(entrada->clave, clave);
+	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
+		data = buscarEnStorage(entrada->numero);
 
-	if(list_is_empty(tablaEntradas)){
-		entrada->numero = 0;
-	} else{
-		cantidadEntradas = list_size(tablaEntradas);
+		free(data->valor);		// YA NO ME INTERESA EL VIEJO VALOR, LIBERO MEMORIA
 
-		entrada->numero = cantidadEntradas ;
+		data->valor = malloc(strlen(valor) + 1);	// SETEO MEMORIA
+
+		strcpy(data->valor, valor);			// COPIO EL NUEVO VALOR A LA DATA
+
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se modifico el valor de la clave %s con %s"ANSI_COLOR_RESET, entrada->clave, data->valor);
+
+	} else {		// SINO CREO UNA NUEVA ENTRADA
+		entrada = malloc(sizeof(entrada_t));
+		data = malloc(sizeof(data_t));
+
+		/* Creo entrada */
+		entrada->tamanio_valor = strlen(valor) + 1;
+		entrada->clave = malloc(strlen(clave) + 1);
+		strcpy(entrada->clave, clave);
+
+		if(list_is_empty(tablaEntradas)){
+			entrada->numero = 0;
+		} else{
+			cantidadEntradas = list_size(tablaEntradas);
+
+			entrada->numero = cantidadEntradas ;
+		}
+
+		list_add(tablaEntradas, entrada);
+
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
+
+		/*Creo data y la seteo en la lista de storage */
+		data->numeroEntrada = entrada->numero;
+		data->valor = malloc(entrada->tamanio_valor);
+		strcpy(data->valor, valor);
+
+		list_add(listaStorage, data);
+
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
+		free(entrada);
+		free(data);
 	}
-
-	list_add(tablaEntradas, entrada);
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
-
-
-	/*Creo data */
-	data->numeroEntrada = entrada->numero;
-	data->valor = malloc(entrada->tamanio_valor);
-	strcpy(data->valor, valor);
-
-	list_add(storage, data);
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
-
-	free(entrada);
-	free(data);
 }
 
 void store(char* clave){
-	claveBuscada = malloc(strlen(clave)+ 1);
-	strcpy(claveBuscada, clave);
+	entrada_t* entrada;
+	data_t* storage;
+	FILE* archivo;
+//	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
+//
+//	strcpy(directorioMontaje, PUNTOMONTAJE);
+//
+//	strcat(directorioMontaje, clave);
+//
+//	archivo = fopen(directorioMontaje, 'w');
+//
+//	claveBuscada = malloc(strlen(clave)+ 1);
+//	strcpy(claveBuscada, clave);
+//
+//	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
+//
+//	storage = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
+//
+//	free(directorioMontaje);
+}
 
+entrada_t* buscarEnTablaDeEntradas(char* clave) {
+	entrada_t* entrada;
 
+	for(int i=0; i<list_size(tablaEntradas); i++) {	// RECORRO LA LISTA DE ENTRADAS
+		entrada = list_get(tablaEntradas, i);		// VOY TOMANDO ELEMENTOS
+
+		if (strcmp(entrada->clave, clave) == 0) {	// SI LA CLAVE DE LA ENTRADA COINCIDE CON LA DEL STORE
+			return entrada;							// DEVUELVO LA ENTRADA ENCONTRADA
+		}
+	}
+
+	return NULL;
+}
+
+data_t* buscarEnStorage(int entrada) {
+	data_t* storage;
+
+	for(int i=0; i<list_size(listaStorage); i++) {	// RECORRO LA LISTA DE STORAGE
+		storage = list_get(listaStorage, i);		// VOY TOMANDO ELEMENTOS
+
+		if (storage->numeroEntrada == entrada) {	// SI LA ENTRADA COINCIDE CON LA DE LA LISTA DEL STORAGE
+			return storage;							// DEVUELVO EL STORAGE ENCONTRADO
+		}
+	}
+
+	return NULL;
 }
 
 void recibirClave(int socket, header_t* header, char* bufferClave){
@@ -223,7 +278,7 @@ int main(void) {
 	int socket = conectarSocket();
 
 	tablaEntradas = list_create();
-	storage = list_create();
+	listaStorage = list_create();
 
 	reciboHandshake(socket);
 	envioIdentificador(socket);

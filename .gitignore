@@ -56,3 +56,4 @@ dkms.conf
 .settings
 Coordinador/.settings/language.settings.xml
 Instancias/.settings/language.settings.xml
+*.log
