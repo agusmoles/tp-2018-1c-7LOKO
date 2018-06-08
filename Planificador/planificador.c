@@ -352,13 +352,13 @@ void bloquearESI(char* clave, int* IDESI) {
 
 	if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) {	// SI ES SJF, SETEO VARIABLES DEL ESI EJECUTANDO
 		ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
-		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;
+		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
 		ESI->rafagaActual = 0; 	// LO SETEO EN 0 PORQUE FUE "DESALOJADO" PORQUE SE BLOQUEO
 	}
 
 	if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
 		ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
-		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;
+		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
 		ESI->tiempoDeEspera = 0;
 
 		sem_wait(&mutexListos);
@@ -621,8 +621,6 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, socketCliente[posicion].identificadorESI,socketCliente[posicion].estimacionProximaRafaga, socketCliente[posicion].estimacionRafagaActual);
 						}
 
-						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
-
 						if (list_size(listos) >= 2) {			//SI HAY MAS DOS ESIS EN LISTOS ORDENO
 							ordenarColaDeListosPorSJF();
 						}
@@ -632,7 +630,6 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 
 					if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
 						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
-						socketCliente[posicion].estimacionRafagaActual = socketCliente[posicion].estimacionProximaRafaga;
 						socketCliente[posicion].tiempoDeEspera = 0; 	// LO REINICIO CADA VEZ QUE DEVUELVE OPOK (DEBERIA SER SOLO UNA VEZ CUANDO ENTRA A EJECUTAR PERO BUE)
 
 						sem_wait(&mutexListos);
@@ -744,6 +741,7 @@ void verificarDesalojoPorSJF(cliente* ESIEjecutando) {
 			list_remove(listos, 0);		// Y SACO DE LISTOS AL QUE VA A EJECUTAR
 			sem_post(&mutexListos);
 			ESIEjecutando->rafagaActual = 0;	// SE RESETEA LA RAFAGA ACTUAL (PORQUE FUE DESALOJADO)
+			ESIEjecutando->estimacionRafagaActual = ESIEjecutando->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
 
 			sem_wait(&mutexEjecutando);
 			list_add(ejecutando, primerESIListo);
@@ -864,7 +862,7 @@ int main(void) {
 		socketCliente[i].fd = -1;				//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
 		socketCliente[i].estimacionProximaRafaga = estimacionInicial;	//ESTIMACION INICIAL POR DEFAULT
 		socketCliente[i].rafagaActual = 0;
-		socketCliente[i].estimacionRafagaActual = estimacionInicial;
+		socketCliente[i].estimacionRafagaActual = 0;
 		socketCliente[i].tasaDeRespuesta = 0;
 	}
 
