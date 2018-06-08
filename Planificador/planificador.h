@@ -25,17 +25,7 @@ int estimacionInicial;
 #define NUMEROCLIENTES 20
 #define DEBUG 1
 
-typedef struct Cliente{
-	char nombre[14];
-	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
-	int identificadorESI;
-	int rafagaActual;
-	float estimacionRafagaActual;
-	float estimacionProximaRafaga;
-	float tasaDeRespuesta;
-	int tiempoDeEspera;
-	char recursoSolicitado[40];
-}cliente;
+
 
 t_log* logger;
 t_config* config;
@@ -65,7 +55,6 @@ void conectarConCoordinador();
 void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI);
 cliente* buscarESI(int* IDESI);
 void abortarESI(int* IDESI);
-cliente* desbloquearESI(char* clave);
 void informarAlCoordinador(int socketCoordinador, int operacion);
 void escuchar(int socket);
 int envioHandshake(int socketCliente);

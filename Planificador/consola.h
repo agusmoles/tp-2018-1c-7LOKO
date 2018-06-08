@@ -18,12 +18,25 @@
 #include <semaphore.h>
 #include "../Colores.h"
 
+typedef struct Cliente{
+	char nombre[14];
+	int fd;						//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
+	int identificadorESI;
+	int rafagaActual;
+	float estimacionRafagaActual;
+	float estimacionProximaRafaga;
+	float tasaDeRespuesta;
+	int tiempoDeEspera;
+	char recursoSolicitado[40];
+}cliente;
+
 t_log* loggerConsola;
 t_dictionary* diccionarioClaves;
 sem_t pausado;
 
 void bloquearESI(char* clave, int* IDESI);
 void listar(char* clave);
+cliente* desbloquearESI(char* clave);
 
 int ejecutar_consola();
 int com_pausar(char **args);

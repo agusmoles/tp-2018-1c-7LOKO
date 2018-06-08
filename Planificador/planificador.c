@@ -1,8 +1,6 @@
 /******** SERVIDOR PLANIFICADOR *********/
-
-#include "planificador.h"
 #include "consola.h"
-
+#include "planificador.h"
 
 void _exit_with_error(char* mensaje) {
 	close(listenSocket);
@@ -163,7 +161,7 @@ void conectarConCoordinador() {
 	envioIdentificador(socket);
 
 	fd_set descriptorCoordinador;
-	int fdmax;
+	int fdmaxCoordinador;
 	header_t* buffer_header = malloc(sizeof(header_t));
 	int* IDESI = malloc(sizeof(int));
 	char* clave;
@@ -171,9 +169,9 @@ void conectarConCoordinador() {
 	while(1) {
 		FD_ZERO(&descriptorCoordinador);
 		FD_SET(socket, &descriptorCoordinador);
-		fdmax = socket;
+		fdmaxCoordinador = socket;
 
-		select(fdmax + 1, &descriptorCoordinador, NULL, NULL, NULL);
+		select(fdmaxCoordinador + 1, &descriptorCoordinador, NULL, NULL, NULL);
 
 		if (FD_ISSET(socket, &descriptorCoordinador)) {
 
@@ -853,6 +851,8 @@ int main(void) {
 
 	pthread_detach(threadCliente);
 	pthread_detach(threadConsola);
+
+	/***************************************************************************************/
 
 	listenSocket = conectarSocketYReservarPuerto();
 
