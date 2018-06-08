@@ -187,8 +187,6 @@ void set(char* clave, char* valor){
 		list_add(listaStorage, data);
 
 		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
-		free(entrada);
-		free(data);
 	}
 }
 
@@ -196,22 +194,22 @@ void store(char* clave){
 	entrada_t* entrada;
 	data_t* storage;
 	FILE* archivo;
-//	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
-//
-//	strcpy(directorioMontaje, PUNTOMONTAJE);
-//
-//	strcat(directorioMontaje, clave);
-//
-//	archivo = fopen(directorioMontaje, 'w');
-//
-//	claveBuscada = malloc(strlen(clave)+ 1);
-//	strcpy(claveBuscada, clave);
-//
-//	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
-//
-//	storage = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
-//
-//	free(directorioMontaje);
+	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
+
+	strcpy(directorioMontaje, PUNTOMONTAJE);
+
+	strcat(directorioMontaje, clave);
+
+	archivo = fopen(directorioMontaje, "w");
+
+	claveBuscada = malloc(strlen(clave)+ 1);
+	strcpy(claveBuscada, clave);
+
+	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
+
+	storage = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
+
+	free(directorioMontaje);
 }
 
 entrada_t* buscarEnTablaDeEntradas(char* clave) {
