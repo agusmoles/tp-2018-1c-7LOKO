@@ -180,12 +180,12 @@ int com_desbloquear(char **args){
 	}
 
 	if (dictionary_has_key(diccionarioClaves, args[1])) {
-		int* IDESI = dictionary_remove(diccionarioClaves, args[1]);
+		int* IDESI = dictionary_remove(diccionarioClaves, args[1]);	// NO SE SI HAY QUE LIBERAR LA CLAVE
 		free(IDESI);
 		desbloquearESI(args[1]);
 
 	} else {
-		printf(ANSI_COLOR_BOLDWHITE"La clave %s no se encontraba en el sistema\n"ANSI_COLOR_RESET, args[1]);
+		log_info(loggerConsola, ANSI_COLOR_BOLDWHITE"La clave %s no se encontraba en el sistema\n"ANSI_COLOR_RESET, args[1]);
 	}
 
 	liberar_parametros(args);
