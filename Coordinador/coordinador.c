@@ -438,6 +438,11 @@ void enviarSentenciaESI(int socket, header_t* header, char* clave, char* valor){
 	enviarValor(socket, valor);
 }
 
+void enviarSentenciaESIStore(int socket, header_t* header, char* clave){
+	enviarHeader(socket, header);
+	enviarClave(socket, clave);
+}
+
 void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int idESI){
 	enviarHeader(socket, header);
 	enviarClave(socket, clave);
@@ -535,6 +540,13 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				enviarMensaje(socketESI->fd, "OPOK");
 				desbloquearESI(socketPlanificador);
 			}
+
+			/*Ahora envio la sentencia a la Instancia encargada */
+			instanciaEncargada = seleccionEquitativeLoad();
+			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
+			actualizarVectorInstanciasConectadas();
+			enviarSentenciaESIStore(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);

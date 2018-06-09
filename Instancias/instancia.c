@@ -103,6 +103,7 @@ void pipeHandler() {
 
 /* Recibir operacion de Coordinador */
 void recibirInstruccion(int socket){
+
 	header_t* buffer_header = malloc(sizeof(header_t));
 	char* bufferClave;
 	char* bufferValor;
@@ -124,6 +125,7 @@ void recibirInstruccion(int socket){
 		recibirValor(socket, tamanioValor, bufferValor);
 
 		set(bufferClave, bufferValor);
+
 		break;
 	case 2: /* STORE */
 		/* Recibo clave */
@@ -135,17 +137,20 @@ void recibirInstruccion(int socket){
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No existe el codigo de operacion"ANSI_COLOR_RESET);
 		break;
 	}
-
-	free(tamanioValor);
-	free(bufferClave);
-	free(bufferValor);
+//
 	free(buffer_header);
+	free(tamanioValor);
+
+	/* ESTOS NO
+    free(bufferClave);
+	free(bufferValor);
+*/
 }
 
 void set(char* clave, char* valor){
 	entrada_t* entrada;
 	data_t* data;
-	int cantidadEntradas = list_length(tablaEntradas);
+	int cantidadEntradas = list_size(tablaEntradas);
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
 		data = buscarEnStorage(entrada->numero);
@@ -158,7 +163,9 @@ void set(char* clave, char* valor){
 
 		log_info(logger, ANSI_COLOR_BOLDGREEN"Se modifico el valor de la clave %s con %s"ANSI_COLOR_RESET, entrada->clave, data->valor);
 
-	} else {		// SINO CREO UNA NUEVA ENTRADA
+	}
+	else {		// SINO CREO UNA NUEVA ENTRADA
+
 		entrada = malloc(sizeof(entrada_t));
 		data = malloc(sizeof(data_t));
 
@@ -168,21 +175,19 @@ void set(char* clave, char* valor){
 		strcpy(entrada->clave, clave);
 
 
-	/* ESTE SWITCH ES PARA CONTEMPLAR CUANDO SE NECESITAN 2 ENTRADAS */
-
-	switch(entrada->tamanio_valor > TAMANIOENTRADA){
-
-		case true:
+		/*Crear Storage*/
+	/* ESTE if ES PARA CONTEMPLAR CUANDO SE NECESITAN 2 ENTRADAS */
+	if(strlen(valor) > TAMANIOENTRADA){
 
 			entrada->tamanio_valor = TAMANIOENTRADA;
 
-			entrada_t entrada2;								/* CREO OTRA ENTRADA */
+			entrada_t* entrada2;							/* CREO OTRA ENTRADA */
 			entrada2 = malloc(sizeof(entrada_t));
 
 			entrada2->clave = malloc(strlen(clave)+1);
 			strcpy(entrada2->clave, entrada->clave);
-			entrada2->tamanio_valor = entrada->tamanio_valor - TAMANIOENTRADA;
 
+			entrada2->tamanio_valor = strlen(valor) - TAMANIOENTRADA;
 			entrada->numero = list_size(tablaEntradas);
 			entrada2->numero = list_size(tablaEntradas) + 1;
 
@@ -198,34 +203,33 @@ void set(char* clave, char* valor){
 			valor1 = string_substring(valor, 0, TAMANIOENTRADA);									// ACA SEPARO EL VALOR
 			valor2 = string_substring(valor, TAMANIOENTRADA, sizeof(valor) + 1 - TAMANIOENTRADA);		// EN DOS STRINGS
 
-
-			data_t data2;							/* CREO OTRO DATA */
-			data2 = malloc(sizeof(data_t));
-
-			data2->numeroEntrada = entrada2->numero;
-			data2->valor = malloc(entrada2.tamanio_valor);
-			strcpy(data2->valor, valor2);
-
 			data->numeroEntrada = entrada->numero;
 			data->valor = malloc(entrada->tamanio_valor);
 			strcpy(data->valor, valor1);
 
+			data_t* data2;							/* CREO OTRO DATA */
+			data2 = malloc(sizeof(data_t));
+
+			data2->numeroEntrada = entrada2->numero;
+			data2->valor = malloc(entrada2->tamanio_valor);
+			strcpy(data2->valor, valor2);
+
 			list_add(listaStorage, data);
 			list_add(listaStorage, data2);
 
+			free(valor1);
+			free(valor2);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage \n Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor, data2->numeroEntrada, data2->valor);
 
-			break;
-
-		case false:
+		}else{
 
 			entrada->numero = list_size(tablaEntradas);
+
 			list_add(tablaEntradas, entrada);
 			cantidadEntradas ++;
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
 
-			data->numeroEntrada = malloc(entrada->numero);
 			data->numeroEntrada = entrada->numero;
 			data->valor = malloc(entrada->tamanio_valor);
 			strcpy(data->valor, valor);
@@ -233,8 +237,6 @@ void set(char* clave, char* valor){
 			list_add(listaStorage, data);
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
-
-			break;
 		}
 	}
 }
