@@ -8,7 +8,7 @@ Puerto Planificador=8001
 
 Algoritmo de planificación=SJF-SD
 
-Alfa planificación=30
+Alfa planificación=50
 
 Estimación inicial=3
 
