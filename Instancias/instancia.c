@@ -1,6 +1,8 @@
 /******** CLIENTE INSTANCIAS *********/
 
 #include "instancia.h"
+#include <sys/mman.h>
+#include <fcntl.h>
 
 /* CONEXIONES */
 void _exit_with_error(int socket, char* mensaje) {
@@ -131,7 +133,7 @@ void recibirInstruccion(int socket){
 		/* Recibo clave */
 		recibirClave(socket, buffer_header, bufferClave);
 
-		//store(bufferClave);
+		store(bufferClave);
 		break;
 	default:
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No existe el codigo de operacion"ANSI_COLOR_RESET);
@@ -241,27 +243,76 @@ void set(char* clave, char* valor){
 	}
 }
 
+/*Sin mmap*/
+//void store(char* clave){
+//	entrada_t* entrada;
+//	data_t* storage;
+//	FILE* archivo;
+//	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
+//
+//	strcpy(directorioMontaje, PUNTOMONTAJE);
+//
+//	strcat(directorioMontaje, clave);
+//
+//	archivo = fopen(directorioMontaje, "w");
+//
+//	claveBuscada = malloc(strlen(clave)+ 1);
+//	strcpy(claveBuscada, clave);
+//
+//	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
+//
+//	storage = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
+//
+//	free(directorioMontaje);
+//}
+
 void store(char* clave){
 	entrada_t* entrada;
 	data_t* storage;
-	FILE* archivo;
+	int fd;
+	char* mem_ptr;
 	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
+	FILE* archivo;
 
 	strcpy(directorioMontaje, PUNTOMONTAJE);
 
 	strcat(directorioMontaje, clave);
 
-	archivo = fopen(directorioMontaje, "w");
-
 	claveBuscada = malloc(strlen(clave)+ 1);
 	strcpy(claveBuscada, clave);
 
 	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
-
 	storage = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
 
+	archivo = fopen(directorioMontaje, "w");
+
+	fputs(storage->valor , archivo);
+
+	fclose(archivo);
+//
+//	if((fd = open(directorioMontaje, O_CREAT, S_IRWXU )) < 0){
+//		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open "ANSI_COLOR_RESET);
+//	}
+//
+//	size_t tamanio = strlen(storage->valor) + 1;
+//
+//	lseek(fd, tamanio-1, SEEK_SET);
+//	write(fd, "", 1);
+//
+//	mem_ptr = mmap(NULL, tamanio , PROT_WRITE | PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
+//
+//	storage->valor[tamanio] = '\0';
+//
+//	memcpy(mem_ptr, storage->valor, tamanio);
+//
+//	msync(mem_ptr, tamanio, MS_SYNC);
+//
+//	munmap(mem_ptr, tamanio);
+//
+//	free(path);
 	free(directorioMontaje);
 }
+
 
 entrada_t* buscarEnTablaDeEntradas(char* clave) {
 	entrada_t* entrada;
@@ -334,6 +385,8 @@ int main(void) {
 
 
 	conectarConCoordinador(socket);
+
+
 
 	close(socket);
 
