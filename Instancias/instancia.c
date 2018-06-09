@@ -145,7 +145,7 @@ void recibirInstruccion(int socket){
 void set(char* clave, char* valor){
 	entrada_t* entrada;
 	data_t* data;
-	int cantidadEntradas;
+	int cantidadEntradas = list_length(tablaEntradas);
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
 		data = buscarEnStorage(entrada->numero);
@@ -167,26 +167,75 @@ void set(char* clave, char* valor){
 		entrada->clave = malloc(strlen(clave) + 1);
 		strcpy(entrada->clave, clave);
 
-		if(list_is_empty(tablaEntradas)){
-			entrada->numero = 0;
-		} else{
-			cantidadEntradas = list_size(tablaEntradas);
 
-			entrada->numero = cantidadEntradas ;
+	/* ESTE SWITCH ES PARA CONTEMPLAR CUANDO SE NECESITAN 2 ENTRADAS */
+
+	switch(entrada->tamanio_valor > TAMANIOENTRADA){
+
+		case true:
+
+			entrada->tamanio_valor = TAMANIOENTRADA;
+
+			entrada_t entrada2;								/* CREO OTRA ENTRADA */
+			entrada2 = malloc(sizeof(entrada_t));
+
+			entrada2->clave = malloc(strlen(clave)+1);
+			strcpy(entrada2->clave, entrada->clave);
+			entrada2->tamanio_valor = entrada->tamanio_valor - TAMANIOENTRADA;
+
+			entrada->numero = list_size(tablaEntradas);
+			entrada2->numero = list_size(tablaEntradas) + 1;
+
+			list_add(tablaEntradas, entrada);
+			list_add(tablaEntradas, entrada2);
+			cantidadEntradas += 2;
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agregaron las entradas: Clave %s - Entrada %d - Tamanio Valor %d \n Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor,entrada2->clave,entrada2->numero,entrada2->tamanio_valor);;
+
+			char* valor1 = malloc(entrada->tamanio_valor);
+			char* valor2 = malloc(entrada2->tamanio_valor);
+
+			valor1 = string_substring(valor, 0, TAMANIOENTRADA);									// ACA SEPARO EL VALOR
+			valor2 = string_substring(valor, TAMANIOENTRADA, sizeof(valor) + 1 - TAMANIOENTRADA);		// EN DOS STRINGS
+
+
+			data_t data2;							/* CREO OTRO DATA */
+			data2 = malloc(sizeof(data_t));
+
+			data2->numeroEntrada = entrada2->numero;
+			data2->valor = malloc(entrada2.tamanio_valor);
+			strcpy(data2->valor, valor2);
+
+			data->numeroEntrada = entrada->numero;
+			data->valor = malloc(entrada->tamanio_valor);
+			strcpy(data->valor, valor1);
+
+			list_add(listaStorage, data);
+			list_add(listaStorage, data2);
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage \n Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor, data2->numeroEntrada, data2->valor);
+
+			break;
+
+		case false:
+
+			entrada->numero = list_size(tablaEntradas);
+			list_add(tablaEntradas, entrada);
+			cantidadEntradas ++;
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
+
+			data->numeroEntrada = malloc(entrada->numero);
+			data->numeroEntrada = entrada->numero;
+			data->valor = malloc(entrada->tamanio_valor);
+			strcpy(data->valor, valor);
+
+			list_add(listaStorage, data);
+
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
+
+			break;
 		}
-
-		list_add(tablaEntradas, entrada);
-
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
-
-		/*Creo data y la seteo en la lista de storage */
-		data->numeroEntrada = entrada->numero;
-		data->valor = malloc(entrada->tamanio_valor);
-		strcpy(data->valor, valor);
-
-		list_add(listaStorage, data);
-
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
 	}
 }
 
