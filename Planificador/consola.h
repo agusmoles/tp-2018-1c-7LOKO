@@ -36,7 +36,7 @@ sem_t pausado;
 
 void bloquearESI(char* clave, int* IDESI);
 void listar(char* clave);
-cliente* desbloquearESI(char* clave);
+void desbloquearESI(char* clave);
 
 int ejecutar_consola();
 int com_pausar(char **args);

@@ -139,30 +139,30 @@ int com_bloquear(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	int* IDESI = malloc(sizeof(int));
-
-	*IDESI = atoi(args[2]);
-
-	if (dictionary_has_key(diccionarioClaves, args[1])) {
-		// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
-
-		bloquearESI(args[1], IDESI);
-
-		int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, args[1]);
-
-		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], IDEsiQueTieneLaClaveTomada, IDESI);
-
-//					informarClaveTomada(); AL COORDINADOR
-
-		free(IDESI);
-	} else {
-
-		dictionary_put(diccionarioClaves, args[1], IDESI);
-
-		log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, IDESI, args[1]);
-
-//					informarClaveTomada(); AL COORDINADOR
-	}
+//	int* IDESI = malloc(sizeof(int));
+//
+//	*IDESI = atoi(args[2]);
+//
+//	if (dictionary_has_key(diccionarioClaves, args[1])) {
+//		// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
+//
+//		bloquearESI(args[1], IDESI);
+//
+//		int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, args[1]);
+//
+//		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], IDEsiQueTieneLaClaveTomada, IDESI);
+//
+////					informarClaveTomada(); AL COORDINADOR
+//
+//		free(IDESI);
+//	} else {
+//
+//		dictionary_put(diccionarioClaves, args[1], IDESI);
+//
+//		log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, IDESI, args[1]);
+//
+////					informarClaveTomada(); AL COORDINADOR
+//	}
 
 	liberar_parametros(args);
 	return 1;
@@ -180,10 +180,9 @@ int com_desbloquear(char **args){
 	}
 
 	if (dictionary_has_key(diccionarioClaves, args[1])) {
-		int* IDESI = dictionary_remove(diccionarioClaves, args[1]);	// NO SE SI HAY QUE LIBERAR LA CLAVE
+		int* IDESI = dictionary_remove(diccionarioClaves, args[1]);	// CREO QUE HAY QUE LIBERAR LA CLAVE
 		free(IDESI);
 		desbloquearESI(args[1]);
-
 	} else {
 		log_info(loggerConsola, ANSI_COLOR_BOLDWHITE"La clave %s no se encontraba en el sistema\n"ANSI_COLOR_RESET, args[1]);
 	}
