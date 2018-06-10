@@ -243,29 +243,6 @@ void set(char* clave, char* valor){
 	}
 }
 
-/*Sin mmap*/
-//void store(char* clave){
-//	entrada_t* entrada;
-//	data_t* storage;
-//	FILE* archivo;
-//	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
-//
-//	strcpy(directorioMontaje, PUNTOMONTAJE);
-//
-//	strcat(directorioMontaje, clave);
-//
-//	archivo = fopen(directorioMontaje, "w");
-//
-//	claveBuscada = malloc(strlen(clave)+ 1);
-//	strcpy(claveBuscada, clave);
-//
-//	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
-//
-//	storage = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
-//
-//	free(directorioMontaje);
-//}
-
 void store(char* clave){
 	entrada_t* entrada;
 	data_t* storage;
@@ -284,36 +261,27 @@ void store(char* clave){
 	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
 	storage = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
 
-	archivo = fopen(directorioMontaje, "w");
+	if((fd = open(directorioMontaje, O_CREAT | O_RDWR , S_IRWXU )) < 0){
+		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open "ANSI_COLOR_RESET);
+	}
 
-	fputs(storage->valor , archivo);
+	size_t tamanio = strlen(storage->valor) + 1;
 
-	fclose(archivo);
-//
-//	if((fd = open(directorioMontaje, O_CREAT, S_IRWXU )) < 0){
-//		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open "ANSI_COLOR_RESET);
-//	}
-//
-//	size_t tamanio = strlen(storage->valor) + 1;
-//
-//	lseek(fd, tamanio-1, SEEK_SET);
-//	write(fd, "", 1);
-//
-//	mem_ptr = mmap(NULL, tamanio , PROT_WRITE | PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
-//
-//	storage->valor[tamanio] = '\0';
-//
-//	memcpy(mem_ptr, storage->valor, tamanio);
-//
-//	msync(mem_ptr, tamanio, MS_SYNC);
-//
-//	munmap(mem_ptr, tamanio);
-//
-//	free(path);
+	lseek(fd, tamanio-1, SEEK_SET);
+	write(fd, "", 1);
+
+	mem_ptr = mmap(NULL, tamanio , PROT_WRITE | PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
+
+	memcpy(mem_ptr, storage->valor, tamanio);
+
+	msync(mem_ptr, tamanio, MS_SYNC);
+
+	munmap(mem_ptr, tamanio);
+
 	free(directorioMontaje);
 }
 
-
+/* Busca la entrada que contenga esa clave */
 entrada_t* buscarEnTablaDeEntradas(char* clave) {
 	entrada_t* entrada;
 
@@ -328,6 +296,7 @@ entrada_t* buscarEnTablaDeEntradas(char* clave) {
 	return NULL;
 }
 
+/*Busca el data que contenga esa entrada*/
 data_t* buscarEnStorage(int entrada) {
 	data_t* storage;
 
@@ -342,6 +311,7 @@ data_t* buscarEnStorage(int entrada) {
 	return NULL;
 }
 
+/* Recibir sentencia del coordinador*/
 void recibirClave(int socket, header_t* header, char* bufferClave){
 	if (recv(socket, bufferClave, header->tamanioClave, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio la clave"ANSI_COLOR_RESET);
@@ -366,6 +336,7 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
 }
+
 
 int main(void) {
 	struct sigaction finalizacion;
