@@ -10,6 +10,8 @@ int main(){
 	char* instruccion;
 	size_t len = 0;
 	int sentencias = 0;
+	char* buffer = malloc(strlen("OPOK") + 1);
+	int caracteresLeidos;
 
 	socketPlanificador = conect_to_server(IPPLANIFICADOR,PUERTOPLANIFICADOR);
 	recibirHandshake(socketPlanificador,"******PLANIFICADOR HANDSHAKE******");
@@ -24,17 +26,30 @@ int main(){
 
 	fseek(script,0,SEEK_SET);			// MUEVO EL PUNTERO AL INICIO PORQUE ESTABA AL FINAL POR LA FUNCION CANTIDADSENTENCIAS()
 
-	while(getline(&instruccion,&len,script) != -1){		// LEO LAS INSTURCCIONES
+	while((caracteresLeidos = getline(&instruccion,&len,script)) != -1){		// LEO LAS INSTURCCIONES
 		sentencias--;
+
+		log_info(logger, ANSI_COLOR_BOLDYELLOW"Esperando EXEOR..."ANSI_COLOR_RESET);
+
 		recibirMensaje(socketPlanificador,"EXEOR");		// ESPERO ORDEN DE EJECUCION
 
 		ejecutarInstruccion(instruccion,socketCoordinador);	// EJECUTO
-		recibirMensaje(socketCoordinador,"OPOK");				// ESPERO QUE ME LLEGUE UN OPOK
 
-		if(sentencias){										//Consulto si es la ultima sentencia para enviar el EXEEND
-			enviarMensaje(socketPlanificador,"OPOK");		// SI NO ES LA ULTIMA, ENVIO OPOK
-		}else{
-			enviarMensaje(socketPlanificador,"EXEEND");		// SI LO ES, ENVIO EXEEND
+		if (recv(socketCoordinador, buffer, strlen("OPOK") + 1, 0) < 0) {		// RECIBO RESULTADO DEL COORDINADOR
+			exitError(socketCoordinador, "No se pudo recibir el resultado de la operacion");
+		}
+
+		if (strcmp(buffer, "OPBL") == 0) {		// SI ES QUE SE BLOQUEO EL ESI, VUELVO A EJECUTAR LA MISMA LINEA
+			fseek(script, -caracteresLeidos, SEEK_CUR);	// VOLVIENDO ATRAS AL PUNTERO DEL ARCHIVO
+			sentencias++;								// Y SUMANDOLE A LA SENTENCIA PORQUE DESPUES SE LE VUELVE A RESTAR EN EL WHILE...
+		}
+
+		if (strcmp(buffer, "OPOK") == 0) {		// SI SALIO TODO BIEN, AVISO AL PLANIF
+			if(sentencias){										//Consulto si es la ultima sentencia para enviar el EXEEND
+				enviarMensaje(socketPlanificador,"OPOK");		// SI NO ES LA ULTIMA, ENVIO OPOK
+			}else{
+				enviarMensaje(socketPlanificador,"EXEEND");		// SI LO ES, ENVIO EXEEND
+			}
 		}
 	}
 

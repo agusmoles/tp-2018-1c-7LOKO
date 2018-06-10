@@ -484,6 +484,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 			if(verificarClaveTomada(socketPlanificador) == 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"La clave se encontraba tomada"ANSI_COLOR_RESET);
+				enviarMensaje(socketESI->fd, "OPBL");
 			} else {
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET correctamente"ANSI_COLOR_RESET);
 				enviarMensaje(socketESI->fd, "OPOK");
@@ -535,10 +536,14 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 			if(verificarClaveTomada(socketPlanificador) == 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"El ESI %d fue abortado por error de STORE"ANSI_COLOR_RESET, socketESI->identificadorESI);
+				// ACA DEBERIAS SACAR AL ESI DE TU LISTA DE CONECTADOS NACHITO, TE LO DEJO COMENTADO (PORQUE YA SE ABORTO)
+
+				close(socketESI->fd);		// CIERRO EL FD Y DESPUES NO SE SI TE HACE FALTA HACER ALGO MAS
+
+
 			} else {
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el STORE correctamente"ANSI_COLOR_RESET);
 				enviarMensaje(socketESI->fd, "OPOK");
-				desbloquearESI(socketPlanificador);
 			}
 
 			/*Ahora envio la sentencia a la Instancia encargada */
@@ -555,33 +560,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			_exit_with_error(socketESI->fd, "No cumpliste el protocolo de enviar Header");
 	}
 	free(bufferClave);
-}
-
-/* RECIBO MENSAJE DEL PLANIFICADOR PARA SABER SI HAY QUE DESBLOQUEAR UN ESI DESPUES DE UN STORE O NO*/
-void desbloquearESI(int socketPlanificador) {
-	int* bufferIDEsi = malloc(sizeof(int));
-	int* bufferOperacion = malloc(sizeof(int));
-
-	if(recv(socketPlanificador, bufferOperacion, sizeof(int), 0) < 0) {
-		_exit_with_error(socketPlanificador, ANSI_COLOR_BOLDRED"No se pudo recibir el mensaje para desbloquear un ESI"ANSI_COLOR_RESET);
-	}
-
-	if (*bufferOperacion == 0) {
-
-	} else if (*bufferOperacion == 1) {
-		if(recv(socketPlanificador, bufferIDEsi, sizeof(int), 0) < 0) {
-			_exit_with_error(socketPlanificador, ANSI_COLOR_BOLDRED"No se pudo recibir el ID ESI para desbloquear un ESI"ANSI_COLOR_RESET);
-		}
-
-		cliente_t* ESI = buscarESI(bufferIDEsi);
-
-		enviarMensaje(ESI->fd, "OPOK");
-
-		log_info(logger, ANSI_COLOR_BOLDCYAN"Se envio un OPOK al ESI %d desbloqueado"ANSI_COLOR_RESET, ESI->identificadorESI);
-	}
-
-	free(bufferIDEsi);
-	free(bufferOperacion);
 }
 
 /* Identifica si se conecto ESI, PLANIFICADOR o INSTANCIA */

@@ -229,33 +229,8 @@ void conectarConCoordinador() {
 
 						// DESBLOQUEO AL ESI QUE ESTA ESPERANDO POR ESTE RECURSO, SI LO HUBIESE
 
-						cliente* ESIDesbloqueado;
-						int* codigoOP = malloc(sizeof(int));
-						int* IDESIADesbloquear = malloc(sizeof(int));
+						desbloquearESI(clave);
 
-						ESIDesbloqueado = desbloquearESI(clave);
-
-						if (ESIDesbloqueado != NULL) {
-							*codigoOP = 1;
-							*IDESIADesbloquear = ESIDesbloqueado->identificadorESI;
-
-							if(send(socket, codigoOP, sizeof(int), 0) < 0) {
-								_exit_with_error("No se pudo enviar el codigo de OP para desbloquear ESI");
-							}
-
-							if(send(socket, IDESIADesbloquear, sizeof(int), 0) < 0) {
-								_exit_with_error("No se pudo enviar el ID de ESI al Coordinador para desbloquearlo");
-							}
-						} else {
-							*codigoOP = 0;
-
-							if(send(socket, codigoOP, sizeof(int), 0) < 0) {
-								_exit_with_error("No se pudo enviar el codigo de OP para desbloquear ESI");
-							}
-						}
-
-						free(codigoOP);
-						free(IDESIADesbloquear);
 
 					} else {		// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
 						abortarESI(IDESI);
@@ -380,7 +355,7 @@ void bloquearESI(char* clave, int* IDESI) {
 	ordenarProximoAEjecutar();	// COMO LO BLOQUEE, TENGO QUE MANDAR A OTRO A EJECUTAR
 }
 
-cliente* desbloquearESI(char* clave) {
+void desbloquearESI(char* clave) {
 	cliente* primerESIBloqueadoEsperandoPorClave;
 
 	for(int i=0; i<list_size(bloqueados); i++) {
@@ -393,28 +368,18 @@ cliente* desbloquearESI(char* clave) {
 			list_remove(bloqueados, i);		// LO SACO DE BLOQUEADOS AL ESI
 			sem_post(&mutexBloqueados);
 
-			int* IDESIDesbloqueado = malloc(sizeof(int));	// CREO VARIABLE PARA AGREGARLA AL DICCIONARIO
-			*IDESIDesbloqueado = primerESIBloqueadoEsperandoPorClave->identificadorESI;	// LA SETEO CON LA ID DEL ESI
-
-			sem_wait(&mutexDiccionarioClaves);
-			dictionary_put(diccionarioClaves, clave, IDESIDesbloqueado);	// AGREGO LA CLAVE AL ESI
-			sem_post(&mutexDiccionarioClaves);
-
-			log_info(logger, ANSI_COLOR_BOLDCYAN"Se desbloqueo al ESI %d ya que se libero la clave %s"ANSI_COLOR_RESET, *IDESIDesbloqueado, clave);
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se desbloqueo al ESI %d ya que se libero la clave %s"ANSI_COLOR_RESET, primerESIBloqueadoEsperandoPorClave->identificadorESI, clave);
 
 			sem_wait(&mutexListos);
 			list_add(listos, primerESIBloqueadoEsperandoPorClave);	// LO MANDO A LISTOS
 			sem_post(&mutexListos);
-
-			return primerESIBloqueadoEsperandoPorClave;
 		}
 	}
 
-//	if(list_is_empty(ejecutando)) {
-//		ordenarProximoAEjecutar();
-//	}
+	if(list_is_empty(ejecutando)) {
+		ordenarProximoAEjecutar();
+	}
 
-	return NULL;
 }
 
 void listar(char* clave) {
