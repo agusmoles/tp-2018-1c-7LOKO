@@ -215,7 +215,6 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador){
 				enviarHeader(socketCoordinador, header);
 				enviarClave(socketCoordinador, parsed.argumentos.GET.clave);
 
-				printf(ANSI_COLOR_BOLDWHITE"TAMANIO CLAVE: %d\n"ANSI_COLOR_RESET, header->tamanioClave);
 				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
 				free(header);
 				break;

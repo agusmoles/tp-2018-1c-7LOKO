@@ -271,7 +271,7 @@ void conectarConCoordinador() {
 
 void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI) {
 	if( *(int*)ESI == *ESIABuscarEnDiccionario) {
-		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el ESI %d ya que fue abortado"ANSI_COLOR_RESET, clave, *(int*) ESI);
+		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el ESI %d ya que fue finalizado"ANSI_COLOR_RESET, clave, *(int*) ESI);
 		int* value = dictionary_remove(diccionarioClaves, clave);
 		free(value);
 	}
@@ -611,6 +611,20 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 					sem_wait(&mutexFinalizados);
 					list_add(finalizados, &socketCliente[posicion]);
 					sem_post(&mutexFinalizados);
+
+					/*************************** LIBERO LAS CLAVES TOMADAS DEL ESI ************************/
+
+					ESIABuscarEnDiccionario = malloc(sizeof(int));
+
+					*ESIABuscarEnDiccionario = socketCliente[posicion].identificadorESI;	// SETEO LA VARIABLE GLOBAL
+
+					sem_wait(&mutexDiccionarioClaves);
+					dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+					sem_post(&mutexDiccionarioClaves);
+
+					free(ESIABuscarEnDiccionario);
+
+					/*************************************************************************************/
 
 					socketCliente[posicion].fd = -1;	// LO SETEO EN -1 PORQUE YA SE DESCONECTO
 
