@@ -6,7 +6,7 @@ int main(){
 	crearConfig();
 	setearConfigEnVariables();
 	int socketPlanificador,socketCoordinador;
-	FILE* script = fopen("ESI_1","r");
+	FILE* script = fopen("ESI_MultiClave","r");
 	char* instruccion;
 	size_t len = 0;
 	int sentencias = 0;

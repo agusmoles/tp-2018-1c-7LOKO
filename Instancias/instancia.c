@@ -249,7 +249,8 @@ void store(char* clave){
 	int fd;
 	char* mem_ptr;
 	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
-	FILE* archivo;
+
+	mkdir(PUNTOMONTAJE, 0777);
 
 	strcpy(directorioMontaje, PUNTOMONTAJE);
 
