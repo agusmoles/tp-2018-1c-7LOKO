@@ -503,6 +503,10 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				log_error(logger, ANSI_COLOR_BOLDRED"Error de Clave no Identificada"ANSI_COLOR_RESET);
 			}
 
+			/* Avisa a Planificador */
+			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
+
 			recibirTamanioValor(socketESI->fd, tamanioValor);
 			bufferValor = malloc(*tamanioValor);
 			recibirValor(socketESI->fd, tamanioValor, bufferValor);

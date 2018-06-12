@@ -168,6 +168,7 @@ void recibirMensaje(int socketServidor, char* mensaje){
 void enviarMensaje(int socketServidor, void* msg){
 	int resultado;
 	resultado = send(socketServidor,msg, strlen(msg)+1,0);
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio %s al planificador"ANSI_COLOR_RESET, (char*) msg);
 	verificarResultado(socketServidor, resultado);
 }
 
@@ -215,7 +216,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador){
 				enviarHeader(socketCoordinador, header);
 				enviarClave(socketCoordinador, parsed.argumentos.GET.clave);
 
-				printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+				printf(ANSI_COLOR_BOLDWHITE"GET\tclave: <%s>\n"ANSI_COLOR_RESET, parsed.argumentos.GET.clave);
 				free(header);
 				break;
 			case SET:
@@ -226,7 +227,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador){
 
 				enviarValor(socketCoordinador, parsed.argumentos.SET.valor);
 
-				printf("SET\tclave: <%s>\tvalor: <%s>\n", parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+				printf(ANSI_COLOR_BOLDWHITE"SET\tclave: <%s>\tvalor: <%s>\n"ANSI_COLOR_RESET, parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
 				free(header);
 				break;
 			case STORE:
@@ -235,7 +236,7 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador){
 				enviarHeader(socketCoordinador, header);
 				enviarClave(socketCoordinador, parsed.argumentos.STORE.clave);
 
-				printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+				printf(ANSI_COLOR_BOLDWHITE"STORE\tclave: <%s>\n"ANSI_COLOR_RESET, parsed.argumentos.STORE.clave);
 				free(header);
 				break;
 			default:
