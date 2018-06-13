@@ -42,6 +42,7 @@ void setearConfigEnVariables() {
 	sem_init(&mutexBloqueados, 0, 1);
 	sem_init(&mutexFinalizados, 0, 1);
 	sem_init(&mutexDiccionarioClaves, 0, 1);
+	sem_init(&esisListos, 0, 0);
 
 	/************************ SETEO CLAVES BLOQUEADAS ******************/
 
@@ -165,6 +166,7 @@ void conectarConCoordinador() {
 	header_t* buffer_header = malloc(sizeof(header_t));
 	int* IDESI = malloc(sizeof(int));
 	char* clave;
+	cliente* ESI;
 
 	while(1) {
 		FD_ZERO(&descriptorCoordinador);
@@ -186,6 +188,8 @@ void conectarConCoordinador() {
 			int* idEsiParaDiccionario = malloc(sizeof(int));
 
 			*idEsiParaDiccionario = *IDESI;
+
+			ESI = buscarESI(IDESI);
 
 			switch(buffer_header->codigoOperacion) {
 			case 0: // OPERACION GET
@@ -209,7 +213,16 @@ void conectarConCoordinador() {
 					log_info(logger, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, *idEsiParaDiccionario, clave);
 
 					informarAlCoordinador(socket, 1); // 1 PORQUE SALIO BIEN
+
+					recibirMensaje(ESI);
 				}
+				break;
+			case 1: //OPERACION SET
+
+				// VERIFICAR SI YO TENGO QUE VER SI EL SET TIRA ERROR POR CLAVE NO IDENTIFICADA O EL COORDINADOR
+
+				recibirMensaje(ESI);
+
 				break;
 			case 2: //OPERACION STORE
 				if (dictionary_has_key(diccionarioClaves, clave)) {
@@ -231,6 +244,7 @@ void conectarConCoordinador() {
 
 						desbloquearESI(clave);
 
+						recibirMensaje(ESI);
 
 					} else {		// DEBO ABORTAR AL ESI POR STOREAR UNA CLAVE QUE NO ES DE EL
 						abortarESI(IDESI);
@@ -271,7 +285,7 @@ void conectarConCoordinador() {
 
 void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI) {
 	if( *(int*)ESI == *ESIABuscarEnDiccionario) {
-		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el ESI %d ya que fue abortado"ANSI_COLOR_RESET, clave, *(int*) ESI);
+		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el ESI %d ya que fue finalizado"ANSI_COLOR_RESET, clave, *(int*) ESI);
 		int* value = dictionary_remove(diccionarioClaves, clave);
 		free(value);
 	}
@@ -377,7 +391,7 @@ void desbloquearESI(char* clave) {
 	}
 
 	if(list_is_empty(ejecutando)) {
-		ordenarProximoAEjecutar();
+		sem_post(&esisListos); // LE AVISO AL HILO DE PLANIFICACION QUE EJECUTE. PORQUE SI ESTABA PAUSADO Y DESBLOQUEABA POR CONSOLA, IGUAL PLANIFICABA
 	}
 
 }
@@ -419,46 +433,12 @@ void escuchar(int socket) {
 
 }
 
-void manejoDeClientes(int socket, cliente* socketCliente) {
-	FD_ZERO(&descriptoresLectura);			//VACIO EL SET DE DESCRIPTORES
-	FD_SET(socket, &descriptoresLectura); //ASIGNO EL SOCKET DE SERVIDOR AL SET
+void manejoDeClientes() {
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"Se esta esperando por conexiones de los clientes..."ANSI_COLOR_RESET);
 
-	for (int i=0; i<NUMEROCLIENTES; i++) {
-		if(socketCliente[i].fd != -1 && socketCliente[i].nombre[0] != '\0') {
-			FD_SET(socketCliente[i].fd, &descriptoresLectura);  //SI EL FD ES DISTINTO DE -1 LO AGREGO AL SET
-		}
-	}
+	aceptarCliente(listenSocket);
 
-	log_info(logger, ANSI_COLOR_BOLDYELLOW"Se esta esperando por conexiones o mensajes de los clientes..."ANSI_COLOR_RESET);
-
-	switch(select(fdmax+1, &descriptoresLectura, NULL, NULL, NULL)) {
-		case 0: log_info(logger, "Expiro el tiempo de espera de conexion o mensaje de los clientes");
-				break;
-
-		case -1: _exit_with_error(ANSI_COLOR_BOLDRED"Fallo el manejo de clientes"ANSI_COLOR_RESET);
-				break;
-
-		default:sem_wait(&pausado);			// SI EL PLANIFICADOR ESTA PAUSADO, NO HACE NADA...
-				sem_post(&pausado);				// SI PASO, LO LIBERO...
-
-				if (FD_ISSET(socket, &descriptoresLectura)) { //ACA SE TRATA AL SOCKET SERVIDOR, SI DA TRUE ES PORQUE TIENE UN CLIENTE ESPERANDO EN COLA
-					aceptarCliente(socket, socketCliente);
-
-					if(list_is_empty(ejecutando)) {			// SI LA LISTA DE EJECUTANDO ESTA VACIA, ENTONCES MANDO ORDEN DE EJECUTAR
-						ordenarProximoAEjecutar();	// PORQUE SINO MANDABA DOS EXEOR AL MISMO ESI CUANDO ESTE NO LO ESPERA
-					}
-				}
-
-				for (int i=0; i<NUMEROCLIENTES; i++) {
-					if (FD_ISSET(socketCliente[i].fd, &descriptoresLectura)) {
-						recibirMensaje(socketCliente, i); //RECIBO EL MENSAJE, DENTRO DE LA FUNCION MANEJO ERRORES
-					}
-				}
-
-				manejoDeClientes(socket, socketCliente);
-
-				break;
-	}
+	sem_post(&esisListos);
 }
 
 int envioHandshake(int socketCliente) {
@@ -491,11 +471,9 @@ int envioIDDeESI(int socketCliente, int identificador) {
 	}
 }
 
-void aceptarCliente(int socket, cliente* socketCliente) {
+void aceptarCliente(int socket) {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
-
-	log_info(logger, ANSI_COLOR_BOLDYELLOW"Un nuevo cliente requiere acceso al servidor. Procediendo a aceptar.."ANSI_COLOR_RESET);
 
 	for (int i=0; i<NUMEROCLIENTES; i++) {			//RECORRO EL ARRAY DE CLIENTES
 		if (socketCliente[i].fd == -1 && socketCliente[i].nombre[0] == '\0') {	//SI FD ES IGUAL A -1 Y NO TIENE
@@ -540,6 +518,18 @@ void aceptarCliente(int socket, cliente* socketCliente) {
 	}
 }
 
+void planificar() {
+	while(1) {
+		sem_wait(&esisListos);
+		sem_wait(&pausado);
+		sem_post(&pausado);
+
+		if(list_is_empty(ejecutando)) {
+			ordenarProximoAEjecutar();
+		}
+	}
+}
+
 void recibirHeader(int socket, header_t* header) {
 	if(recv(socket, header, sizeof(header_t), MSG_WAITALL) <= 0) {		// RECIBO EL HEADER
 		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el header"ANSI_COLOR_RESET);
@@ -558,42 +548,42 @@ void recibirIDDeESI(int socket, int* id) {
 	}
 }
 
-void recibirMensaje(cliente* socketCliente, int posicion) {
+void recibirMensaje(cliente* ESI) {
 	void* buffer = malloc(7);
 	int resultado_recv;
 
-	switch(resultado_recv = recv(socketCliente[posicion].fd, buffer, 7, 0)) {
+	switch(resultado_recv = recv(ESI->fd, buffer, 7, 0)) {
 
 		case -1: _exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el mensaje del cliente"ANSI_COLOR_RESET);
 				break;
 
-		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el %s %d"ANSI_COLOR_RESET, socketCliente[posicion].nombre, socketCliente[posicion].identificadorESI);
-				close(socketCliente[posicion].fd); 		//CIERRO EL SOCKET
-				socketCliente[posicion].fd = -1;			//LO VUELVO A SETEAR EN -1 POR SI HAY QUE VOLVER A ASIGNARLO
+		case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el %s %d"ANSI_COLOR_RESET, ESI->nombre, ESI->identificadorESI);
+				close(ESI->fd); 		//CIERRO EL SOCKET
+				ESI->fd = -1;			//LO VUELVO A SETEAR EN -1
 				break;
 
-		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del %s %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, socketCliente[posicion].nombre, socketCliente[posicion].identificadorESI, resultado_recv, (char*) buffer);
+		default: printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del %s %d de %d bytes y dice: %s\n"ANSI_COLOR_RESET, ESI->nombre, ESI->identificadorESI, resultado_recv, (char*) buffer);
 
 				if (strcmp(buffer, "OPOK") == 0) {
-					socketCliente[posicion].rafagaActual++;
+					ESI->rafagaActual++;
 
 					if (strcmp(algoritmoPlanificacion, "SJF-CD") == 0) {	//SI ES CON DESALOJO DEBO ORDENAR LA COLA CADA VEZ QUE EJECUTA UNA SENTENCIA
-						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
+						ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
 
 						if(DEBUG) {
-							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, socketCliente[posicion].identificadorESI,socketCliente[posicion].estimacionProximaRafaga, socketCliente[posicion].estimacionRafagaActual);
+							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->estimacionRafagaActual);
 						}
 
 						if (list_size(listos) >= 2) {			//SI HAY MAS DOS ESIS EN LISTOS ORDENO
 							ordenarColaDeListosPorSJF();
 						}
 
-						verificarDesalojoPorSJF(&socketCliente[posicion]);	// Y VERIFICO SI HAY QUE DESALOJAR AL ACTUAL
+						verificarDesalojoPorSJF(ESI);	// Y VERIFICO SI HAY QUE DESALOJAR AL ACTUAL
 					}
 
 					if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
-						socketCliente[posicion].estimacionProximaRafaga = (alfaPlanificacion / 100) * socketCliente[posicion].rafagaActual + (1 - (alfaPlanificacion / 100) ) * socketCliente[posicion].estimacionRafagaActual;
-						socketCliente[posicion].tiempoDeEspera = 0; 	// LO REINICIO CADA VEZ QUE DEVUELVE OPOK (DEBERIA SER SOLO UNA VEZ CUANDO ENTRA A EJECUTAR PERO BUE)
+						ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
+						ESI->tiempoDeEspera = 0; 	// LO REINICIO CADA VEZ QUE DEVUELVE OPOK (DEBERIA SER SOLO UNA VEZ CUANDO ENTRA A EJECUTAR PERO BUE)
 
 						sem_wait(&mutexListos);
 						list_iterate(listos, (void *) sumarUnoAlWaitingTime);
@@ -609,14 +599,29 @@ void recibirMensaje(cliente* socketCliente, int posicion) {
 					sem_post(&mutexEjecutando);
 
 					sem_wait(&mutexFinalizados);
-					list_add(finalizados, &socketCliente[posicion]);
+					list_add(finalizados, ESI);
 					sem_post(&mutexFinalizados);
 
-					socketCliente[posicion].fd = -1;	// LO SETEO EN -1 PORQUE YA SE DESCONECTO
+					/*************************** LIBERO LAS CLAVES TOMADAS DEL ESI ************************/
+
+					ESIABuscarEnDiccionario = malloc(sizeof(int));
+
+					*ESIABuscarEnDiccionario = ESI->identificadorESI;	// SETEO LA VARIABLE GLOBAL
+
+					sem_wait(&mutexDiccionarioClaves);
+					dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+					sem_post(&mutexDiccionarioClaves);
+
+					free(ESIABuscarEnDiccionario);
+
+					/*************************************************************************************/
+
+					close(ESI->fd);
+					ESI->fd = -1;	// LO SETEO EN -1 PORQUE YA SE DESCONECTO
 
 					if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
 						if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) { // SI ES SJF
-							ordenarColaDeListosPorSJF(&socketCliente[posicion]);
+							ordenarColaDeListosPorSJF(ESI);
 						}
 
 						else if (strcmp(algoritmoPlanificacion, "HRRN") == 0) { //SI ES HRRN
@@ -764,6 +769,54 @@ void calcularResponseRatio(cliente* cliente) {
 	cliente->tasaDeRespuesta = (cliente->tiempoDeEspera + cliente->estimacionProximaRafaga) / cliente->estimacionProximaRafaga;
 }
 
+int esiEstaEjecutando(cliente* ESI) {
+	if (!list_is_empty(ejecutando)) {
+		cliente* ESIEjecutando = list_get(ejecutando, 0);
+
+		if(ESIEjecutando->identificadorESI == ESI->identificadorESI) {	// SI EL ESI ESTABA EJECUTANDO, TENGO QUE DESALOJARLO Y ORDENAR A OTRO A EJECUTAR
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+
+	return 0;
+}
+
+int esiEstaEnListos(cliente* ESI) {
+	for (int i=0; i<list_size(listos); i++) {
+		cliente* ESIListo = list_get(listos, i);
+
+		if (ESIListo->identificadorESI == ESI->identificadorESI) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int esiEstaEnBloqueados(cliente* ESI) {
+	for (int i=0; i<list_size(bloqueados); i++) {
+		cliente* ESIBloqueado = list_get(bloqueados, i);
+
+		if (ESIBloqueado->identificadorESI == ESI->identificadorESI) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int hayEsisBloqueadosEsperandoPor(char* clave) {
+	for(int i=0; i<NUMEROCLIENTES; i++) {
+		if (strcmp(socketCliente[i].recursoSolicitado, clave) == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 void intHandler() {
 	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
 	exit(1);
@@ -803,7 +856,7 @@ int main(void) {
 
 	sleep(1);
 
-	/************************************** CONEXION CON CONSOLA **********************************/
+	/************************************** HILO CONSOLA **********************************/
 
 	pthread_t threadConsola;
 
@@ -814,8 +867,20 @@ int main(void) {
 		log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo consola"ANSI_COLOR_RESET);
 	}
 
+	/************************************** HILO CONSOLA **********************************/
+
+	pthread_t threadPlanificacion;
+
+	if(pthread_create(&threadPlanificacion, NULL, (void *)planificar, NULL) != 0) {
+		log_error(logger, "No se pudo crear el hilo de planificacion");
+		exit(-1);
+	}else{
+		log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo de planificacion"ANSI_COLOR_RESET);
+	}
+
 	pthread_detach(threadCliente);
 	pthread_detach(threadConsola);
+	pthread_detach(threadPlanificacion);
 
 	/***************************************************************************************/
 
@@ -831,7 +896,9 @@ int main(void) {
 		socketCliente[i].tasaDeRespuesta = 0;
 	}
 
-	manejoDeClientes(listenSocket, socketCliente);
+	while(1) {
+		manejoDeClientes();
+	}
 
 	close(listenSocket);
 
