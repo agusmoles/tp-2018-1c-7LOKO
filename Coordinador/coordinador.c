@@ -203,7 +203,6 @@ void recibirMensaje_Instancias(void* argumentos) {
 							cantidadInstanciasConectadas--;
 							instanciasConectadas();
 						}
-
 						close(args->socketCliente.fd); 		//CIERRO EL SOCKET
 						free(args);							//LIBERO MEMORIA CUANDO SE DESCONECTA
 						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
@@ -226,9 +225,7 @@ void recibirMensaje_Planificador(void* argumentos) {
 	fd_set descriptoresLectura;
 	int fdmax = args->socketCliente.fd + 1;
 	int flag = 1;
-
-	void* buffer = malloc(1024);
-	int resultado_recv;
+	int socketESI;
 
 	while(flag) {
 		FD_ZERO(&descriptoresLectura);
@@ -237,11 +234,22 @@ void recibirMensaje_Planificador(void* argumentos) {
 		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
 
 		if (FD_ISSET(args->socketCliente.fd, &descriptoresLectura)) {
-			/* Recibe en otro lado */
+			sem_wait(&semaforo_planificador);
+
+			/* Buscar socket ESI */
+			socketESI = buscarSocketESI();
+
+			if(verificarClaveTomada(args->socketCliente.fd) == 0){
+				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
+				enviarMensaje(socketESI, "OPBL");
+			} else {
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET/STORE correctamente"ANSI_COLOR_RESET);
+				enviarMensaje(socketESI, "OPOK");
+			}
+
+			sem_post(&semaforo_planificadorOK);
 		}
 	}
-
-	free(buffer);
 	pthread_exit(NULL);
 }
 
@@ -306,6 +314,15 @@ void asignarNombreAlSocketCliente(cliente_t* socketCliente, char* nombre) {
 /* Crea un array con las instancias que se encuentran conectadas y muestra la cantidad*/
 void instanciasConectadas(){
 	printf("Cantidad de instancias conectadas: %d \n", cantidadInstanciasConectadas);
+}
+
+int buscarInstanciaEncargada(char* clave){
+	for(int i=0; i<CANTIDADCLAVES; i ++){
+		if(strcmp(clave, clavesExistentes[i].clave)){
+			return clavesExistentes[i].instancia;
+		}
+	}
+	return -1;
 }
 
 /* Si no hay instancias conectadas logea el error */
@@ -458,7 +475,6 @@ int verificarClaveTomada(int socket){
 	return *resultado;
 }
 
-
 /* Realiza GET, SET, STORE */
 void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlanificador){
 	char* bufferClave = malloc(header->tamanioClave);
@@ -474,22 +490,15 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			if(verificarSiExisteClave(bufferClave) < 0){
 				agregarClave(header->tamanioClave, bufferClave);
 			}
-			/* Si existe consultar al planificador */
-
-			mostrarClavesExistentes();
+			//mostrarClavesExistentes();
 
 			/* Avisa a Planificador */
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
 
-			if(verificarClaveTomada(socketPlanificador) == 0){
-				log_error(logger, ANSI_COLOR_BOLDRED"La clave se encontraba tomada"ANSI_COLOR_RESET);
-				enviarMensaje(socketESI->fd, "OPBL");
-			} else {
-				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET correctamente"ANSI_COLOR_RESET);
-				enviarMensaje(socketESI->fd, "OPOK");
-			}
+			sem_post(&semaforo_planificador);
 
+			sem_wait(&semaforo_planificadorOK);
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
 			break;
@@ -534,22 +543,17 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
 
-			if(verificarClaveTomada(socketPlanificador) == 0){
-				log_error(logger, ANSI_COLOR_BOLDRED"El ESI %d fue abortado por error de STORE"ANSI_COLOR_RESET, socketESI->identificadorESI);
-				// ACA DEBERIAS SACAR AL ESI DE TU LISTA DE CONECTADOS NACHITO, TE LO DEJO COMENTADO (PORQUE YA SE ABORTO)
+			sem_post(&semaforo_planificador);
 
-				close(socketESI->fd);		// CIERRO EL FD Y DESPUES NO SE SI TE HACE FALTA HACER ALGO MAS
-
-
-			} else {
-				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el STORE correctamente"ANSI_COLOR_RESET);
-				enviarMensaje(socketESI->fd, "OPOK");
-			}
+			sem_wait(&semaforo_planificadorOK);
 
 			/*Ahora envio la sentencia a la Instancia encargada */
-			instanciaEncargada = seleccionEquitativeLoad();
+			if((instanciaEncargada = buscarInstanciaEncargada(bufferClave)) == -1){
+				instanciaEncargada = seleccionEquitativeLoad();
+			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			actualizarVectorInstanciasConectadas();
+
 			enviarSentenciaESIStore(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
 
@@ -665,6 +669,15 @@ int buscarSocketPlanificador(){
 	return -1;
 }
 
+int buscarSocketESI(){
+	for(int i = 0; i<NUMEROCLIENTES; i++){
+		if(strcmp(socketCliente[i].nombre, "ESI") == 0){
+			return socketCliente[i].fd;
+		}
+	}
+	return -1;
+}
+
 cliente_t* buscarESI(int* IDESI) {
 	for(int i=0; i<NUMEROCLIENTES; i++) {
 		if(socketCliente[i].identificadorESI == *IDESI) {
@@ -703,6 +716,9 @@ int main(void) {
 		strcpy(clavesExistentes[j].clave, "Nada");
 		clavesExistentes[j].instancia = -1;
 	}
+
+	sem_init(&semaforo_planificador, 0 , 0);
+	sem_init(&semaforo_planificadorOK, 0 , 0);
 
 	while(1) {
 		aceptarCliente(listenSocket, socketCliente);

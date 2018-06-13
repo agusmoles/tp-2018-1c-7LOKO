@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include "../Colores.h"
 #include "sharedlib.h"
+#include <semaphore.h>
 
 char* PUERTO;
 #define NUMEROCLIENTES 20
@@ -46,6 +47,9 @@ t_config* config;
 cliente_t socketCliente[NUMEROCLIENTES];
 clave_t clavesExistentes[CANTIDADCLAVES];
 //t_list* clavesExistentes;
+sem_t semaforo_planificador;
+sem_t semaforo_instancia;
+sem_t semaforo_planificadorOK;
 
 /*FUNCIONES DE CONEXION */
 void _exit_with_error(int socket, char* mensaje);
@@ -119,5 +123,10 @@ void enviarValor(int socket, char* valor);
 void enviarIDEsi(int socket, int idESI);
 
 int buscarSocketPlanificador();
+int buscarSocketESI();
+
+int verificarClaveTomada(int socket);
 
 cliente_t* buscarESI(int* IDESI);
+
+int buscarInstanciaEncargada(char* clave);
