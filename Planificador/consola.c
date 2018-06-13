@@ -139,30 +139,64 @@ int com_bloquear(char **args){
 			return error_sobran_parametros(args);
 	}
 
-//	int* IDESI = malloc(sizeof(int));
-//
-//	*IDESI = atoi(args[2]);
-//
-//	if (dictionary_has_key(diccionarioClaves, args[1])) {
-//		// TENGO QUE BLOQUEAR AL ESI BLA BLA BLA
-//
-//		bloquearESI(args[1], IDESI);
-//
-//		int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, args[1]);
-//
-//		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], IDEsiQueTieneLaClaveTomada, IDESI);
-//
-////					informarClaveTomada(); AL COORDINADOR
-//
-//		free(IDESI);
-//	} else {
-//
-//		dictionary_put(diccionarioClaves, args[1], IDESI);
-//
-//		log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, IDESI, args[1]);
-//
-////					informarClaveTomada(); AL COORDINADOR
-//	}
+	int* IDESI = malloc(sizeof(int));
+
+	*IDESI = atoi(args[2]);
+
+	cliente* ESI = buscarESI(IDESI);
+
+	if (ESI == NULL) {
+		log_error(loggerConsola, ANSI_COLOR_BOLDRED"No existe el ESI en el Sistema."ANSI_COLOR_RESET);
+
+		if (!dictionary_has_key(diccionarioClaves, args[1])) {		// SI NINGUN ESI LA TIENE, LA TOMA EL SISTEMA
+			*IDESI = -1;
+
+			dictionary_put(diccionarioClaves, args[1], IDESI);
+
+			log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"La clave %s fue tomada por el Sistema"ANSI_COLOR_RESET, args[1]);
+		}
+	} else {
+		if (dictionary_has_key(diccionarioClaves, args[1])) {		// SI ALGUIEN YA TIENE EL RECURSO ASIGNADO, BLOQUEO AL ESI
+
+			if (esiEstaEnBloqueados(ESI)) {		// SI YA ESTABA BLOQUEADO, NO HACE NADA
+				log_error(loggerConsola, ANSI_COLOR_BOLDRED"El ESI %d ya se encontraba bloqueado por la clave %s"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->recursoSolicitado);
+			}
+
+
+			if (esiEstaEjecutando(ESI)) { // SI EL ESI ESTABA EJECUTANDO, TENGO QUE DESALOJARLO Y ORDENAR A OTRO A EJECUTAR
+				strcpy(ESI->recursoSolicitado, args[1]);
+			}
+
+
+			for (int i=0; i<list_size(listos); i++) {
+				cliente* ESIListo = list_get(listos, i);
+
+				if (ESIListo->identificadorESI == ESI->identificadorESI) {		// SI ESTA EN LISTOS, LO SACO Y PASO A BLOQUEADO
+					strcpy(ESI->recursoSolicitado, args[1]);
+
+					sem_wait(&mutexListos);
+					list_remove(listos, i);
+					sem_post(&mutexListos);
+
+					sem_wait(&mutexBloqueados);
+					list_add(bloqueados, ESI);
+					sem_post(&mutexBloqueados);
+				}
+			}
+
+			int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, args[1]);
+
+			log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], IDEsiQueTieneLaClaveTomada, IDESI);
+
+			free(IDESI);
+		} else {		// SI NO LO TIENEN ASIGNADO, SE LO ASIGNO AL ESI
+
+			dictionary_put(diccionarioClaves, args[1], IDESI);
+
+			log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, IDESI, args[1]);
+
+		}
+	}
 
 	liberar_parametros(args);
 	return 1;
@@ -180,9 +214,12 @@ int com_desbloquear(char **args){
 	}
 
 	if (dictionary_has_key(diccionarioClaves, args[1])) {
-		int* IDESI = dictionary_remove(diccionarioClaves, args[1]);	// CREO QUE HAY QUE LIBERAR LA CLAVE
-		free(IDESI);
 		desbloquearESI(args[1]);
+
+		if (!hayEsisBloqueadosEsperandoPor(args[1])) {		// SI NO HAY MAS ESIS BLOQUEADOS POR LA CLAVE, LA LIBERO
+			int* IDESI = dictionary_remove(diccionarioClaves, args[1]);
+			free(IDESI);
+		}
 	} else {
 		log_info(loggerConsola, ANSI_COLOR_BOLDWHITE"La clave %s no se encontraba en el sistema\n"ANSI_COLOR_RESET, args[1]);
 	}

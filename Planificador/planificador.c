@@ -769,6 +769,54 @@ void calcularResponseRatio(cliente* cliente) {
 	cliente->tasaDeRespuesta = (cliente->tiempoDeEspera + cliente->estimacionProximaRafaga) / cliente->estimacionProximaRafaga;
 }
 
+int esiEstaEjecutando(cliente* ESI) {
+	if (!list_is_empty(ejecutando)) {
+		cliente* ESIEjecutando = list_get(ejecutando, 0);
+
+		if(ESIEjecutando->identificadorESI == ESI->identificadorESI) {	// SI EL ESI ESTABA EJECUTANDO, TENGO QUE DESALOJARLO Y ORDENAR A OTRO A EJECUTAR
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+
+	return 0;
+}
+
+int esiEstaEnListos(cliente* ESI) {
+	for (int i=0; i<list_size(listos); i++) {
+		cliente* ESIListo = list_get(listos, i);
+
+		if (ESIListo->identificadorESI == ESI->identificadorESI) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int esiEstaEnBloqueados(cliente* ESI) {
+	for (int i=0; i<list_size(bloqueados); i++) {
+		cliente* ESIBloqueado = list_get(bloqueados, i);
+
+		if (ESIBloqueado->identificadorESI == ESI->identificadorESI) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int hayEsisBloqueadosEsperandoPor(char* clave) {
+	for(int i=0; i<NUMEROCLIENTES; i++) {
+		if (strcmp(socketCliente[i].recursoSolicitado, clave) == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 void intHandler() {
 	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
 	exit(1);
