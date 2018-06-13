@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <commons/log.h>
 #include <commons/string.h>
+#include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -31,12 +32,21 @@ typedef struct Cliente{
 }cliente;
 
 t_log* loggerConsola;
+t_list* bloqueados;
+t_list* listos;
 t_dictionary* diccionarioClaves;
 sem_t pausado;
+sem_t mutexBloqueados;
+sem_t mutexListos;
 
 void bloquearESI(char* clave, int* IDESI);
 void listar(char* clave);
 void desbloquearESI(char* clave);
+cliente* buscarESI(int* IDESI);
+int esiEstaEjecutando(cliente* ESI);
+int esiEstaEnListos(cliente* ESI);
+int esiEstaEnBloqueados(cliente* ESI);
+int hayEsisBloqueadosEsperandoPor(char* clave);
 
 int ejecutar_consola();
 int com_pausar(char **args);
