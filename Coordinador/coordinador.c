@@ -318,11 +318,19 @@ void instanciasConectadas(){
 
 int buscarInstanciaEncargada(char* clave){
 	for(int i=0; i<CANTIDADCLAVES; i ++){
-		if(strcmp(clave, clavesExistentes[i].clave)){
+		if(strcmp(clavesExistentes[i].clave, clave) == 0){
 			return clavesExistentes[i].instancia;
 		}
 	}
 	return -1;
+}
+
+void setearInstancia(char* clave, int instancia){
+	for(int i=0; i<CANTIDADCLAVES; i ++){
+		if(strcmp(clavesExistentes[i].clave, clave) == 0){
+			clavesExistentes[i].instancia = instancia;
+		}
+	}
 }
 
 /* Si no hay instancias conectadas logea el error */
@@ -363,7 +371,44 @@ int seleccionEquitativeLoad(){
 }
 
 int seleccionLeastSpaceUsed(){
-	return 0;
+	int entradasOcupadasPorInstancia[cantidadInstanciasConectadas];
+
+	for(int h=0; h<cantidadInstanciasConectadas; h++){
+		entradasOcupadasPorInstancia[h] = 0;
+	}
+
+	/*Buscar entradas ocupadas de cada instancia*/
+	for(int i=0; i<CANTIDADCLAVES; i++){
+		switch(clavesExistentes[i].instancia){
+		case 0:
+			entradasOcupadasPorInstancia[0] ++;
+			break;
+		case 1:
+			entradasOcupadasPorInstancia[1] ++;
+			break;
+		case 2:
+			entradasOcupadasPorInstancia[2] ++;
+			break;
+		case 3:
+			entradasOcupadasPorInstancia[3] ++;
+			break;
+		default:
+			break;
+		}
+	}
+
+	int minimo = entradasOcupadasPorInstancia[0];
+	int instanciaSeleccionada = 0;
+
+	/*Busco la que tenga menos entradas ocupadas*/
+	for(int j=0; j<cantidadInstanciasConectadas; j++){
+		if(entradasOcupadasPorInstancia[j] < minimo){
+			minimo = entradasOcupadasPorInstancia[j];
+			instanciaSeleccionada = j;
+		}
+	}
+
+	return instanciaSeleccionada;
 }
 
 int seleccionKeyExplicit(){
@@ -521,14 +566,20 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			recibirValor(socketESI->fd, tamanioValor, bufferValor);
 
 			/*Ahora envio la sentencia a la Instancia encargada */
-			instanciaEncargada = seleccionEquitativeLoad();
+			if((instanciaEncargada = buscarInstanciaEncargada(bufferClave)) == -1){
+				instanciaEncargada = seleccionEquitativeLoad();
+				//instanciaEncargada = seleccionLeastSpaceUsed();
+				setearInstancia(bufferClave, instanciaEncargada);
+			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			actualizarVectorInstanciasConectadas();
+
 			enviarSentenciaESI(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
 
-			enviarMensaje(socketESI->fd, "OPOK");
+			/*Falta respuesta de la instancia */
 
+			enviarMensaje(socketESI->fd, "OPOK");
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: SET %s %s",socketESI->identificadorESI, bufferClave, bufferValor);
 
@@ -554,12 +605,15 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			/*Ahora envio la sentencia a la Instancia encargada */
 			if((instanciaEncargada = buscarInstanciaEncargada(bufferClave)) == -1){
 				instanciaEncargada = seleccionEquitativeLoad();
+				//instanciaEncargada = seleccionLeastSpaceUsed();
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			actualizarVectorInstanciasConectadas();
 
 			enviarSentenciaESIStore(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
+
+			/*Falta respuesta de la instancia */
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
