@@ -43,6 +43,8 @@ int cantidad_commands() {
 int ejecutar_consola(){
   char * linea;
   char** args;
+
+  loggerConsola = log_create("loggerConsola.log", "planificador", 1, LOG_LEVEL_INFO);
 	
   while(1){
 
