@@ -153,6 +153,7 @@ void set(char* clave, char* valor){
 	entrada_t* entrada;
 	data_t* data;
 	int cantidadEntradas = list_size(tablaEntradas);
+	int entradasNecesarias;
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
 		data = buscarEnStorage(entrada->numero);
@@ -177,9 +178,14 @@ void set(char* clave, char* valor){
 		strcpy(entrada->clave, clave);
 
 
-		/*Crear Storage*/
+		if(strlen(valor) <= TAMANIOENTRADA){
+			entradasNecesarias = 1;
+		}else{
+			entradasNecesarias = 2;
+		}
+
 	/* ESTE if ES PARA CONTEMPLAR CUANDO SE NECESITAN 2 ENTRADAS */
-	if(strlen(valor) > TAMANIOENTRADA){
+	if(entradasNecesarias > 1){
 
 			entrada->tamanio_valor = TAMANIOENTRADA;
 
@@ -193,9 +199,13 @@ void set(char* clave, char* valor){
 			entrada->numero = list_size(tablaEntradas);
 			entrada2->numero = list_size(tablaEntradas) + 1;
 
-			list_add(tablaEntradas, entrada);
-			list_add(tablaEntradas, entrada2);
-			cantidadEntradas += 2;
+			if(CANTIDADENTRADAS - cantidadEntradas < entradasNecesarias){
+				reemplazarSegun(ALGORITMOREEMPLAZO, entrada);
+				reemplazarSegun(ALGORITMOREEMPLAZO, entrada2);
+			}else{
+				list_add(tablaEntradas, entrada);
+				list_add(tablaEntradas, entrada2);
+			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agregaron las entradas: Clave %s - Entrada %d - Tamanio Valor %d \n Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor,entrada2->clave,entrada2->numero,entrada2->tamanio_valor);;
 
