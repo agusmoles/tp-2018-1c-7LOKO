@@ -645,6 +645,9 @@ void ordenarProximoAEjecutar() {
 	char* ordenEjecucion = "EXEOR";
 	cliente* esiProximoAEjecutar;
 
+	sem_wait(&pausado);	// SI ESTA PAUSADO NO EJECUTO
+	sem_post(&pausado);
+
 	if(list_is_empty(listos) && list_is_empty(ejecutando)) {		// SI LAS DOS LISTAS ESTAN VACIAS, NADIE VA A EJECUTAR
 		printf(ANSI_COLOR_BOLDRED"\nNo hay ESIs para ejecutar\n\n"ANSI_COLOR_RESET);
 	} else if (!list_is_empty(ejecutando)){							// SI EJECUTANDO NO ESTA VACIA, DEBERIA SEGUIR EJECUTANDO EL...
@@ -730,7 +733,7 @@ void ordenarColaDeListosPorHRRN() {
 
 		for (int i=0; i<list_size(listos); i++) {
 			struct Cliente* esi = list_get(listos, i);
-			printf(ANSI_COLOR_BOLDWHITE"ESI %d ------ Response ratio: %f\n"ANSI_COLOR_RESET, esi->identificadorESI, esi->tasaDeRespuesta);
+			printf(ANSI_COLOR_BOLDWHITE"ESI %d ------ Response ratio: %f - Tiempo de espera: %d - Estimacion Proxima Rafaga: %f\n"ANSI_COLOR_RESET, esi->identificadorESI, esi->tasaDeRespuesta, esi->tiempoDeEspera, esi->estimacionProximaRafaga);
 		}
 
 		printf("\n\n\n");
@@ -755,7 +758,7 @@ int comparadorRafaga(cliente* cliente, struct Cliente* cliente2) {
 }
 
 int comparadorResponseRatio(cliente* cliente, struct Cliente* cliente2) {
-	if(cliente->tasaDeRespuesta <= cliente2->tasaDeRespuesta)
+	if(cliente->tasaDeRespuesta >= cliente2->tasaDeRespuesta)
 		return 1;
 	else
 		return 0;
