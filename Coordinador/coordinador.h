@@ -50,6 +50,7 @@ clave_t clavesExistentes[CANTIDADCLAVES];
 sem_t semaforo_planificador;
 sem_t semaforo_instancia;
 sem_t semaforo_planificadorOK;
+sem_t mutexEsiEjecutando;
 
 /*FUNCIONES DE CONEXION */
 void _exit_with_error(int socket, char* mensaje);
