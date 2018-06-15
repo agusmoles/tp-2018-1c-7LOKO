@@ -38,6 +38,8 @@ t_dictionary* diccionarioClaves;
 sem_t pausado;
 sem_t mutexBloqueados;
 sem_t mutexListos;
+int socketStatus;
+char* IPCOORDINADOR;
 
 void bloquearESI(char* clave, int* IDESI);
 void listar(char* clave);
@@ -48,6 +50,7 @@ int esiEstaEnListos(cliente* ESI);
 int esiEstaEnBloqueados(cliente* ESI);
 int hayEsisBloqueadosEsperandoPor(char* clave);
 
+int conectarSocketStatus();
 int ejecutar_consola();
 int com_pausar(char **args);
 int com_continuar(char **args);
@@ -62,5 +65,6 @@ int com_man(char **args);
 int ejecutar_linea(char **args);
 
 void liberar_parametros(char **args);
+void _exit_with_error(char* mensaje);
 
 #endif /* CONSOLAPLANIFICADOR_SRC_CONSOLA_H_ */

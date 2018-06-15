@@ -36,6 +36,29 @@ int (*com_func[]) (char **) = {
 	&com_man
 };
 
+int conectarSocketStatus() {
+	struct addrinfo hints;
+	struct addrinfo *serverInfo;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;		// Permite que la maquina se encargue de verificar si usamos IPv4 o IPv6
+	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
+
+	getaddrinfo(IPCOORDINADOR, "8002", &hints, &serverInfo);	// Carga en serverInfo los datos de la conexion
+
+	int server_socket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+
+	if (connect(server_socket, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
+		_exit_with_error("No se pudo conectar con el servidor");
+	}
+
+	log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"Se pudo conectar con el Coordinador por el comando status"ANSI_COLOR_RESET);
+
+	freeaddrinfo(serverInfo);
+
+	return server_socket;
+}
+
 int cantidad_commands() {
   return sizeof(command_nombre) / sizeof(char *);
 }
@@ -45,6 +68,7 @@ int ejecutar_consola(){
   char** args;
 
   loggerConsola = log_create("loggerConsola.log", "planificador", 1, LOG_LEVEL_INFO);
+  socketStatus = conectarSocketStatus();
 	
   while(1){
 
@@ -274,9 +298,16 @@ int com_status(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	// NO OLVIDARSE DE LIBERAR PARAMETROS
+	char* msg = "HOLA";
 
-	puts("Estas en status");
+	if (send(socketStatus, msg, strlen(msg) + 1, 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo enviar el mensaje de status"ANSI_COLOR_RESET);
+	}
+
+	log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"Se pudo enviar el comando status");
+
+	liberar_parametros(args);
+
 	return 1;
 }
 

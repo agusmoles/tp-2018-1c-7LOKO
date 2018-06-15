@@ -241,6 +241,8 @@ void recibirMensaje_Planificador(void* argumentos) {
 			socketESI = buscarSocketESI(idEsiEjecutando);
 			log_info(logger, "Socket ESI: %d", socketESI);
 
+			printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI FD: %d\n"ANSI_COLOR_RESET, socketESI);
+
 			if(verificarClaveTomada(args->socketCliente.fd) == 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
 				enviarMensaje(socketESI, "OPBL");
@@ -305,6 +307,86 @@ void crearHiloESI(cliente_t* socketCliente, int socketPlanificador){
 	log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo ESI"ANSI_COLOR_RESET);
 
 	pthread_detach(threadESI);
+}
+
+void crearHiloStatus() {
+	pthread_t threadStatus;
+
+	if( pthread_create(&threadStatus, NULL, (void *) recibirMensajeStatus, NULL)!= 0 ){
+		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo de status"ANSI_COLOR_RESET);
+		exit(-1);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo de status"ANSI_COLOR_RESET);
+
+	pthread_detach(threadStatus);
+}
+
+int conectarSocketYReservarPuertoDeStatus() {
+	struct addrinfo hints;
+	struct addrinfo *serverInfo;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;		// No importa si uso IPv4 o IPv6
+	hints.ai_flags = AI_PASSIVE;		// Asigna el address del localhost: 127.0.0.1
+	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
+
+	getaddrinfo(NULL, "8002", &hints, &serverInfo); // Notar que le pasamos NULL como IP, ya que le indicamos que use localhost en AI_PASSIVE
+
+	listenSocketStatus = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+
+	if (listenSocketStatus <= 0) {
+		_exit_with_error(listenSocketStatus, "No se pudo conectar el socket");
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar el socket con éxito"ANSI_COLOR_RESET);
+
+	if(bind(listenSocketStatus, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
+		_exit_with_error(listenSocketStatus, "No se pudo reservar correctamente el puerto de escucha");
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo reservar correctamente el puerto de escucha del servidor"ANSI_COLOR_RESET);
+
+	freeaddrinfo(serverInfo);
+
+	return listenSocketStatus;
+}
+
+void recibirMensajeStatus() {
+	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
+	socklen_t addrlen = sizeof(addr);
+	fd_set descriptorLectura;
+	char* buffer = malloc(5);
+
+	if(listen(listenSocketStatus, 1) < 0) {
+		_exit_with_error(listenSocketStatus, "No se puede esperar por conexiones del status");
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se esta escuchando correctamente en el puerto del status"ANSI_COLOR_RESET);
+
+	int socketStatusPlanificador = accept(listenSocketStatus, (struct sockaddr *) &addr, &addrlen);
+
+	log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se conecto el comando status"ANSI_COLOR_RESET);
+
+	while(1) {
+		FD_ZERO(&descriptorLectura);
+		FD_SET(socketStatusPlanificador, &descriptorLectura);
+
+		select(socketStatusPlanificador + 1, &descriptorLectura, NULL, NULL, NULL);
+
+		switch (recv(socketStatusPlanificador, buffer, 5, 0)) {
+
+		case -1: _exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"No se pudo recibir el mensaje del comando status"ANSI_COLOR_RESET);
+			break;
+
+		case 0: close(listenSocketStatus);
+			_exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"************SE DESCONECTO EL COMANDO STATUS************"ANSI_COLOR_RESET);
+			break;
+
+		default: log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se recibio el mensaje del status: %s"ANSI_COLOR_RESET, buffer);
+			break;
+		}
+	}
 }
 
 /* Asigna nombre a cada cliente particular:  Instancia, ESI, Planificador */
@@ -761,10 +843,13 @@ int main(void) {
 	setearConfigEnVariables();
 
 	int listenSocket = conectarSocketYReservarPuerto();
+	listenSocketStatus = conectarSocketYReservarPuertoDeStatus();
 
 	escuchar(listenSocket);
 
 	configurarLogOperaciones();
+
+	crearHiloStatus();
 
 	//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
 	//INICIALIZO EL ARRAY DE INSTANCIAS CONECTADAS EN -1 LAS ID
