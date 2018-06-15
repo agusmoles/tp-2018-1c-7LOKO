@@ -17,7 +17,6 @@
 
 char* PUERTOPLANIFICADOR;
 char* PUERTOCOORDINADOR;
-char* IPCOORDINADOR;
 char* algoritmoPlanificacion;
 int listenSocket;
 double alfaPlanificacion;
@@ -37,7 +36,6 @@ sem_t mutexDiccionarioClaves;
 sem_t esisListos;
 fd_set descriptoresLectura;
 cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
-int fdmax = 10;
 int* ESIABuscarEnDiccionario;
 
 void configurarLogger();
@@ -72,4 +70,3 @@ int comparadorRafaga(cliente* cliente, struct Cliente* cliente2);
 int comparadorResponseRatio(cliente* cliente, struct Cliente* cliente2);
 void sumarUnoAlWaitingTime(cliente* cliente);
 void calcularResponseRatio(cliente* cliente);
-void _exit_with_error(char* mensaje);

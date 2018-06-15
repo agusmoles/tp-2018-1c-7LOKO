@@ -485,10 +485,6 @@ void aceptarCliente(int socket) {
 				_exit_with_error("No se pudo conectar el cliente");		// MANEJO DE ERRORES
 			}
 
-			if (socketCliente[i].fd > fdmax) {
-				fdmax = socketCliente[i].fd;				//SI EL FD ASIGNADO ES MAYOR AL FDMAX (QUE NECESITA EL SELECT() ), LO ASIGNO AL FDMAX
-			}
-
 			switch(envioHandshake(socketCliente[i].fd)) {
 				case -1: _exit_with_error("No se pudo enviar el handshake");
 						break;
@@ -870,7 +866,7 @@ int main(void) {
 		log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo consola"ANSI_COLOR_RESET);
 	}
 
-	/************************************** HILO CONSOLA **********************************/
+	/************************************** HILO PLANIFICACION **********************************/
 
 	pthread_t threadPlanificacion;
 

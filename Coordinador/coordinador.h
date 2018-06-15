@@ -50,6 +50,7 @@ clave_t clavesExistentes[CANTIDADCLAVES];
 sem_t semaforo_planificador;
 sem_t semaforo_instancia;
 sem_t semaforo_planificadorOK;
+int listenSocketStatus;
 
 /*FUNCIONES DE CONEXION */
 void _exit_with_error(int socket, char* mensaje);
@@ -82,6 +83,12 @@ void crearHiloPlanificador(cliente_t socketCliente);
 void crearHiloInstancia(cliente_t socketCliente);
 
 void crearHiloESI(cliente_t* socketCliente, int socketPlanificador);
+
+void crearHiloStatus();
+
+int conectarSocketYReservarPuertoDeStatus();
+
+void recibirMensajeStatus();
 
 /* Crea un array con las instancias que se encuentran conectadas y muestra la cantidad*/
 void instanciasConectadas();
