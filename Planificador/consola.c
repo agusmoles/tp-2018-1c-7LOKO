@@ -184,15 +184,22 @@ int com_bloquear(char **args){
 	} else {
 		if (dictionary_has_key(diccionarioClaves, args[1])) {		// SI ALGUIEN YA TIENE EL RECURSO ASIGNADO, BLOQUEO AL ESI
 
+			int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, args[1]);
+
 			if (esiEstaEnBloqueados(ESI)) {		// SI YA ESTABA BLOQUEADO, NO HACE NADA
 				log_error(loggerConsola, ANSI_COLOR_BOLDRED"El ESI %d ya se encontraba bloqueado por la clave %s"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->recursoSolicitado);
 			}
 
 
 			if (esiEstaEjecutando(ESI)) { // SI EL ESI ESTABA EJECUTANDO, TENGO QUE DESALOJARLO Y ORDENAR A OTRO A EJECUTAR
-				strcpy(ESI->recursoSolicitado, args[1]);
-			}
+				sem_wait(&desalojoComandoBloquear);
+				ESI->desalojoPorComandoBloquear = 1;
+				sem_post(&desalojoComandoBloquear);
 
+				strcpy(ESI->recursoSolicitado, args[1]);	// LE ASIGNO LA CLAVE POR LA QUE SE BLOQUEO
+
+				log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], *IDEsiQueTieneLaClaveTomada, *IDESI);
+			}
 
 			for (int i=0; i<list_size(listos); i++) {
 				cliente* ESIListo = list_get(listos, i);
@@ -207,19 +214,17 @@ int com_bloquear(char **args){
 					sem_wait(&mutexBloqueados);
 					list_add(bloqueados, ESI);
 					sem_post(&mutexBloqueados);
+
+					log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], *IDEsiQueTieneLaClaveTomada, *IDESI);
 				}
 			}
-
-			int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, args[1]);
-
-			log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], IDEsiQueTieneLaClaveTomada, IDESI);
 
 			free(IDESI);
 		} else {		// SI NO LO TIENEN ASIGNADO, SE LO ASIGNO AL ESI
 
 			dictionary_put(diccionarioClaves, args[1], IDESI);
 
-			log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, IDESI, args[1]);
+			log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, *IDESI, args[1]);
 
 		}
 	}

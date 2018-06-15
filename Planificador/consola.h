@@ -29,6 +29,7 @@ typedef struct Cliente{
 	float tasaDeRespuesta;
 	int tiempoDeEspera;
 	char recursoSolicitado[40];
+	int desalojoPorComandoBloquear;
 }cliente;
 
 t_log* loggerConsola;
@@ -38,6 +39,7 @@ t_dictionary* diccionarioClaves;
 sem_t pausado;
 sem_t mutexBloqueados;
 sem_t mutexListos;
+sem_t desalojoComandoBloquear;
 int socketStatus;
 char* IPCOORDINADOR;
 

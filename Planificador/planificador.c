@@ -43,6 +43,7 @@ void setearConfigEnVariables() {
 	sem_init(&mutexFinalizados, 0, 1);
 	sem_init(&mutexDiccionarioClaves, 0, 1);
 	sem_init(&esisListos, 0, 0);
+	sem_init(&desalojoComandoBloquear, 0, 1);
 
 	/************************ SETEO CLAVES BLOQUEADAS ******************/
 
@@ -586,6 +587,20 @@ void recibirMensaje(cliente* ESI) {
 						sem_post(&mutexListos);
 					}
 
+					if(ESI->desalojoPorComandoBloquear) {
+						sem_wait(&desalojoComandoBloquear);
+						ESI->desalojoPorComandoBloquear = 0;		// LO VUELVO A SETEAR EN 0
+						sem_post(&desalojoComandoBloquear);
+
+						sem_wait(&mutexEjecutando);
+						list_remove(ejecutando, 0);
+						sem_post(&mutexEjecutando);
+
+						sem_wait(&mutexBloqueados);
+						list_add(bloqueados, ESI);
+						sem_post(&mutexBloqueados);
+					}
+
 					ordenarProximoAEjecutar();
 				}
 
@@ -831,16 +846,6 @@ int main(void) {
 	crearDiccionarioDeClaves();
 	setearConfigEnVariables();
 	setearListaDeEstados();
-
-	/************************************** MUESTRO CLAVES INICIALMENTE BLOQUEADAS *************************/
-
-	int* IDEsi;
-
-	IDEsi = dictionary_get(diccionarioClaves, "futbol:messi");
-
-	for (int i=0; i<dictionary_size(diccionarioClaves); i++) {
-		printf("%d \n", *IDEsi);
-	}
 
 	/************************************** CONEXION CON COORDINADOR **********************************/
 
