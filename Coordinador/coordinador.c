@@ -4,6 +4,7 @@ cliente_t v_instanciasConectadas[NUMEROCLIENTES];
 int instanciaSiguiente = 0;
 int cantidadInstanciasConectadas = 0;
 int identificadorInstancia = 0;
+int idEsiEjecutando = 0;
 
 /* Funciomes de conexion */
 void _exit_with_error(int socket, char* mensaje) {
@@ -237,7 +238,8 @@ void recibirMensaje_Planificador(void* argumentos) {
 			sem_wait(&semaforo_planificador);
 
 			/* Buscar socket ESI */
-			socketESI = buscarSocketESI();
+			socketESI = buscarSocketESI(idEsiEjecutando);
+			log_info(logger, "Socket ESI: %d", socketESI);
 
 			printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI FD: %d\n"ANSI_COLOR_RESET, socketESI);
 
@@ -609,6 +611,10 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 	int32_t * tamanioValor;
 	char* bufferValor;
 
+	sem_wait(&mutexEsiEjecutando);
+	idEsiEjecutando = socketESI->identificadorESI;
+	sem_post(&mutexEsiEjecutando);
+
 	switch(header->codigoOperacion){
 		case 0: /* GET */
 			recibirClave(socketESI->fd, header,bufferClave);
@@ -809,9 +815,9 @@ int buscarSocketPlanificador(){
 	return -1;
 }
 
-int buscarSocketESI(){
+int buscarSocketESI(int idEsi){
 	for(int i = 0; i<NUMEROCLIENTES; i++){
-		if(strcmp(socketCliente[i].nombre, "ESI") == 0){
+		if(socketCliente[i].identificadorESI == idEsi){
 			return socketCliente[i].fd;
 		}
 	}
@@ -850,6 +856,7 @@ int main(void) {
 	for (int i=0; i<NUMEROCLIENTES; i++) {
 		socketCliente[i].fd = -1;
 		v_instanciasConectadas[i].identificadorInstancia = -1;
+		socketCliente[i].identificadorESI = -1;
 	}
 
 	for(int j=0; j<CANTIDADCLAVES; j++){
@@ -862,6 +869,7 @@ int main(void) {
 
 	sem_init(&semaforo_planificador, 0 , 0);
 	sem_init(&semaforo_planificadorOK, 0 , 0);
+	sem_init(&mutexEsiEjecutando, 0, 1);
 
 	while(1) {
 		aceptarCliente(listenSocket, socketCliente);

@@ -50,6 +50,7 @@ clave_t clavesExistentes[CANTIDADCLAVES];
 sem_t semaforo_planificador;
 sem_t semaforo_instancia;
 sem_t semaforo_planificadorOK;
+sem_t mutexEsiEjecutando;
 int listenSocketStatus;
 
 /*FUNCIONES DE CONEXION */
