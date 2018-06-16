@@ -287,9 +287,68 @@ int com_kill(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	// NO OLVIDARSE DE LIBERAR PARAMETROS
 
-	puts("Estas en kill");
+	int* IDESI = malloc(sizeof(int));
+	*IDESI = atoi(args[1]);
+	cliente* ESI = buscarESI(IDESI);
+
+	for (int i=0; i<list_size(bloqueados); i++) {
+		cliente* ESIBloqueado = list_get(bloqueados, i);
+
+		if (ESIBloqueado->identificadorESI == ESI->identificadorESI) {
+			sem_wait(&mutexBloqueados);
+			list_remove(bloqueados, i);
+			sem_post(&mutexBloqueados);
+
+			sem_wait(&mutexFinalizados);
+			list_add(finalizados, ESI);
+			sem_post(&mutexFinalizados);
+
+			ESIABuscarEnDiccionario = malloc(sizeof(int));
+			*ESIABuscarEnDiccionario = *IDESI;	// SETEO LA VARIABLE GLOBAL
+
+			sem_wait(&mutexDiccionarioClaves);
+			dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+			sem_post(&mutexDiccionarioClaves);
+
+			free(ESIABuscarEnDiccionario);
+		}
+	}
+
+
+	if (esiEstaEjecutando(ESI)) { // SI EL ESI ESTABA EJECUTANDO, TENGO QUE ABORTARLO Y ORDENAR A OTRO A EJECUTAR
+		sem_wait(&desalojoComandoKill);
+		ESI->desalojoPorComandoKill = 1;
+		sem_post(&desalojoComandoKill);
+	}
+
+	for (int i=0; i<list_size(listos); i++) {
+		cliente* ESIListo = list_get(listos, i);
+
+		if (ESIListo->identificadorESI == ESI->identificadorESI) {		// SI ESTA EN LISTOS, LO SACO Y FINALIZO
+			sem_wait(&mutexListos);
+			list_remove(listos, i);
+			sem_post(&mutexListos);
+
+			sem_wait(&mutexFinalizados);
+			list_add(finalizados, ESI);
+			sem_post(&mutexFinalizados);
+
+			ESIABuscarEnDiccionario = malloc(sizeof(int));
+			*ESIABuscarEnDiccionario = *IDESI;	// SETEO LA VARIABLE GLOBAL
+
+			sem_wait(&mutexDiccionarioClaves);
+			dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+			sem_post(&mutexDiccionarioClaves);
+
+			free(ESIABuscarEnDiccionario);
+		}
+	}
+
+	free(IDESI);
+
+	liberar_parametros(args);
+
 	return 1;
 }
 
@@ -303,13 +362,56 @@ int com_status(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	char* msg = "HOLA";
+	int* tamanioClave = malloc(sizeof(int));
+	int* tamanioValor = malloc(sizeof(int));
+	char* bufferValor;
+	int* instancia = malloc(sizeof(int));
 
-	if (send(socketStatus, msg, strlen(msg) + 1, 0) < 0) {
-		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo enviar el mensaje de status"ANSI_COLOR_RESET);
+	*tamanioClave = strlen(args[1]) + 1;
+
+	/*********************** PROCEDIMIENTO EXPLICADO EN PROTOCOLO.TXT ****************************/
+
+	if (send(socketStatus, tamanioClave, sizeof(int), 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo enviar el tamaño de la clave en status"ANSI_COLOR_RESET);
 	}
 
-	log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"Se pudo enviar el comando status");
+	if (send(socketStatus, args[1], *tamanioClave, 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo enviar la clave en status"ANSI_COLOR_RESET);
+	}
+
+	if (recv(socketStatus, tamanioValor, sizeof(int), 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el tamaño de valor en status"ANSI_COLOR_RESET);
+	}
+
+	if (*tamanioValor == -1) {		// SI NO HAY VALOR, QUE RECIBA -1 EL TAMANIO Y DESPUES LA INSTANCIA
+		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave no tiene valor guardado en ninguna instancia"ANSI_COLOR_RESET);
+
+		if (recv(socketStatus, instancia, sizeof(int), 0) < 0) {
+			log_error(loggerConsola, ANSI_COLOR_BOLDRED"El valor se guardaria en la instancia %d"ANSI_COLOR_RESET, *instancia);
+		}
+
+	} else {
+
+		bufferValor = malloc(*tamanioValor);
+
+		if (recv(socketStatus, bufferValor, *tamanioValor, 0) < 0) {
+			_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el valor en status"ANSI_COLOR_RESET);
+		}
+
+		log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"El valor de la clave %s es %s"ANSI_COLOR_RESET, args[1], bufferValor);
+
+		if (recv(socketStatus, instancia, sizeof(int), 0) < 0) {
+			log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"El valor esta guardado en la instancia %d"ANSI_COLOR_RESET, *instancia);
+		}
+
+		free(bufferValor);
+	}
+
+	listar(args[1]);
+
+	free(tamanioClave);
+	free(tamanioValor);
+	free(instancia);
 
 	liberar_parametros(args);
 

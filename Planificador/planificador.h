@@ -29,14 +29,10 @@ int estimacionInicial;
 t_log* logger;
 t_config* config;
 t_list* ejecutando;
-t_list* finalizados;
 sem_t mutexEjecutando;
-sem_t mutexFinalizados;
-sem_t mutexDiccionarioClaves;
 sem_t esisListos;
 fd_set descriptoresLectura;
 cliente socketCliente[NUMEROCLIENTES];		//ARRAY DE ESTRUCTURA CLIENTE
-int* ESIABuscarEnDiccionario;
 
 void configurarLogger();
 void crearConfig();
@@ -47,7 +43,6 @@ int conectarSocketCoordinador();
 void reciboHandshake(int socket);
 void envioIdentificador(int socket);
 void conectarConCoordinador();
-void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI);
 void abortarESI(int* IDESI);
 void informarAlCoordinador(int socketCoordinador, int operacion);
 void escuchar(int socket);

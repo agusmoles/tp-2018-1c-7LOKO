@@ -44,6 +44,7 @@ void setearConfigEnVariables() {
 	sem_init(&mutexDiccionarioClaves, 0, 1);
 	sem_init(&esisListos, 0, 0);
 	sem_init(&desalojoComandoBloquear, 0, 1);
+	sem_init(&desalojoComandoKill, 0, 1);
 
 	/************************ SETEO CLAVES BLOQUEADAS ******************/
 
@@ -601,6 +602,29 @@ void recibirMensaje(cliente* ESI) {
 						sem_post(&mutexBloqueados);
 					}
 
+					if(ESI->desalojoPorComandoKill) {
+						sem_wait(&desalojoComandoKill);
+						ESI->desalojoPorComandoKill = 0;
+						sem_post(&desalojoComandoKill);
+
+						sem_wait(&mutexEjecutando);
+						list_remove(ejecutando, 0);
+						sem_post(&mutexEjecutando);
+
+						sem_wait(&mutexFinalizados);
+						list_add(finalizados, ESI);
+						sem_post(&mutexFinalizados);
+
+						ESIABuscarEnDiccionario = malloc(sizeof(int));
+						*ESIABuscarEnDiccionario = ESI->identificadorESI;	// SETEO LA VARIABLE GLOBAL
+
+						sem_wait(&mutexDiccionarioClaves);
+						dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+						sem_post(&mutexDiccionarioClaves);
+
+						free(ESIABuscarEnDiccionario);
+					}
+
 					ordenarProximoAEjecutar();
 				}
 
@@ -898,6 +922,8 @@ int main(void) {
 		socketCliente[i].rafagaActual = 0;
 		socketCliente[i].estimacionRafagaActual = 0;
 		socketCliente[i].tasaDeRespuesta = 0;
+		socketCliente[i].desalojoPorComandoBloquear = 0;
+		socketCliente[i].desalojoPorComandoKill = 0;
 	}
 
 	while(1) {
