@@ -29,17 +29,25 @@ typedef struct Cliente{
 	float tasaDeRespuesta;
 	int tiempoDeEspera;
 	char recursoSolicitado[40];
+	int desalojoPorComandoBloquear;
+	int desalojoPorComandoKill;
 }cliente;
 
 t_log* loggerConsola;
 t_list* bloqueados;
 t_list* listos;
+t_list* finalizados;
 t_dictionary* diccionarioClaves;
 sem_t pausado;
 sem_t mutexBloqueados;
 sem_t mutexListos;
+sem_t mutexFinalizados;
+sem_t mutexDiccionarioClaves;
+sem_t desalojoComandoBloquear;
+sem_t desalojoComandoKill;
 int socketStatus;
 char* IPCOORDINADOR;
+int* ESIABuscarEnDiccionario;
 
 void bloquearESI(char* clave, int* IDESI);
 void listar(char* clave);
@@ -49,6 +57,7 @@ int esiEstaEjecutando(cliente* ESI);
 int esiEstaEnListos(cliente* ESI);
 int esiEstaEnBloqueados(cliente* ESI);
 int hayEsisBloqueadosEsperandoPor(char* clave);
+void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI);
 
 int conectarSocketStatus();
 int ejecutar_consola();
