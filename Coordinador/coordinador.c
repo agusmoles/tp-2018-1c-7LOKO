@@ -239,7 +239,6 @@ void recibirMensaje_Planificador(void* argumentos) {
 
 			/* Buscar socket ESI */
 			socketESI = buscarSocketESI(idEsiEjecutando);
-			log_info(logger, "Socket ESI: %d", socketESI);
 
 			printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI FD: %d\n"ANSI_COLOR_RESET, socketESI);
 
@@ -496,6 +495,29 @@ int seleccionLeastSpaceUsed(){
 }
 
 int seleccionKeyExplicit(){
+	int cantidadLetras = 26;
+	int i = 0;
+	int numeroInstancias = cantidadInstanciasConectadas;
+	int letrasUsadas;
+	actualizarVectorInstanciasConectadas();
+
+	/*Primero asigno letra a cada instancia */
+	// Redondear para arriba -> 1 + ((x - 1) / y)
+	while((cantidadLetras % numeroInstancias) != 0){
+		letrasUsadas =  1 + ( (cantidadLetras - 1) / cantidadInstanciasConectadas);
+		v_instanciasConectadas[i].cantidadLetras = letrasUsadas;
+		i ++;
+		cantidadLetras -= letrasUsadas;
+		numeroInstancias --;
+	}
+
+	for(int j = i; j<=numeroInstancias; j++){
+		v_instanciasConectadas[j].cantidadLetras = cantidadLetras / numeroInstancias;
+	}
+
+	/*Ahora selecciono la instancia encargada segun primer letra*/
+
+
 	return 0;
 }
 
@@ -625,6 +647,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			}
 			//mostrarClavesExistentes();
 
+			seleccionKeyExplicit();
+
 			/* Avisa a Planificador */
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
@@ -662,6 +686,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			actualizarVectorInstanciasConectadas();
 
+			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
+
 			enviarSentenciaESI(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
 
@@ -697,6 +723,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			actualizarVectorInstanciasConectadas();
+
+			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
 
 			enviarSentenciaESIStore(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);

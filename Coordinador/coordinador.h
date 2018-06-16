@@ -24,6 +24,8 @@ typedef struct Cliente{
 	int fd; 				//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
 	int identificadorESI;
 	int identificadorInstancia;
+	int cantidadLetras;
+	char primeraLetra;
 }cliente_t;
 
 typedef struct arg_struct {
