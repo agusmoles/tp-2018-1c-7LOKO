@@ -289,6 +289,7 @@ void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI) {
 	if( *(int*)ESI == *ESIABuscarEnDiccionario) {
 		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el ESI %d ya que fue finalizado"ANSI_COLOR_RESET, clave, *(int*) ESI);
 		int* value = dictionary_remove(diccionarioClaves, clave);
+		desbloquearESI(clave);
 		free(value);
 	}
 }
