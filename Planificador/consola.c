@@ -384,11 +384,12 @@ int com_status(char **args){
 	}
 
 	if (*tamanioValor == -1) {		// SI NO HAY VALOR, QUE RECIBA -1 EL TAMANIO Y DESPUES LA INSTANCIA
-		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave no tiene valor guardado en ninguna instancia"ANSI_COLOR_RESET);
+		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave no existe o no tiene valor guardado en ninguna instancia"ANSI_COLOR_RESET);
 
 		if (recv(socketStatus, instancia, sizeof(int), 0) < 0) {
 			log_error(loggerConsola, ANSI_COLOR_BOLDRED"El valor se guardaria en la instancia %d"ANSI_COLOR_RESET, *instancia);
 		}
+
 
 	} else {
 
@@ -401,8 +402,10 @@ int com_status(char **args){
 		log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"El valor de la clave %s es %s"ANSI_COLOR_RESET, args[1], bufferValor);
 
 		if (recv(socketStatus, instancia, sizeof(int), 0) < 0) {
-			log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"El valor esta guardado en la instancia %d"ANSI_COLOR_RESET, *instancia);
+			_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir la instancia en status"ANSI_COLOR_RESET);
 		}
+
+		log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"El valor esta guardado en la instancia %d"ANSI_COLOR_RESET, *instancia);
 
 		free(bufferValor);
 	}
