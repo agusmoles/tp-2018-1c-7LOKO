@@ -239,7 +239,6 @@ void recibirMensaje_Planificador(void* argumentos) {
 
 			/* Buscar socket ESI */
 			socketESI = buscarSocketESI(idEsiEjecutando);
-			log_info(logger, "Socket ESI: %d", socketESI);
 
 			printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI FD: %d\n"ANSI_COLOR_RESET, socketESI);
 
@@ -356,7 +355,8 @@ void recibirMensajeStatus() {
 	struct sockaddr_in addr;			// Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
 	fd_set descriptorLectura;
-	char* buffer = malloc(5);
+	int* tamanioClave = malloc(sizeof(int));
+	char* clave;
 
 	if(listen(listenSocketStatus, 1) < 0) {
 		_exit_with_error(listenSocketStatus, "No se puede esperar por conexiones del status");
@@ -374,7 +374,8 @@ void recibirMensajeStatus() {
 
 		select(socketStatusPlanificador + 1, &descriptorLectura, NULL, NULL, NULL);
 
-		switch (recv(socketStatusPlanificador, buffer, 5, 0)) {
+		/* Primero recibo tamanio clave */
+		switch (recv(socketStatusPlanificador, tamanioClave, sizeof(int), 0)) {
 
 		case -1: _exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"No se pudo recibir el mensaje del comando status"ANSI_COLOR_RESET);
 			break;
@@ -383,7 +384,20 @@ void recibirMensajeStatus() {
 			_exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"************SE DESCONECTO EL COMANDO STATUS************"ANSI_COLOR_RESET);
 			break;
 
-		default: log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se recibio el mensaje del status: %s"ANSI_COLOR_RESET, buffer);
+		default:
+			log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se recibio el tamaño de la clave (status): %d"ANSI_COLOR_RESET, *tamanioClave);
+			clave = malloc(*tamanioClave);
+
+			/*Recibo clave*/
+			if(recv(socketStatusPlanificador, clave, *tamanioClave, 0) < 0){
+				_exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"No se pudo recibir la clave (status) "ANSI_COLOR_RESET);
+			}
+			log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se recibio la clave (status): %s"ANSI_COLOR_RESET, clave);
+
+			/*Chequear si existe valor actual*/
+
+
+
 			break;
 		}
 	}
@@ -495,8 +509,45 @@ int seleccionLeastSpaceUsed(){
 	return instanciaSeleccionada;
 }
 
-int seleccionKeyExplicit(){
-	return 0;
+int seleccionKeyExplicit(char inicial){
+	int cantidadLetras = 26;
+	int i = 0;
+	int numeroInstancias = cantidadInstanciasConectadas;
+	int letrasUsadas;
+	actualizarVectorInstanciasConectadas();
+
+	/*Primero asigno letra a cada instancia */
+	v_instanciasConectadas[0].primeraLetra = 'a';
+
+	// Redondear para arriba -> 1 + ((x - 1) / y)
+	while((cantidadLetras % numeroInstancias) != 0){
+		letrasUsadas =  1 + ( (cantidadLetras - 1) / numeroInstancias);
+		if(i > 0){
+			v_instanciasConectadas[i].primeraLetra = v_instanciasConectadas[i-1].ultimaLetra + 1;
+		}
+		v_instanciasConectadas[i].ultimaLetra = v_instanciasConectadas[i].primeraLetra + letrasUsadas -1;
+		i ++;
+		cantidadLetras -= letrasUsadas;
+		numeroInstancias --;
+	}
+
+	for(int j = i; j<cantidadInstanciasConectadas; j++){
+		if(j > 0){
+			v_instanciasConectadas[j].primeraLetra = v_instanciasConectadas[j-1].ultimaLetra + 1;
+		}
+		letrasUsadas = cantidadLetras / numeroInstancias;
+		v_instanciasConectadas[j].ultimaLetra = v_instanciasConectadas[j].primeraLetra + letrasUsadas - 1;
+	}
+
+	/*Ahora selecciono la instancia encargada segun primer letra*/
+	for(int h=0; h<cantidadInstanciasConectadas; h++){
+		printf("Instancia %d: Primera letra %c - Ultima letra %c\n", h, v_instanciasConectadas[h].primeraLetra, v_instanciasConectadas[h].ultimaLetra);
+
+		if(inicial >= v_instanciasConectadas[h].primeraLetra && inicial <= v_instanciasConectadas[h].ultimaLetra){
+			return h;
+		}
+	}
+	return -1;
 }
 
 /* Administracion de claves del coordinador */
@@ -655,12 +706,15 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 			/*Ahora envio la sentencia a la Instancia encargada */
 			if((instanciaEncargada = buscarInstanciaEncargada(bufferClave)) == -1){
-				instanciaEncargada = seleccionEquitativeLoad();
+				//instanciaEncargada = seleccionEquitativeLoad();
 				//instanciaEncargada = seleccionLeastSpaceUsed();
+				instanciaEncargada = seleccionKeyExplicit(bufferClave[0]);
 				setearInstancia(bufferClave, instanciaEncargada);
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			actualizarVectorInstanciasConectadas();
+
+			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
 
 			enviarSentenciaESI(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
@@ -697,6 +751,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			actualizarVectorInstanciasConectadas();
+
+			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
 
 			enviarSentenciaESIStore(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
