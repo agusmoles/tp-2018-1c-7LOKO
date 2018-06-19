@@ -26,6 +26,7 @@ typedef struct Cliente{
 	int identificadorInstancia;
 	int cantidadLetras;
 	char primeraLetra;
+	char ultimaLetra;
 }cliente_t;
 
 typedef struct arg_struct {
