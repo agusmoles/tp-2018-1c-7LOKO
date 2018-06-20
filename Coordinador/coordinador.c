@@ -5,6 +5,8 @@ int instanciaSiguiente = 0;
 int cantidadInstanciasConectadas = 0;
 int identificadorInstancia = 0;
 int idEsiEjecutando = 0;
+int* tamanioValorStatus;
+char* valorStatus;
 
 /* Funciomes de conexion */
 void _exit_with_error(int socket, char* mensaje) {
@@ -177,86 +179,6 @@ void asignarIDdeInstancia(cliente_t* socketCliente, int id){
 	log_info(logger, ANSI_COLOR_BOLDCYAN "Se recibio el identificador de la Instancia %d"ANSI_COLOR_RESET, socketCliente->identificadorInstancia);
 }
 
-
-void recibirMensaje_Instancias(void* argumentos) {
-	arg_t* args = argumentos;
-	fd_set descriptoresLectura;
-	int fdmax = args->socketCliente.fd + 1;
-	int flag = 1;
-
-	void* buffer = malloc(1024);
-	int resultado_recv;
-
-	while(flag) {
-		FD_ZERO(&descriptoresLectura);
-		FD_SET(args->socketCliente.fd, &descriptoresLectura);
-
-		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
-
-		if (FD_ISSET(args->socketCliente.fd, &descriptoresLectura)) {
-		switch(resultado_recv = recv(args->socketCliente.fd, buffer, 1024, 0)) {
-				case -1: _exit_with_error(args->socket, "No se pudo recibir el mensaje del cliente");
-						break;
-
-				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %s"ANSI_COLOR_RESET, args->socketCliente.nombre);
-
-						if(strcmp(args->socketCliente.nombre, "Instancia") == 0){
-							cantidadInstanciasConectadas--;
-							instanciasConectadas();
-						}
-						close(args->socketCliente.fd); 		//CIERRO EL SOCKET
-						free(args);							//LIBERO MEMORIA CUANDO SE DESCONECTA
-						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
-						break;
-
-				default:
-						printf(ANSI_COLOR_BOLDGREEN"Se recibio el mensaje por parte del cliente %s de %d bytes y dice: %s\n"ANSI_COLOR_RESET, args->socketCliente.nombre, resultado_recv, (char*) buffer);
-						break;
-
-			}
-		}
-	}
-
-	free(buffer);
-	pthread_exit(NULL);
-}
-
-void recibirMensaje_Planificador(void* argumentos) {
-	arg_t* args = argumentos;
-	fd_set descriptoresLectura;
-	int fdmax = args->socketCliente.fd + 1;
-	int flag = 1;
-	int socketESI;
-
-	while(flag) {
-		FD_ZERO(&descriptoresLectura);
-		FD_SET(args->socketCliente.fd, &descriptoresLectura);
-
-		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
-
-		if (FD_ISSET(args->socketCliente.fd, &descriptoresLectura)) {
-			sem_wait(&semaforo_planificador);
-
-			/* Buscar socket ESI */
-			socketESI = buscarSocketESI(idEsiEjecutando);
-
-			printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI FD: %d\n"ANSI_COLOR_RESET, socketESI);
-
-			if(verificarClaveTomada(args->socketCliente.fd) == 0){
-				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
-				enviarMensaje(socketESI, "OPBL");
-			} else {
-				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET/STORE correctamente"ANSI_COLOR_RESET);
-				enviarMensaje(socketESI, "OPOK");
-			}
-
-			sem_post(&semaforo_planificadorOK);
-		}
-	}
-	pthread_exit(NULL);
-}
-
-
 /* Creacion de hilos para cada cliente */
 void crearHiloPlanificador(cliente_t socketCliente){
 	pthread_t threadPlanificador;
@@ -321,34 +243,88 @@ void crearHiloStatus() {
 	pthread_detach(threadStatus);
 }
 
-int conectarSocketYReservarPuertoDeStatus() {
-	struct addrinfo hints;
-	struct addrinfo *serverInfo;
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;		// No importa si uso IPv4 o IPv6
-	hints.ai_flags = AI_PASSIVE;		// Asigna el address del localhost: 127.0.0.1
-	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
+/* Funciones que llaman los hilos */
+void recibirMensaje_Instancias(void* argumentos) {
+	arg_t* args = argumentos;
+	fd_set descriptoresLectura;
+	int fdmax = args->socketCliente.fd + 1;
+	int flag = 1;
+	int resultado_recv;
+	tamanioValorStatus =  malloc(sizeof(int));
 
-	getaddrinfo(NULL, "8002", &hints, &serverInfo); // Notar que le pasamos NULL como IP, ya que le indicamos que use localhost en AI_PASSIVE
+	while(flag) {
+		FD_ZERO(&descriptoresLectura);
+		FD_SET(args->socketCliente.fd, &descriptoresLectura);
 
-	listenSocketStatus = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
 
-	if (listenSocketStatus <= 0) {
-		_exit_with_error(listenSocketStatus, "No se pudo conectar el socket");
+		if (FD_ISSET(args->socketCliente.fd, &descriptoresLectura)) {
+		switch(resultado_recv = recv(args->socketCliente.fd, tamanioValorStatus, sizeof(int), 0)) {
+				case -1: _exit_with_error(args->socket, "No se pudo recibir el mensaje del cliente");
+						break;
+
+				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %s"ANSI_COLOR_RESET, args->socketCliente.nombre);
+
+						if(strcmp(args->socketCliente.nombre, "Instancia") == 0){
+							cantidadInstanciasConectadas--;
+							instanciasConectadas();
+						}
+						close(args->socketCliente.fd); 		//CIERRO EL SOCKET
+						free(args);							//LIBERO MEMORIA CUANDO SE DESCONECTA
+						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
+						break;
+
+				default:
+						sem_wait(&semaforo_instancia);
+						if(*tamanioValorStatus > 0){
+							valorStatus = malloc(*tamanioValorStatus);
+							if(recv(args->socketCliente.fd, valorStatus, *tamanioValorStatus, 0) < 0){
+								_exit_with_error(args->socket, "No se pudo recibir el valor de la instancia");
+							}
+						}
+						sem_post(&semaforo_instanciaOK);
+						break;
+
+			}
+		}
 	}
+	pthread_exit(NULL);
+}
 
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar el socket con éxito"ANSI_COLOR_RESET);
+void recibirMensaje_Planificador(void* argumentos) {
+	arg_t* args = argumentos;
+	fd_set descriptoresLectura;
+	int fdmax = args->socketCliente.fd + 1;
+	int flag = 1;
+	int socketESI;
 
-	if(bind(listenSocketStatus, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
-		_exit_with_error(listenSocketStatus, "No se pudo reservar correctamente el puerto de escucha");
+	while(flag) {
+		FD_ZERO(&descriptoresLectura);
+		FD_SET(args->socketCliente.fd, &descriptoresLectura);
+
+		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
+
+		if (FD_ISSET(args->socketCliente.fd, &descriptoresLectura)) {
+			sem_wait(&semaforo_planificador);
+
+			/* Buscar socket ESI */
+			socketESI = buscarSocketESI(idEsiEjecutando);
+
+			printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI FD: %d\n"ANSI_COLOR_RESET, socketESI);
+
+			if(verificarClaveTomada(args->socketCliente.fd) == 0){
+				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
+				enviarMensaje(socketESI, "OPBL");
+			} else {
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET/STORE correctamente"ANSI_COLOR_RESET);
+				enviarMensaje(socketESI, "OPOK");
+			}
+
+			sem_post(&semaforo_planificadorOK);
+		}
 	}
-
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo reservar correctamente el puerto de escucha del servidor"ANSI_COLOR_RESET);
-
-	freeaddrinfo(serverInfo);
-
-	return listenSocketStatus;
+	pthread_exit(NULL);
 }
 
 void recibirMensajeStatus() {
@@ -357,6 +333,9 @@ void recibirMensajeStatus() {
 	fd_set descriptorLectura;
 	int* tamanioClave = malloc(sizeof(int));
 	char* clave;
+	int instanciaEncargada;
+	header_t* headerStatus = malloc(sizeof(header_t));
+	int socketInstancia;
 
 	if(listen(listenSocketStatus, 1) < 0) {
 		_exit_with_error(listenSocketStatus, "No se puede esperar por conexiones del status");
@@ -394,20 +373,88 @@ void recibirMensajeStatus() {
 			}
 			log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se recibio la clave (status): %s"ANSI_COLOR_RESET, clave);
 
+
+			/*Ahora envio instancia encargada */
+			if((instanciaEncargada = buscarInstanciaEncargada(clave)) < 0){
+				instanciaEncargada = seleccionEquitativeLoad();
+			}
+
+			/* Avisar a la instancia status */
+			headerStatus->codigoOperacion = 3;
+			headerStatus->tamanioClave = *tamanioClave;
+
+			if((socketInstancia = buscarSocketInstancia(instanciaEncargada))< 0){
+				_exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"No se encontro la instancia (status) "ANSI_COLOR_RESET);
+			}
+
+			enviarHeader(socketInstancia, headerStatus);
+			enviarClave(socketInstancia, clave);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron header y clave a la instancia"ANSI_COLOR_RESET);
+
 			/*Chequear si existe valor actual*/
+			sem_post(&semaforo_instancia);
 
+			sem_wait(&semaforo_instanciaOK);
 
+			/*Envio el tamanio valor*/
+			if(send(socketStatusPlanificador, tamanioValorStatus, sizeof(int), 0) < 0){
+				_exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor (status) "ANSI_COLOR_RESET);
+			}
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el tamanio del valor %d al planificador"ANSI_COLOR_RESET, *tamanioValorStatus);
+
+			if(*tamanioValorStatus > 0){
+				/*Envio el valor*/
+				if(send(socketStatusPlanificador, valorStatus, *tamanioValorStatus, 0) < 0){
+					_exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"No se pudo enviar el valor (status) "ANSI_COLOR_RESET);
+				}
+
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s al planificador"ANSI_COLOR_RESET, valorStatus);
+			}
+
+			if(send(socketStatusPlanificador, &instanciaEncargada, sizeof(int), 0) < 0){
+				_exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"No se pudo enviar la instancia (status) "ANSI_COLOR_RESET);
+			}
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio la instancia encargada %d al planificador"ANSI_COLOR_RESET, instanciaEncargada);
 
 			break;
 		}
 	}
 }
 
+int conectarSocketYReservarPuertoDeStatus() {
+	struct addrinfo hints;
+	struct addrinfo *serverInfo;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;		// No importa si uso IPv4 o IPv6
+	hints.ai_flags = AI_PASSIVE;		// Asigna el address del localhost: 127.0.0.1
+	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
+
+	getaddrinfo(NULL, "8002", &hints, &serverInfo); // Notar que le pasamos NULL como IP, ya que le indicamos que use localhost en AI_PASSIVE
+
+	listenSocketStatus = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+
+	if (listenSocketStatus <= 0) {
+		_exit_with_error(listenSocketStatus, "No se pudo conectar el socket");
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo conectar el socket con éxito"ANSI_COLOR_RESET);
+
+	if(bind(listenSocketStatus, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
+		_exit_with_error(listenSocketStatus, "No se pudo reservar correctamente el puerto de escucha");
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo reservar correctamente el puerto de escucha del servidor"ANSI_COLOR_RESET);
+
+	freeaddrinfo(serverInfo);
+
+	return listenSocketStatus;
+}
+
 /* Asigna nombre a cada cliente particular:  Instancia, ESI, Planificador */
 void asignarNombreAlSocketCliente(cliente_t* socketCliente, char* nombre) {
 	strcpy(socketCliente->nombre, nombre);
 }
-
 
 /* Crea un array con las instancias que se encuentran conectadas y muestra la cantidad*/
 void instanciasConectadas(){
@@ -715,7 +762,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			actualizarVectorInstanciasConectadas();
 
 			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
-
 			enviarSentenciaESI(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
 
@@ -753,7 +799,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			actualizarVectorInstanciasConectadas();
 
 			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
-
 			enviarSentenciaESIStore(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
 
@@ -880,6 +925,15 @@ int buscarSocketESI(int idEsi){
 	return -1;
 }
 
+int buscarSocketInstancia(int idInstancia){
+	for(int i = 0; i<NUMEROCLIENTES; i++){
+		if(socketCliente[i].identificadorInstancia == idInstancia){
+			return socketCliente[i].fd;
+		}
+	}
+	return -1;
+}
+
 cliente_t* buscarESI(int* IDESI) {
 	for(int i=0; i<NUMEROCLIENTES; i++) {
 		if(socketCliente[i].identificadorESI == *IDESI) {
@@ -913,6 +967,7 @@ int main(void) {
 		socketCliente[i].fd = -1;
 		v_instanciasConectadas[i].identificadorInstancia = -1;
 		socketCliente[i].identificadorESI = -1;
+		socketCliente[i].identificadorInstancia = -1;
 	}
 
 	for(int j=0; j<CANTIDADCLAVES; j++){
@@ -926,6 +981,8 @@ int main(void) {
 	sem_init(&semaforo_planificador, 0 , 0);
 	sem_init(&semaforo_planificadorOK, 0 , 0);
 	sem_init(&mutexEsiEjecutando, 0, 1);
+	sem_init(&semaforo_instancia, 0, 0);
+	sem_init(&semaforo_instanciaOK, 0,0);
 
 	while(1) {
 		aceptarCliente(listenSocket, socketCliente);

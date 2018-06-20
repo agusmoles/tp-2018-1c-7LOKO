@@ -53,7 +53,9 @@ clave_t clavesExistentes[CANTIDADCLAVES];
 sem_t semaforo_planificador;
 sem_t semaforo_instancia;
 sem_t semaforo_planificadorOK;
+sem_t semaforo_instanciaOK;
 sem_t mutexEsiEjecutando;
+
 int listenSocketStatus;
 
 /*FUNCIONES DE CONEXION */
@@ -91,6 +93,10 @@ void crearHiloESI(cliente_t* socketCliente, int socketPlanificador);
 void crearHiloStatus();
 
 int conectarSocketYReservarPuertoDeStatus();
+
+void recibirMensaje_Instancias(void* argumentos);
+
+void recibirMensaje_Planificador(void* argumentos);
 
 void recibirMensajeStatus();
 
@@ -135,6 +141,7 @@ void enviarIDEsi(int socket, int idESI);
 
 int buscarSocketPlanificador();
 int buscarSocketESI();
+int buscarSocketInstancia(int idInstancia);
 
 int verificarClaveTomada(int socket);
 
