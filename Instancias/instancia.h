@@ -14,6 +14,7 @@
 #include <commons/collections/list.h>
 #include "../Colores.h"
 #include "sharedlib.h"
+#include <math.h>
 
 char* IP;
 char* PUERTO;
@@ -28,7 +29,7 @@ t_log* logger;
 t_config* config;
 
 t_list* tablaEntradas;
-char* storage[CANTIDADENTRADAS];
+char** storage;
 
 char* claveBuscada;
 
@@ -49,12 +50,13 @@ void envioIdentificador(int socket);
 void pipeHandler();
 void recibirInstruccion(int socket);
 void set(char* clave, char* valor);
+void agregarPendientes(t_list* entradas, t_list* datas);
 void store(char* clave);
 void recibirClave(int socket, header_t* header, char* bufferClave);
 void recibirTamanioValor(int socket, int32_t* tamanioValor);
 void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor);
 entrada_t* buscarEnTablaDeEntradas(char* clave);
-data_t* buscarEnStorage(int entrada);
+char* buscarEnStorage(int entrada);
 void enviarTamanioValor(int socket, int* tamanioValor);
 void enviarValor(int socket, int tamanioValor, char* valor);
 

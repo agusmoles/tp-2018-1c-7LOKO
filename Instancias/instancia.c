@@ -27,6 +27,10 @@ void setearConfigEnVariables() {
 	NOMBREINSTANCIA = config_get_string_value(config, "Nombre de la Instancia");
 	INTERVALODUMP = config_get_int_value(config, "Intervalo de dump");
 	TAMANIOENTRADA = config_get_int_value(config, "Tamanio de Entrada");
+	CANTIDADENTRADAS = config_get_int_value(config, "Cantidad de Entradas");
+
+	storage = calloc(CANTIDADENTRADAS, TAMANIOENTRADA);	// CREO ARRAY CON ESPACIO DE CANTIDAD DE ENTRADAS + TAMANIO
+	tablaEntradas = list_create();
 }
 
 int conectarSocket() {
@@ -111,7 +115,7 @@ void recibirInstruccion(int socket){
 	char* bufferValor;
 	int32_t* tamanioValor;
 	entrada_t* entrada;
-	data_t* data;
+	char* data;
 	int* tamanioValorStatus = malloc(sizeof(int));
 	char* valorStatus;
 
@@ -145,7 +149,7 @@ void recibirInstruccion(int socket){
 		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL && (data = buscarEnStorage(entrada->numero)) != NULL){
 				*tamanioValorStatus = entrada->tamanio_valor;
 				valorStatus = malloc(*tamanioValorStatus);
-				strcpy(valorStatus, data->valor);
+				strcpy(valorStatus, data);
 
 				enviarTamanioValor(socket, tamanioValorStatus);
 				log_info(logger, "Se envio el tamanio del valor al coordinador");
@@ -190,7 +194,7 @@ void set(char* clave, char* valor){
 	t_list* entradasPendientes;
 	t_list* datasPendientes;
 
-	int entradasNecesarias = (int) (ceil(strlen(valor)/(double)TAMANIOENTRADA)); // ceil() redondea siempre para arriba.
+	int entradasNecesarias = ceil(strlen(valor)/(double)TAMANIOENTRADA); // ceil() redondea siempre para arriba.
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
 		char* data = buscarEnStorage(entrada->numero);
@@ -202,31 +206,31 @@ void set(char* clave, char* valor){
 	}
 	else {		// ACA SE CREAN ENTRADAS
 
-		entrada = malloc(sizeof(entrada_t));
-
-		char* data;
 		datasPendientes = list_create();
 		entradasPendientes = list_create();
 
 		for(int i=0; i<entradasNecesarias; i++){
+			char* data = malloc(TAMANIOENTRADA);
 			entrada = malloc(sizeof(entrada_t));
-			entrada->clave = malloc(strlen(clave+1));
+			entrada->clave = malloc(strlen(clave) + 1);
 			strcpy(entrada->clave, clave);
 
 			char* value = malloc(TAMANIOENTRADA);
-			char* value = string_substring(valor, i*TAMANIOENTRADA, TAMANIOENTRADA);
+			char* valueModificada = string_substring(valor, i*TAMANIOENTRADA, TAMANIOENTRADA);
 
-			entrada->tamanio_valor = strlen(value)+1;
+			entrada->tamanio_valor = strlen(valueModificada)+1;
 
-			strcpy(data, value);
+			strcpy(data, valueModificada);
 
 			list_add(datasPendientes, data);
 			list_add(entradasPendientes, entrada);
 			free(value);
+			free(valueModificada);
 		}
 		agregarPendientes(entradasPendientes, datasPendientes);
 		list_destroy(datasPendientes);
 		list_destroy(entradasPendientes);
+}
 }
 
 void agregarPendientes(t_list* entradas, t_list* datas){
@@ -350,15 +354,9 @@ char* buscarEnStorage(int entrada) {
 
 	char* data;
 
-	for(int i=0; i<CANTIDADENTRADAS; i++) {	// RECORRO LA LISTA DE STORAGE
-		data = &storage[i];		// VOY TOMANDO ELEMENTOS
+	data = &storage[entrada];	// ESTA MAL ESTO
 
-		if(i == entrada) {	// SI LA ENTRADA COINCIDE CON LA DE LA LISTA DEL STORAGE
-			return data;							// DEVUELVO EL STORAGE ENCONTRADO
-		}
-	}
-
-	return NULL;
+	return data;
 }
 
 /* Recibir sentencia del coordinador*/
@@ -397,13 +395,6 @@ int main(void) {
 	crearConfig();
 	setearConfigEnVariables();
 	int socket = conectarSocket();
-
-	tablaEntradas = list_create();
-
-	for(int i=0; i<CANTIDADENTRADAS; i++){		// inicializo el storage
-		storage[i] = malloc(TAMANIOENTRADA);
-		strcpy(storage[i],"");
-	}
 
 	reciboHandshake(socket);
 	envioIdentificador(socket);
