@@ -201,7 +201,11 @@ void set(char* clave, char* valor){
 	t_list* entradasPendientes;
 	t_list* datasPendientes;
 
-	int entradasNecesarias = ceil(strlen(valor)/(double)TAMANIOENTRADA); // ceil() redondea siempre para arriba.
+	int entradasNecesarias = ceil(strlen(valor)/TAMANIOENTRADA); // ceil() redondea siempre para arriba.
+
+	log_info(logger, ANSI_COLOR_BOLDWHITE"Entradas necesarias: %d"ANSI_COLOR_RESET, entradasNecesarias);
+
+	// FALTA VER CASOS QUE EL VALOR NUEVO SEA MAS CHICO O MAS GRANDE QUE EL VALOR VIEJO --> LIBERAR LOS OTROS O PEDIR MAS ESPACIO
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
 		char* data = buscarEnStorage(entrada->numero);
@@ -217,12 +221,11 @@ void set(char* clave, char* valor){
 		entradasPendientes = list_create();
 
 		for(int i=0; i<entradasNecesarias; i++){
-			char* data = malloc(TAMANIOENTRADA);
 			entrada = malloc(sizeof(entrada_t));
 			entrada->clave = malloc(strlen(clave) + 1);
 			strcpy(entrada->clave, clave);
 
-			char* value = malloc(TAMANIOENTRADA);
+			char* data = malloc(TAMANIOENTRADA);
 			char* valueModificada = string_substring(valor, i*TAMANIOENTRADA, TAMANIOENTRADA);
 
 			entrada->tamanio_valor = strlen(valueModificada)+1;
@@ -231,13 +234,13 @@ void set(char* clave, char* valor){
 
 			list_add(datasPendientes, data);
 			list_add(entradasPendientes, entrada);
-			free(value);
 			free(valueModificada);
 		}
+
 		agregarPendientes(entradasPendientes, datasPendientes);
 		list_destroy(datasPendientes);
 		list_destroy(entradasPendientes);
-}
+	}
 }
 
 void agregarPendientes(t_list* entradas, t_list* datas){
