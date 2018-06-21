@@ -51,6 +51,7 @@ void pipeHandler();
 void recibirInstruccion(int socket);
 void set(char* clave, char* valor);
 void agregarPendientes(t_list* entradas, t_list* datas);
+int entradasContiguasDisponibles();
 void store(char* clave);
 void recibirClave(int socket, header_t* header, char* bufferClave);
 void recibirTamanioValor(int socket, int32_t* tamanioValor);

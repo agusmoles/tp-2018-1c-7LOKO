@@ -29,7 +29,13 @@ void setearConfigEnVariables() {
 	TAMANIOENTRADA = config_get_int_value(config, "Tamanio de Entrada");
 	CANTIDADENTRADAS = config_get_int_value(config, "Cantidad de Entradas");
 
-	storage = calloc(CANTIDADENTRADAS, TAMANIOENTRADA);	// CREO ARRAY CON ESPACIO DE CANTIDAD DE ENTRADAS + TAMANIO
+    storage = calloc(CANTIDADENTRADAS, sizeof(char*)); 	// CREO VECTOR CON TAMAÑO PARA PUNTERO DE CHARS
+
+	for (int i=0; i<CANTIDADENTRADAS; i++) {
+		storage[i] = malloc(TAMANIOENTRADA);
+		strcpy(storage[i], "");  						// INICIALIZO CON STRING VACIO
+    }
+
 	tablaEntradas = list_create();
 }
 
@@ -238,7 +244,7 @@ void agregarPendientes(t_list* entradas, t_list* datas){
 	char* data;
 	int aux;
 
-	while(list_size(entradas) > entradasContiguasDisponibles(storage)){
+	while(list_size(entradas) > entradasContiguasDisponibles()){
 		reemplazarSegun(ALGORITMOREEMPLAZO);  // aca tambien falta laburar (ver en AlgoritmosReemplazo.c)
 	}
 
@@ -278,16 +284,16 @@ int agregarAStorage(char* data, entradasNecesarias){ //falta aca que agregue los
 	return -1;
 }
 
-int entradasContiguasDisponibles(char* storage){
+int entradasContiguasDisponibles(){
 	int contador = 0;
 	int resultado = 0;
 
 	for(int i=0; i<CANTIDADENTRADAS; i++){
-		if(strcmp(storage[i],"") == 0){
+		if(strcmp(storage[i], "") == 0){
 			contador++;
 		}else{
 			if(contador > resultado){
-			resultado = contador;
+				resultado = contador;
 			}
 			contador = 0;
 		}
@@ -351,11 +357,8 @@ entrada_t* buscarEnTablaDeEntradas(char* clave) {
 
 /*Busca el data que contenga esa entrada*/
 char* buscarEnStorage(int entrada) {
-
 	char* data;
-
-	data = &storage[entrada];	// ESTA MAL ESTO
-
+	data = storage[entrada];
 	return data;
 }
 
