@@ -184,15 +184,22 @@ int com_bloquear(char **args){
 	} else {
 		if (dictionary_has_key(diccionarioClaves, args[1])) {		// SI ALGUIEN YA TIENE EL RECURSO ASIGNADO, BLOQUEO AL ESI
 
+			int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, args[1]);
+
 			if (esiEstaEnBloqueados(ESI)) {		// SI YA ESTABA BLOQUEADO, NO HACE NADA
 				log_error(loggerConsola, ANSI_COLOR_BOLDRED"El ESI %d ya se encontraba bloqueado por la clave %s"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->recursoSolicitado);
 			}
 
 
 			if (esiEstaEjecutando(ESI)) { // SI EL ESI ESTABA EJECUTANDO, TENGO QUE DESALOJARLO Y ORDENAR A OTRO A EJECUTAR
-				strcpy(ESI->recursoSolicitado, args[1]);
-			}
+				sem_wait(&desalojoComandoBloquear);
+				ESI->desalojoPorComandoBloquear = 1;
+				sem_post(&desalojoComandoBloquear);
 
+				strcpy(ESI->recursoSolicitado, args[1]);	// LE ASIGNO LA CLAVE POR LA QUE SE BLOQUEO
+
+				log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], *IDEsiQueTieneLaClaveTomada, *IDESI);
+			}
 
 			for (int i=0; i<list_size(listos); i++) {
 				cliente* ESIListo = list_get(listos, i);
@@ -207,19 +214,17 @@ int com_bloquear(char **args){
 					sem_wait(&mutexBloqueados);
 					list_add(bloqueados, ESI);
 					sem_post(&mutexBloqueados);
+
+					log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], *IDEsiQueTieneLaClaveTomada, *IDESI);
 				}
 			}
-
-			int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, args[1]);
-
-			log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d "ANSI_COLOR_RESET, args[1], IDEsiQueTieneLaClaveTomada, IDESI);
 
 			free(IDESI);
 		} else {		// SI NO LO TIENEN ASIGNADO, SE LO ASIGNO AL ESI
 
 			dictionary_put(diccionarioClaves, args[1], IDESI);
 
-			log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, IDESI, args[1]);
+			log_info(loggerConsola, ANSI_COLOR_BOLDCYAN"El ESI %d tomo efectivamente la clave %s"ANSI_COLOR_RESET, *IDESI, args[1]);
 
 		}
 	}
@@ -282,9 +287,68 @@ int com_kill(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	// NO OLVIDARSE DE LIBERAR PARAMETROS
 
-	puts("Estas en kill");
+	int* IDESI = malloc(sizeof(int));
+	*IDESI = atoi(args[1]);
+	cliente* ESI = buscarESI(IDESI);
+
+	for (int i=0; i<list_size(bloqueados); i++) {
+		cliente* ESIBloqueado = list_get(bloqueados, i);
+
+		if (ESIBloqueado->identificadorESI == ESI->identificadorESI) {
+			sem_wait(&mutexBloqueados);
+			list_remove(bloqueados, i);
+			sem_post(&mutexBloqueados);
+
+			sem_wait(&mutexFinalizados);
+			list_add(finalizados, ESI);
+			sem_post(&mutexFinalizados);
+
+			ESIABuscarEnDiccionario = malloc(sizeof(int));
+			*ESIABuscarEnDiccionario = *IDESI;	// SETEO LA VARIABLE GLOBAL
+
+			sem_wait(&mutexDiccionarioClaves);
+			dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+			sem_post(&mutexDiccionarioClaves);
+
+			free(ESIABuscarEnDiccionario);
+		}
+	}
+
+
+	if (esiEstaEjecutando(ESI)) { // SI EL ESI ESTABA EJECUTANDO, TENGO QUE ABORTARLO Y ORDENAR A OTRO A EJECUTAR
+		sem_wait(&desalojoComandoKill);
+		ESI->desalojoPorComandoKill = 1;
+		sem_post(&desalojoComandoKill);
+	}
+
+	for (int i=0; i<list_size(listos); i++) {
+		cliente* ESIListo = list_get(listos, i);
+
+		if (ESIListo->identificadorESI == ESI->identificadorESI) {		// SI ESTA EN LISTOS, LO SACO Y FINALIZO
+			sem_wait(&mutexListos);
+			list_remove(listos, i);
+			sem_post(&mutexListos);
+
+			sem_wait(&mutexFinalizados);
+			list_add(finalizados, ESI);
+			sem_post(&mutexFinalizados);
+
+			ESIABuscarEnDiccionario = malloc(sizeof(int));
+			*ESIABuscarEnDiccionario = *IDESI;	// SETEO LA VARIABLE GLOBAL
+
+			sem_wait(&mutexDiccionarioClaves);
+			dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+			sem_post(&mutexDiccionarioClaves);
+
+			free(ESIABuscarEnDiccionario);
+		}
+	}
+
+	free(IDESI);
+
+	liberar_parametros(args);
+
 	return 1;
 }
 
@@ -298,13 +362,59 @@ int com_status(char **args){
 			return error_sobran_parametros(args);
 	}
 
-	char* msg = "HOLA";
+	int* tamanioClave = malloc(sizeof(int));
+	int* tamanioValor = malloc(sizeof(int));
+	char* bufferValor;
+	int* instancia = malloc(sizeof(int));
 
-	if (send(socketStatus, msg, strlen(msg) + 1, 0) < 0) {
-		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo enviar el mensaje de status"ANSI_COLOR_RESET);
+	*tamanioClave = strlen(args[1]) + 1;
+
+	/*********************** PROCEDIMIENTO EXPLICADO EN PROTOCOLO.TXT ****************************/
+
+	if (send(socketStatus, tamanioClave, sizeof(int), 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo enviar el tamaño de la clave en status"ANSI_COLOR_RESET);
 	}
 
-	log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"Se pudo enviar el comando status");
+	if (send(socketStatus, args[1], *tamanioClave, 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo enviar la clave en status"ANSI_COLOR_RESET);
+	}
+
+	if (recv(socketStatus, tamanioValor, sizeof(int), 0) < 0) {
+		_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el tamaño de valor en status"ANSI_COLOR_RESET);
+	}
+
+	if (*tamanioValor == -1) {		// SI NO HAY VALOR, QUE RECIBA -1 EL TAMANIO Y DESPUES LA INSTANCIA
+		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave no existe o no tiene valor guardado en ninguna instancia"ANSI_COLOR_RESET);
+
+		if (recv(socketStatus, instancia, sizeof(int), 0) < 0) {
+			log_error(loggerConsola, ANSI_COLOR_BOLDRED"El valor se guardaria en la instancia %d"ANSI_COLOR_RESET, *instancia);
+		}
+
+
+	} else {
+
+		bufferValor = malloc(*tamanioValor);
+
+		if (recv(socketStatus, bufferValor, *tamanioValor, 0) < 0) {
+			_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el valor en status"ANSI_COLOR_RESET);
+		}
+
+		log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"El valor de la clave %s es %s"ANSI_COLOR_RESET, args[1], bufferValor);
+
+		if (recv(socketStatus, instancia, sizeof(int), 0) < 0) {
+			_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir la instancia en status"ANSI_COLOR_RESET);
+		}
+
+		log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"El valor esta guardado en la instancia %d"ANSI_COLOR_RESET, *instancia);
+
+		free(bufferValor);
+	}
+
+	listar(args[1]);
+
+	free(tamanioClave);
+	free(tamanioValor);
+	free(instancia);
 
 	liberar_parametros(args);
 
@@ -316,10 +426,56 @@ int com_deadlock(char **args){
 		return error_no_lleva_parametros(args);
 	}
 
-	// NO OLVIDARSE DE LIBERAR PARAMETROS
+	t_list* deadlock = list_create();
+	int* IDESI;
+	int* IDESISiguiente;
+	cliente* ESI, *ESIQueTieneElRecurso;
 
-	puts("Estas en deadlock");
+	for(int i=0; i<list_size(bloqueados); i++) {
+		ESI = list_get(bloqueados, i);
+
+		list_add(deadlock, ESI);
+
+		IDESI = dictionary_get(diccionarioClaves, ESI->recursoSolicitado);
+
+		ESIQueTieneElRecurso = buscarESI(IDESI);
+
+		if(!esiEstaEnBloqueados(ESIQueTieneElRecurso)) {
+			// SI YA NO ESTA BLOQUEADO, NO HAY DEADLOCK
+			list_remove(deadlock, 0);
+		} else {
+			IDESISiguiente = dictionary_get(diccionarioClaves, ESIQueTieneElRecurso->recursoSolicitado);
+
+			if (*IDESISiguiente == *IDESI) {
+				list_add(deadlock, ESIQueTieneElRecurso);
+			}
+		}
+	}
+
+	for(int i=0; i<list_size(deadlock); i++) {
+		cliente* esi = list_get(deadlock, i);
+
+		printf(ANSI_COLOR_BOLDWHITE"ESI %d\n"ANSI_COLOR_RESET, esi->identificadorESI);
+	}
+
+	list_destroy(deadlock);
+	liberar_parametros(args);
+
 	return 1;
+}
+
+cliente* buscarESIEnBloqueados(int* IDESI) {
+	cliente* ESI;
+
+	for (int i=0; i<list_size(bloqueados); i++) {
+		ESI = list_get(bloqueados, i);
+
+		if (ESI->identificadorESI == *IDESI) {
+			return ESI;
+		}
+	}
+
+	return NULL;
 }
 
 int com_man(char **args){

@@ -43,6 +43,8 @@ void setearConfigEnVariables() {
 	sem_init(&mutexFinalizados, 0, 1);
 	sem_init(&mutexDiccionarioClaves, 0, 1);
 	sem_init(&esisListos, 0, 0);
+	sem_init(&desalojoComandoBloquear, 0, 1);
+	sem_init(&desalojoComandoKill, 0, 1);
 
 	/************************ SETEO CLAVES BLOQUEADAS ******************/
 
@@ -286,6 +288,7 @@ void conectarConCoordinador() {
 void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI) {
 	if( *(int*)ESI == *ESIABuscarEnDiccionario) {
 		log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se elimino la clave %s tomada por el ESI %d ya que fue finalizado"ANSI_COLOR_RESET, clave, *(int*) ESI);
+		desbloquearESI(clave);
 		int* value = dictionary_remove(diccionarioClaves, clave);
 		free(value);
 	}
@@ -586,6 +589,43 @@ void recibirMensaje(cliente* ESI) {
 						sem_post(&mutexListos);
 					}
 
+					if(ESI->desalojoPorComandoBloquear) {
+						sem_wait(&desalojoComandoBloquear);
+						ESI->desalojoPorComandoBloquear = 0;		// LO VUELVO A SETEAR EN 0
+						sem_post(&desalojoComandoBloquear);
+
+						sem_wait(&mutexEjecutando);
+						list_remove(ejecutando, 0);
+						sem_post(&mutexEjecutando);
+
+						sem_wait(&mutexBloqueados);
+						list_add(bloqueados, ESI);
+						sem_post(&mutexBloqueados);
+					}
+
+					if(ESI->desalojoPorComandoKill) {
+						sem_wait(&desalojoComandoKill);
+						ESI->desalojoPorComandoKill = 0;
+						sem_post(&desalojoComandoKill);
+
+						sem_wait(&mutexEjecutando);
+						list_remove(ejecutando, 0);
+						sem_post(&mutexEjecutando);
+
+						sem_wait(&mutexFinalizados);
+						list_add(finalizados, ESI);
+						sem_post(&mutexFinalizados);
+
+						ESIABuscarEnDiccionario = malloc(sizeof(int));
+						*ESIABuscarEnDiccionario = ESI->identificadorESI;	// SETEO LA VARIABLE GLOBAL
+
+						sem_wait(&mutexDiccionarioClaves);
+						dictionary_iterator(diccionarioClaves, (void*) eliminarClavesTomadasPorEsiFinalizado); // REMUEVO LAS CLAVES TOMADAS POR EL ESI A FINALIZAR
+						sem_post(&mutexDiccionarioClaves);
+
+						free(ESIABuscarEnDiccionario);
+					}
+
 					ordenarProximoAEjecutar();
 				}
 
@@ -832,16 +872,6 @@ int main(void) {
 	setearConfigEnVariables();
 	setearListaDeEstados();
 
-	/************************************** MUESTRO CLAVES INICIALMENTE BLOQUEADAS *************************/
-
-	int* IDEsi;
-
-	IDEsi = dictionary_get(diccionarioClaves, "futbol:messi");
-
-	for (int i=0; i<dictionary_size(diccionarioClaves); i++) {
-		printf("%d \n", *IDEsi);
-	}
-
 	/************************************** CONEXION CON COORDINADOR **********************************/
 
 	pthread_t threadCliente;
@@ -893,6 +923,8 @@ int main(void) {
 		socketCliente[i].rafagaActual = 0;
 		socketCliente[i].estimacionRafagaActual = 0;
 		socketCliente[i].tasaDeRespuesta = 0;
+		socketCliente[i].desalojoPorComandoBloquear = 0;
+		socketCliente[i].desalojoPorComandoKill = 0;
 	}
 
 	while(1) {

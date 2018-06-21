@@ -110,6 +110,10 @@ void recibirInstruccion(int socket){
 	char* bufferClave;
 	char* bufferValor;
 	int32_t* tamanioValor;
+	entrada_t* entrada;
+	data_t* data;
+	int* tamanioValorStatus = malloc(sizeof(int));
+	char* valorStatus;
 
 	if(recv(socket, buffer_header, sizeof(header_t), MSG_WAITALL)< 0){
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el Header"ANSI_COLOR_RESET);
@@ -135,6 +139,26 @@ void recibirInstruccion(int socket){
 
 		store(bufferClave);
 		break;
+	case 3: /* Status */
+		recibirClave(socket, buffer_header, bufferClave);
+
+		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL && (data = buscarEnStorage(entrada->numero)) != NULL){
+				*tamanioValorStatus = entrada->tamanio_valor;
+				valorStatus = malloc(*tamanioValorStatus);
+				strcpy(valorStatus, data->valor);
+
+				enviarTamanioValor(socket, tamanioValorStatus);
+				log_info(logger, "Se envio el tamanio del valor al coordinador");
+				enviarValor(socket, *tamanioValorStatus, valorStatus);
+				log_info(logger, "Se envio el valor al coordinador");
+				free(valorStatus);
+			}else{
+				*tamanioValorStatus = -1;
+				enviarTamanioValor(socket, tamanioValorStatus);
+				log_info(logger, "Se envio el tamanio del valor al coordinador");
+		}
+
+		break;
 	default:
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No existe el codigo de operacion"ANSI_COLOR_RESET);
 		break;
@@ -142,11 +166,23 @@ void recibirInstruccion(int socket){
 //
 	free(buffer_header);
 	free(tamanioValor);
-
+	free(tamanioValorStatus);
 	/* ESTOS NO
     free(bufferClave);
 	free(bufferValor);
 */
+}
+
+void enviarTamanioValor(int socket, int* tamanioValor){
+	if (send(socket, tamanioValor, sizeof(int32_t), 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
+	}
+}
+
+void enviarValor(int socket, int tamanioValor, char* valor){
+	if (send(socket, valor, tamanioValor, 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
+	}
 }
 
 void set(char* clave, char* valor){
@@ -167,6 +203,7 @@ void set(char* clave, char* valor){
 	else {		// ACA SE CREAN ENTRADAS
 
 		entrada = malloc(sizeof(entrada_t));
+<<<<<<< HEAD
 		char* data;
 		datasPendientes = list_create();
 		entradasPendientes = list_create();
@@ -255,9 +292,91 @@ int entradasContiguasDisponibles(char* storage){
 			}
 			contador = 0;
 		}
+=======
+		data = malloc(sizeof(data_t));
+
+		/* Creo entrada */
+		entrada->tamanio_valor = strlen(valor) + 1;
+		entrada->clave = malloc(strlen(clave) + 1);
+		strcpy(entrada->clave, clave);
+
+
+//		if(strlen(valor) <= TAMANIOENTRADA){
+//			entradasNecesarias = 1;
+//		}else{
+//			entradasNecesarias = 2;
+//		}
+//
+//	/* ESTE if ES PARA CONTEMPLAR CUANDO SE NECESITAN 2 ENTRADAS */
+//	if(entradasNecesarias > 1){
+//
+//			entrada->tamanio_valor = TAMANIOENTRADA;
+//
+//			entrada_t* entrada2;							/* CREO OTRA ENTRADA */
+//			entrada2 = malloc(sizeof(entrada_t));
+//
+//			entrada2->clave = malloc(strlen(clave)+1);
+//			strcpy(entrada2->clave, entrada->clave);
+//
+//			entrada2->tamanio_valor = strlen(valor) - TAMANIOENTRADA;
+//			entrada->numero = list_size(tablaEntradas);
+//			entrada2->numero = list_size(tablaEntradas) + 1;
+//
+//			if(CANTIDADENTRADAS - cantidadEntradas < entradasNecesarias){
+//				reemplazarSegun(ALGORITMOREEMPLAZO, entrada);
+//				reemplazarSegun(ALGORITMOREEMPLAZO, entrada2);
+//			}else{
+//				list_add(tablaEntradas, entrada);
+//				list_add(tablaEntradas, entrada2);
+//			}
+//
+//			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agregaron las entradas: Clave %s - Entrada %d - Tamanio Valor %d \n Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor,entrada2->clave,entrada2->numero,entrada2->tamanio_valor);;
+//
+//			char* valor1 = malloc(entrada->tamanio_valor);
+//			char* valor2 = malloc(entrada2->tamanio_valor);
+//
+//			valor1 = string_substring(valor, 0, TAMANIOENTRADA);									// ACA SEPARO EL VALOR
+//			valor2 = string_substring(valor, TAMANIOENTRADA, sizeof(valor) + 1 - TAMANIOENTRADA);		// EN DOS STRINGS
+//
+//			data->numeroEntrada = entrada->numero;
+//			data->valor = malloc(entrada->tamanio_valor);
+//			strcpy(data->valor, valor1);
+//
+//			data_t* data2;							/* CREO OTRO DATA */
+//			data2 = malloc(sizeof(data_t));
+//
+//			data2->numeroEntrada = entrada2->numero;
+//			data2->valor = malloc(entrada2->tamanio_valor);
+//			strcpy(data2->valor, valor2);
+//
+//			list_add(listaStorage, data);
+//			list_add(listaStorage, data2);
+//
+//			free(valor1);
+//			free(valor2);
+//			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage \n Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor, data2->numeroEntrada, data2->valor);
+//
+//		}else{
+
+		entrada->numero = list_size(tablaEntradas);
+
+		list_add(tablaEntradas, entrada);
+		cantidadEntradas ++;
+
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
+
+		data->numeroEntrada = entrada->numero;
+		data->valor = malloc(entrada->tamanio_valor);
+		strcpy(data->valor, valor);
+
+		list_add(listaStorage, data);
+
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
+>>>>>>> 7b137ad5e0c346ca6c72e831012153e7c03b7fcf
 	}
 	return resultado;
 }
+
 
 void store(char* clave){
 	entrada_t* entrada;

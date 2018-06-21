@@ -33,7 +33,21 @@ COD. OP
 0. Para indicar que es una operacion de GET
 1. Para indicar que es una operacion de SET
 2. Para indicar que es una operacion de STR
+3. Para indicar que es una operacion del comando Status del Planificador
 
 El Planificador, luego de recibir una sentencia por parte del Coordinador, le devuelve a éste un 0 si el ESI se bloqueo/aborto y un 1 si se ejecuto con normalidad.
 
 El Planificador, luego de recibir una sentencia STORE además, envia al Coordinador un 1  si hay que mandarle a un ESI que se desbloqueo un OPOK para que siga ejecutando (junto con su ID) o un 0 si no.
+
+------------------------------------- COMANDO STATUS -----------------------------------------
+
+El Coordinador tiene un servidor dedicado al manejo de este comando y el Planificador se conecta apenas inicia.
+
+Cuando se ejecute el "status clave" en la consola, la secuencia va a ser:
+
+1. Planificador envia tamaño de clave
+2. Planificador envia clave
+3. Planificador recibe tamaño del valor almacenado y, en caso de no tenerlo, un -1
+4. Si no lo tiene, solo manda en que instancia (un INT) se guardaria el valor (sin efecto en el algoritmo para el proximo guardado de valor)
+5. Si lo tiene, manda el valor y luego en que instancia esta guardado
+

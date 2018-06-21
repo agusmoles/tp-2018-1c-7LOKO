@@ -55,7 +55,8 @@ void recibirTamanioValor(int socket, int32_t* tamanioValor);
 void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor);
 entrada_t* buscarEnTablaDeEntradas(char* clave);
 data_t* buscarEnStorage(int entrada);
-
+void enviarTamanioValor(int socket, int* tamanioValor);
+void enviarValor(int socket, int tamanioValor, char* valor);
 
 
 
