@@ -203,7 +203,7 @@ void set(char* clave, char* valor){
 	else {		// ACA SE CREAN ENTRADAS
 
 		entrada = malloc(sizeof(entrada_t));
-<<<<<<< HEAD
+
 		char* data;
 		datasPendientes = list_create();
 		entradasPendientes = list_create();
@@ -224,8 +224,9 @@ void set(char* clave, char* valor){
 			list_add(entradasPendientes, entrada);
 			free(value);
 		}
-
 		agregarPendientes(entradasPendientes, datasPendientes);
+		list_destroy(datasPendientes);
+		list_destroy(entradasPendientes);
 }
 
 void agregarPendientes(t_list* entradas, t_list* datas){
@@ -234,7 +235,7 @@ void agregarPendientes(t_list* entradas, t_list* datas){
 	int aux;
 
 	while(list_size(entradas) > entradasContiguasDisponibles(storage)){
-		reemplazarSegun(ALGORITMOREEMPLAZO);
+		reemplazarSegun(ALGORITMOREEMPLAZO);  // aca tambien falta laburar (ver en AlgoritmosReemplazo.c)
 	}
 
 	for(int k=0; k<list_size(datas); k++){
@@ -247,13 +248,10 @@ void agregarPendientes(t_list* entradas, t_list* datas){
 		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);;
 		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, aux, data);
 	}
-
-	list_destroy(datas);
-	list_destroy(entradas);
 }
 
-int agregarAStorage(char* data, entradasNecesarias){
-	int contador = 0;
+int agregarAStorage(char* data, entradasNecesarias){ //falta aca que agregue los datas al array de manera que queden contiguas
+	int contador = 0;								//y se agregue el bloque de datas en el primer lugar que se encuentre libre
 	int resultado = 0;
 	int posicion;
 
@@ -269,11 +267,8 @@ int agregarAStorage(char* data, entradasNecesarias){
 		if(resultado >= entradasNecesarias){
 			posicion = i - entradasNecesarias;
 		}
-	}
-
-
-	strcpy(storage[posicion],data);
 		return i;
+	}
 
 
 	return -1;
@@ -292,91 +287,9 @@ int entradasContiguasDisponibles(char* storage){
 			}
 			contador = 0;
 		}
-=======
-		data = malloc(sizeof(data_t));
-
-		/* Creo entrada */
-		entrada->tamanio_valor = strlen(valor) + 1;
-		entrada->clave = malloc(strlen(clave) + 1);
-		strcpy(entrada->clave, clave);
-
-
-//		if(strlen(valor) <= TAMANIOENTRADA){
-//			entradasNecesarias = 1;
-//		}else{
-//			entradasNecesarias = 2;
-//		}
-//
-//	/* ESTE if ES PARA CONTEMPLAR CUANDO SE NECESITAN 2 ENTRADAS */
-//	if(entradasNecesarias > 1){
-//
-//			entrada->tamanio_valor = TAMANIOENTRADA;
-//
-//			entrada_t* entrada2;							/* CREO OTRA ENTRADA */
-//			entrada2 = malloc(sizeof(entrada_t));
-//
-//			entrada2->clave = malloc(strlen(clave)+1);
-//			strcpy(entrada2->clave, entrada->clave);
-//
-//			entrada2->tamanio_valor = strlen(valor) - TAMANIOENTRADA;
-//			entrada->numero = list_size(tablaEntradas);
-//			entrada2->numero = list_size(tablaEntradas) + 1;
-//
-//			if(CANTIDADENTRADAS - cantidadEntradas < entradasNecesarias){
-//				reemplazarSegun(ALGORITMOREEMPLAZO, entrada);
-//				reemplazarSegun(ALGORITMOREEMPLAZO, entrada2);
-//			}else{
-//				list_add(tablaEntradas, entrada);
-//				list_add(tablaEntradas, entrada2);
-//			}
-//
-//			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agregaron las entradas: Clave %s - Entrada %d - Tamanio Valor %d \n Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor,entrada2->clave,entrada2->numero,entrada2->tamanio_valor);;
-//
-//			char* valor1 = malloc(entrada->tamanio_valor);
-//			char* valor2 = malloc(entrada2->tamanio_valor);
-//
-//			valor1 = string_substring(valor, 0, TAMANIOENTRADA);									// ACA SEPARO EL VALOR
-//			valor2 = string_substring(valor, TAMANIOENTRADA, sizeof(valor) + 1 - TAMANIOENTRADA);		// EN DOS STRINGS
-//
-//			data->numeroEntrada = entrada->numero;
-//			data->valor = malloc(entrada->tamanio_valor);
-//			strcpy(data->valor, valor1);
-//
-//			data_t* data2;							/* CREO OTRO DATA */
-//			data2 = malloc(sizeof(data_t));
-//
-//			data2->numeroEntrada = entrada2->numero;
-//			data2->valor = malloc(entrada2->tamanio_valor);
-//			strcpy(data2->valor, valor2);
-//
-//			list_add(listaStorage, data);
-//			list_add(listaStorage, data2);
-//
-//			free(valor1);
-//			free(valor2);
-//			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage \n Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor, data2->numeroEntrada, data2->valor);
-//
-//		}else{
-
-		entrada->numero = list_size(tablaEntradas);
-
-		list_add(tablaEntradas, entrada);
-		cantidadEntradas ++;
-
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
-
-		data->numeroEntrada = entrada->numero;
-		data->valor = malloc(entrada->tamanio_valor);
-		strcpy(data->valor, valor);
-
-		list_add(listaStorage, data);
-
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
->>>>>>> 7b137ad5e0c346ca6c72e831012153e7c03b7fcf
 	}
 	return resultado;
 }
-
 
 void store(char* clave){
 	entrada_t* entrada;
