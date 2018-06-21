@@ -28,7 +28,7 @@ t_log* logger;
 t_config* config;
 
 t_list* tablaEntradas;
-t_list* listaStorage;
+char* storage[CANTIDADENTRADAS];
 
 char* claveBuscada;
 
@@ -37,11 +37,6 @@ typedef struct Entrada{
 	int numero;
 	int tamanio_valor;
 }entrada_t ;
-
-typedef struct Data{
-	int numeroEntrada;
-	char* valor;
-}data_t;
 
 void _exit_with_error(int socket, char* mensaje);
 void configurarLogger();

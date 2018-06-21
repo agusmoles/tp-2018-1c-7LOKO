@@ -8,8 +8,7 @@
 int posicion = 0;
 int posicionSgte = 1;
 
-void destruirData(data_t* data){
-	free(data->valor);
+void destruirData(char* data){
 	free(data);
 }
 
@@ -18,7 +17,7 @@ void destruirEntrada(entrada_t* entrada){
 	free(entrada);
 }
 
-void reemplazarSegun(int algoritmo, entrada_t* entrada){
+void reemplazarSegun(int algoritmo){
 
 	entrada_t* entradaVieja = list_get(tablaEntradas, posicion);
 	entrada_t* entradaViejaSgte = list_get(tablaEntradas, posicionSgte);
@@ -35,8 +34,8 @@ void reemplazarSegun(int algoritmo, entrada_t* entrada){
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se reemplazo la entrada: Clave %s - Entrada %d - Tamanio Valor %d"ANSI_COLOR_RESET, entradaVieja->clave, entradaVieja->numero, entradaVieja->tamanio_valor);;
-			list_remove_and_destroy_element(listaStorage, posicion, (void*) destruirData);
-			list_replace_and_destroy_element(tablaEntradas, posicion, entrada, (void*) destruirEntrada);
+			list_remove_and_destroy_element(storage, posicion, (void*) destruirData);
+			list_remove_and_destroy_element(tablaEntradas, posicion, (void*) destruirEntrada);
 
 			if(posicion < CANTIDADENTRADAS -1)
 				posicion ++;

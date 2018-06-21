@@ -151,111 +151,117 @@ void recibirInstruccion(int socket){
 
 void set(char* clave, char* valor){
 	entrada_t* entrada;
-	data_t* data;
-	int cantidadEntradas = list_size(tablaEntradas);
-	int entradasNecesarias;
+	t_list* entradasPendientes;
+	t_list* datasPendientes;
+
+	int entradasNecesarias = (int) (ceil(strlen(valor)/(double)TAMANIOENTRADA)); // ceil() redondea siempre para arriba.
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
-		data = buscarEnStorage(entrada->numero);
+		char* data = buscarEnStorage(entrada->numero);
 
-		free(data->valor);		// YA NO ME INTERESA EL VIEJO VALOR, LIBERO MEMORIA
+		strcpy(data, valor);			// COPIO EL NUEVO VALOR A LA DATA
 
-		data->valor = malloc(strlen(valor) + 1);	// SETEO MEMORIA
-
-		strcpy(data->valor, valor);			// COPIO EL NUEVO VALOR A LA DATA
-
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se modifico el valor de la clave %s con %s"ANSI_COLOR_RESET, entrada->clave, data->valor);
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se modifico el valor de la clave %s con %s"ANSI_COLOR_RESET, entrada->clave, data);
 
 	}
-	else {		// SINO CREO UNA NUEVA ENTRADA
+	else {		// ACA SE CREAN ENTRADAS
 
 		entrada = malloc(sizeof(entrada_t));
-		data = malloc(sizeof(data_t));
+		char* data;
+		datasPendientes = list_create();
+		entradasPendientes = list_create();
 
-		/* Creo entrada */
-		entrada->tamanio_valor = strlen(valor) + 1;
-		entrada->clave = malloc(strlen(clave) + 1);
-		strcpy(entrada->clave, clave);
+		for(int i=0; i<entradasNecesarias; i++){
+			entrada = malloc(sizeof(entrada_t));
+			entrada->clave = malloc(strlen(clave+1));
+			strcpy(entrada->clave, clave);
 
+			char* value = malloc(TAMANIOENTRADA);
+			char* value = string_substring(valor, i*TAMANIOENTRADA, TAMANIOENTRADA);
 
-		if(strlen(valor) <= TAMANIOENTRADA){
-			entradasNecesarias = 1;
-		}else{
-			entradasNecesarias = 2;
+			entrada->tamanio_valor = strlen(value)+1;
+
+			strcpy(data, value);
+
+			list_add(datasPendientes, data);
+			list_add(entradasPendientes, entrada);
+			free(value);
 		}
 
-	/* ESTE if ES PARA CONTEMPLAR CUANDO SE NECESITAN 2 ENTRADAS */
-	if(entradasNecesarias > 1){
+		agregarPendientes(entradasPendientes, datasPendientes);
+}
 
-			entrada->tamanio_valor = TAMANIOENTRADA;
+void agregarPendientes(t_list* entradas, t_list* datas){
+	entrada_t* entrada;
+	char* data;
+	int aux;
 
-			entrada_t* entrada2;							/* CREO OTRA ENTRADA */
-			entrada2 = malloc(sizeof(entrada_t));
+	while(list_size(entradas) > entradasContiguasDisponibles(storage)){
+		reemplazarSegun(ALGORITMOREEMPLAZO);
+	}
 
-			entrada2->clave = malloc(strlen(clave)+1);
-			strcpy(entrada2->clave, entrada->clave);
+	for(int k=0; k<list_size(datas); k++){
+		aux = agregarAStorage(list_get(datas, k));
+		entrada = list_get(entradas, k);
+		entrada->numero = aux;
+		list_add(tablaEntradas, entrada);
+		data = list_get(datas,k);
 
-			entrada2->tamanio_valor = strlen(valor) - TAMANIOENTRADA;
-			entrada->numero = list_size(tablaEntradas);
-			entrada2->numero = list_size(tablaEntradas) + 1;
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);;
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, aux, data);
+	}
 
-			if(CANTIDADENTRADAS - cantidadEntradas < entradasNecesarias){
-				reemplazarSegun(ALGORITMOREEMPLAZO, entrada);
-				reemplazarSegun(ALGORITMOREEMPLAZO, entrada2);
-			}else{
-				list_add(tablaEntradas, entrada);
-				list_add(tablaEntradas, entrada2);
-			}
+	list_destroy(datas);
+	list_destroy(entradas);
+}
 
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agregaron las entradas: Clave %s - Entrada %d - Tamanio Valor %d \n Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor,entrada2->clave,entrada2->numero,entrada2->tamanio_valor);;
+int agregarAStorage(char* data, entradasNecesarias){
+	int contador = 0;
+	int resultado = 0;
+	int posicion;
 
-			char* valor1 = malloc(entrada->tamanio_valor);
-			char* valor2 = malloc(entrada2->tamanio_valor);
-
-			valor1 = string_substring(valor, 0, TAMANIOENTRADA);									// ACA SEPARO EL VALOR
-			valor2 = string_substring(valor, TAMANIOENTRADA, sizeof(valor) + 1 - TAMANIOENTRADA);		// EN DOS STRINGS
-
-			data->numeroEntrada = entrada->numero;
-			data->valor = malloc(entrada->tamanio_valor);
-			strcpy(data->valor, valor1);
-
-			data_t* data2;							/* CREO OTRO DATA */
-			data2 = malloc(sizeof(data_t));
-
-			data2->numeroEntrada = entrada2->numero;
-			data2->valor = malloc(entrada2->tamanio_valor);
-			strcpy(data2->valor, valor2);
-
-			list_add(listaStorage, data);
-			list_add(listaStorage, data2);
-
-			free(valor1);
-			free(valor2);
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage \n Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor, data2->numeroEntrada, data2->valor);
-
+	for(int i=0; i<CANTIDADENTRADAS; i++){
+		if(strcmp(storage[i],"") == 0){
+			contador++;
 		}else{
-
-			entrada->numero = list_size(tablaEntradas);
-
-			list_add(tablaEntradas, entrada);
-			cantidadEntradas ++;
-
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
-
-			data->numeroEntrada = entrada->numero;
-			data->valor = malloc(entrada->tamanio_valor);
-			strcpy(data->valor, valor);
-
-			list_add(listaStorage, data);
-
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, data->numeroEntrada, data->valor);
+			if(contador > resultado){
+			resultado = contador;
+			}
+			contador = 0;
+		}
+		if(resultado >= entradasNecesarias){
+			posicion = i - entradasNecesarias;
 		}
 	}
+
+
+	strcpy(storage[posicion],data);
+		return i;
+
+
+	return -1;
+}
+
+int entradasContiguasDisponibles(char* storage){
+	int contador = 0;
+	int resultado = 0;
+
+	for(int i=0; i<CANTIDADENTRADAS; i++){
+		if(strcmp(storage[i],"") == 0){
+			contador++;
+		}else{
+			if(contador > resultado){
+			resultado = contador;
+			}
+			contador = 0;
+		}
+	}
+	return resultado;
 }
 
 void store(char* clave){
 	entrada_t* entrada;
-	data_t* storage;
+	char* data;
 	int fd;
 	char* mem_ptr;
 	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
@@ -270,20 +276,20 @@ void store(char* clave){
 	strcpy(claveBuscada, clave);
 
 	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
-	storage = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
+	data = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
 
 	if((fd = open(directorioMontaje, O_CREAT | O_RDWR , S_IRWXU )) < 0){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open "ANSI_COLOR_RESET);
 	}
 
-	size_t tamanio = strlen(storage->valor) + 1;
+	size_t tamanio = strlen(data) + 1;
 
 	lseek(fd, tamanio-1, SEEK_SET);
 	write(fd, "", 1);
 
 	mem_ptr = mmap(NULL, tamanio , PROT_WRITE | PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
 
-	memcpy(mem_ptr, storage->valor, tamanio);
+	memcpy(mem_ptr, data, tamanio);
 
 	msync(mem_ptr, tamanio, MS_SYNC);
 
@@ -308,14 +314,15 @@ entrada_t* buscarEnTablaDeEntradas(char* clave) {
 }
 
 /*Busca el data que contenga esa entrada*/
-data_t* buscarEnStorage(int entrada) {
-	data_t* storage;
+char* buscarEnStorage(int entrada) {
 
-	for(int i=0; i<list_size(listaStorage); i++) {	// RECORRO LA LISTA DE STORAGE
-		storage = list_get(listaStorage, i);		// VOY TOMANDO ELEMENTOS
+	char* data;
 
-		if (storage->numeroEntrada == entrada) {	// SI LA ENTRADA COINCIDE CON LA DE LA LISTA DEL STORAGE
-			return storage;							// DEVUELVO EL STORAGE ENCONTRADO
+	for(int i=0; i<CANTIDADENTRADAS; i++) {	// RECORRO LA LISTA DE STORAGE
+		data = &storage[i];		// VOY TOMANDO ELEMENTOS
+
+		if(i == entrada) {	// SI LA ENTRADA COINCIDE CON LA DE LA LISTA DEL STORAGE
+			return data;							// DEVUELVO EL STORAGE ENCONTRADO
 		}
 	}
 
@@ -360,7 +367,11 @@ int main(void) {
 	int socket = conectarSocket();
 
 	tablaEntradas = list_create();
-	listaStorage = list_create();
+
+	for(int i=0; i<CANTIDADENTRADAS; i++){		// inicializo el storage
+		storage[i] = malloc(TAMANIOENTRADA);
+		strcpy(storage[i],"");
+	}
 
 	reciboHandshake(socket);
 	envioIdentificador(socket);
