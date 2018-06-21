@@ -18,26 +18,17 @@
 
 char* IP;
 char* PUERTO;
-char* ALGORITMOREEMPLAZO;
 char* PUNTOMONTAJE;
 char* NOMBREINSTANCIA;
 int INTERVALODUMP;
 int TAMANIOENTRADA;
 int CANTIDADENTRADAS;
 
-t_log* logger;
 t_config* config;
 
 t_list* tablaEntradas;
-char** storage;
 
 char* claveBuscada;
-
-typedef struct Entrada{
-	char* clave;
-	int numero;
-	int tamanio_valor;
-}entrada_t ;
 
 void _exit_with_error(int socket, char* mensaje);
 void configurarLogger();
@@ -51,6 +42,7 @@ void pipeHandler();
 void recibirInstruccion(int socket);
 void set(char* clave, char* valor);
 void agregarPendientes(t_list* entradas, t_list* datas);
+int agregarAStorage(char* data, int entradasNecesarias);
 int entradasContiguasDisponibles();
 void store(char* clave);
 void recibirClave(int socket, header_t* header, char* bufferClave);

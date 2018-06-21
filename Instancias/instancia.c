@@ -1,5 +1,6 @@
 /******** CLIENTE INSTANCIAS *********/
 
+#include "AlgoritmosReemplazo.h"
 #include "instancia.h"
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -245,7 +246,7 @@ void agregarPendientes(t_list* entradas, t_list* datas){
 	int aux;
 
 	while(list_size(entradas) > entradasContiguasDisponibles()){
-		reemplazarSegun(ALGORITMOREEMPLAZO);  // aca tambien falta laburar (ver en AlgoritmosReemplazo.c)
+		reemplazarSegun();
 	}
 
 	for(int k=0; k<list_size(datas); k++){
@@ -260,7 +261,7 @@ void agregarPendientes(t_list* entradas, t_list* datas){
 	}
 }
 
-int agregarAStorage(char* data, entradasNecesarias){ //falta aca que agregue los datas al array de manera que queden contiguas
+int agregarAStorage(char* data, int entradasNecesarias){ //falta aca que agregue los datas al array de manera que queden contiguas
 	int contador = 0;								//y se agregue el bloque de datas en el primer lugar que se encuentre libre
 	int resultado = 0;
 	int posicion;
