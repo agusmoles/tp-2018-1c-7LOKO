@@ -15,20 +15,35 @@
 #include "../Colores.h"
 #include "sharedlib.h"
 #include <math.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+
 
 char* IP;
 char* PUERTO;
+char* ALGORITMOREEMPLAZO;
 char* PUNTOMONTAJE;
 char* NOMBREINSTANCIA;
 int INTERVALODUMP;
 int TAMANIOENTRADA;
 int CANTIDADENTRADAS;
 
+t_log* logger;
 t_config* config;
 
 t_list* tablaEntradas;
+t_list* listaStorage;
 
 char* claveBuscada;
+
+typedef struct Entrada{
+	char* clave;
+	int numero;
+	int tamanio_valor;
+	int largo;
+}entrada_t ;
+
+char** storage;
 
 void _exit_with_error(int socket, char* mensaje);
 void configurarLogger();
@@ -41,9 +56,7 @@ void envioIdentificador(int socket);
 void pipeHandler();
 void recibirInstruccion(int socket);
 void set(char* clave, char* valor);
-void agregarPendientes(t_list* entradas, t_list* datas);
-int agregarAStorage(char* data, int entradasNecesarias);
-int entradasContiguasDisponibles();
+int hayEspaciosContiguosPara(int espaciosNecesarios);
 void store(char* clave);
 void recibirClave(int socket, header_t* header, char* bufferClave);
 void recibirTamanioValor(int socket, int32_t* tamanioValor);
@@ -52,8 +65,3 @@ entrada_t* buscarEnTablaDeEntradas(char* clave);
 char* buscarEnStorage(int entrada);
 void enviarTamanioValor(int socket, int* tamanioValor);
 void enviarValor(int socket, int tamanioValor, char* valor);
-
-
-
-
-

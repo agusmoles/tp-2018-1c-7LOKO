@@ -1,9 +1,6 @@
 /******** CLIENTE INSTANCIAS *********/
 
-#include "AlgoritmosReemplazo.h"
 #include "instancia.h"
-#include <sys/mman.h>
-#include <fcntl.h>
 
 /* CONEXIONES */
 void _exit_with_error(int socket, char* mensaje) {
@@ -28,16 +25,14 @@ void setearConfigEnVariables() {
 	NOMBREINSTANCIA = config_get_string_value(config, "Nombre de la Instancia");
 	INTERVALODUMP = config_get_int_value(config, "Intervalo de dump");
 	TAMANIOENTRADA = config_get_int_value(config, "Tamanio de Entrada");
-	CANTIDADENTRADAS = config_get_int_value(config, "Cantidad de Entradas");
+	CANTIDADENTRADAS  = config_get_int_value(config, "Cantidad de Entradas");
 
-    storage = calloc(CANTIDADENTRADAS, sizeof(char*)); 	// CREO VECTOR CON TAMAÑO PARA PUNTERO DE CHARS
+    storage = calloc(CANTIDADENTRADAS, sizeof(char*)); // CREO VECTOR CON TAMAÑO PARA PUNTERO DE CHARS
 
-	for (int i=0; i<CANTIDADENTRADAS; i++) {
+    for (int i=0; i<CANTIDADENTRADAS; i++) {
 		storage[i] = malloc(TAMANIOENTRADA);
-		strcpy(storage[i], "");  						// INICIALIZO CON STRING VACIO
+		strcpy(storage[i], "");  // INICIALIZO CON STRING VACIO
     }
-
-	tablaEntradas = list_create();
 }
 
 int conectarSocket() {
@@ -122,9 +117,9 @@ void recibirInstruccion(int socket){
 	char* bufferValor;
 	int32_t* tamanioValor;
 	entrada_t* entrada;
-	char* data;
 	int* tamanioValorStatus = malloc(sizeof(int));
 	char* valorStatus;
+	char* valor;
 
 	if(recv(socket, buffer_header, sizeof(header_t), MSG_WAITALL)< 0){
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el Header"ANSI_COLOR_RESET);
@@ -153,15 +148,15 @@ void recibirInstruccion(int socket){
 	case 3: /* Status */
 		recibirClave(socket, buffer_header, bufferClave);
 
-		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL && (data = buscarEnStorage(entrada->numero)) != NULL){
+		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL && (valor = buscarEnStorage(entrada->numero)) != NULL){
 				*tamanioValorStatus = entrada->tamanio_valor;
 				valorStatus = malloc(*tamanioValorStatus);
-				strcpy(valorStatus, data);
+				strcpy(valorStatus, valor);
 
 				enviarTamanioValor(socket, tamanioValorStatus);
-				log_info(logger, "Se envio el tamanio del valor al coordinador");
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el tamanio del valor al coordinador"ANSI_COLOR_RESET);
 				enviarValor(socket, *tamanioValorStatus, valorStatus);
-				log_info(logger, "Se envio el valor al coordinador");
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor al coordinador"ANSI_COLOR_RESET);
 				free(valorStatus);
 			}else{
 				*tamanioValorStatus = -1;
@@ -174,14 +169,10 @@ void recibirInstruccion(int socket){
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No existe el codigo de operacion"ANSI_COLOR_RESET);
 		break;
 	}
-//
+
 	free(buffer_header);
 	free(tamanioValor);
 	free(tamanioValorStatus);
-	/* ESTOS NO
-    free(bufferClave);
-	free(bufferValor);
-*/
 }
 
 void enviarTamanioValor(int socket, int* tamanioValor){
@@ -198,144 +189,114 @@ void enviarValor(int socket, int tamanioValor, char* valor){
 
 void set(char* clave, char* valor){
 	entrada_t* entrada;
-	t_list* entradasPendientes;
-	t_list* datasPendientes;
+	char* valorViejo;
+	int posicion = -1; 			// LA INICIALIZO NEGATIVA PARA NOTAR ERROR EN LOS LOGS
 
-	int entradasNecesarias = ceil(strlen(valor)/TAMANIOENTRADA); // ceil() redondea siempre para arriba.
+	int espaciosNecesarios = ceil((double) strlen(valor) / (double) TAMANIOENTRADA);		// DEVUELVE REDONDEADO PARA ARRIBA
 
-	log_info(logger, ANSI_COLOR_BOLDWHITE"Entradas necesarias: %d"ANSI_COLOR_RESET, entradasNecesarias);
-
-	// FALTA VER CASOS QUE EL VALOR NUEVO SEA MAS CHICO O MAS GRANDE QUE EL VALOR VIEJO --> LIBERAR LOS OTROS O PEDIR MAS ESPACIO
+	log_info(logger, ANSI_COLOR_BOLDWHITE"ESPACIOS NECESARIOS PARA EL VALOR: %d"ANSI_COLOR_RESET, espaciosNecesarios);
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
-		char* data = buscarEnStorage(entrada->numero);
+		valorViejo = buscarEnStorage(entrada->numero);
 
-		strcpy(data, valor);			// COPIO EL NUEVO VALOR A LA DATA
+		//  HAY QUE VER SI EL NUEVO VALOR OCUPA MENOS O MAS QUE EL NUEVO
 
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se modifico el valor de la clave %s con %s"ANSI_COLOR_RESET, entrada->clave, data);
+
+		strcpy(valorViejo, valor);			// COPIO EL NUEVO VALOR A LA DATA
+
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se modifico el valor de la clave %s con %s"ANSI_COLOR_RESET, entrada->clave, valor);
 
 	}
-	else {		// ACA SE CREAN ENTRADAS
+	else {		// SINO CREO UNA NUEVA ENTRADA
 
-		datasPendientes = list_create();
-		entradasPendientes = list_create();
+		entrada = malloc(sizeof(entrada_t));
 
-		for(int i=0; i<entradasNecesarias; i++){
-			entrada = malloc(sizeof(entrada_t));
-			entrada->clave = malloc(strlen(clave) + 1);
-			strcpy(entrada->clave, clave);
+		/* Creo entrada */
+		entrada->tamanio_valor = strlen(valor) + 1;
+		entrada->clave = malloc(strlen(clave) + 1);
+		strcpy(entrada->clave, clave);
+		entrada->largo = espaciosNecesarios;
 
-			char* data = malloc(TAMANIOENTRADA);
-			char* valueModificada = string_substring(valor, i*TAMANIOENTRADA, TAMANIOENTRADA);
+		/*************** FINALIZO LO DE LA ENTRADA **************************/
 
-			entrada->tamanio_valor = strlen(valueModificada)+1;
+		if (espaciosNecesarios > 1) {
+			if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {		// SI LA POSICION ES >= 0 OK (SINO DEVUELVE -1)
+				// ASIGNAR EL VALOR DESDE POSICION HASTA LOS ESPACIOS NECESARIOS
+			} else {
+				// REEMPLAZAR SEGUN ALGORITMO
+			}
 
-			strcpy(data, valueModificada);
+		} else {	// SI SOLO NECESITA UN ESPACIO
+			int libre = 0;
 
-			list_add(datasPendientes, data);
-			list_add(entradasPendientes, entrada);
-			free(valueModificada);
+			for (int i=0; i<CANTIDADENTRADAS; i++) {
+				if (strcmp(storage[i], "") == 0) {		// SI ESTA VACIO YA ESTA
+					strcpy(storage[i], valor);
+					posicion = i;
+					libre = 1;
+					break;								// TERMINO EL CICLO FOR
+				}
+			}
+
+			if (!libre) {								// SI NO HABIA ESPACIO VACIO...
+				// REEMPLAZAR SEGUN ALGORITMO
+			}
 		}
 
-		agregarPendientes(entradasPendientes, datasPendientes);
-		list_destroy(datasPendientes);
-		list_destroy(entradasPendientes);
-	}
-}
-
-void agregarPendientes(t_list* entradas, t_list* datas){
-	entrada_t* entrada;
-	char* data;
-	int aux;
-
-	while(list_size(entradas) > entradasContiguasDisponibles()){
-		reemplazarSegun();
-	}
-
-	for(int k=0; k<list_size(datas); k++){
-		aux = agregarAStorage(list_get(datas, k));
-		entrada = list_get(entradas, k);
-		entrada->numero = aux;
+		entrada->numero = posicion;
 		list_add(tablaEntradas, entrada);
-		data = list_get(datas,k);
-
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);;
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego informacion: Entrada %d - Valor %s al Storage"ANSI_COLOR_RESET, aux, data);
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
+		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego el valor %s al storage en la posicion %d"ANSI_COLOR_RESET, storage[posicion], posicion);
 	}
 }
 
-int agregarAStorage(char* data, int entradasNecesarias){ //falta aca que agregue los datas al array de manera que queden contiguas
-	int contador = 0;								//y se agregue el bloque de datas en el primer lugar que se encuentre libre
-	int resultado = 0;
-	int posicion;
+int hayEspaciosContiguosPara(int espaciosNecesarios) {
+	int contador = 0;
 
-	for(int i=0; i<CANTIDADENTRADAS; i++){
-		if(strcmp(storage[i],"") == 0){
+	for (int i=0; i<CANTIDADENTRADAS; i++) {
+		if (strcmp(storage[i], "") ==  0) {		// SI ESA POSICION ESTA VACIO
 			contador++;
-		}else{
-			if(contador > resultado){
-			resultado = contador;
-			}
+		} else {
 			contador = 0;
 		}
-		if(resultado >= entradasNecesarias){
-			posicion = i - entradasNecesarias;
-		}
-		return i;
-	}
 
+		if (contador == espaciosNecesarios) {
+			return i+1-espaciosNecesarios;			// DEVUELVO LA POSICION INICIAL DONDE SE TENDRIA QUE ALMACENAR EL VALOR
+		}
+	}
 
 	return -1;
 }
 
-int entradasContiguasDisponibles(){
-	int contador = 0;
-	int resultado = 0;
-
-	for(int i=0; i<CANTIDADENTRADAS; i++){
-		if(strcmp(storage[i], "") == 0){
-			contador++;
-		}else{
-			if(contador > resultado){
-				resultado = contador;
-			}
-			contador = 0;
-		}
-	}
-	return resultado;
-}
-
 void store(char* clave){
 	entrada_t* entrada;
-	char* data;
 	int fd;
 	char* mem_ptr;
+	char* valor;
 	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
 
-	mkdir(PUNTOMONTAJE, 0777);
+	mkdir(PUNTOMONTAJE, 0777);			// CREO EL DIRECTORIO SI NO ESTA CREADO
 
 	strcpy(directorioMontaje, PUNTOMONTAJE);
 
-	strcat(directorioMontaje, clave);
-
-	claveBuscada = malloc(strlen(clave)+ 1);
-	strcpy(claveBuscada, clave);
+	strcat(directorioMontaje, clave);		// DIRECTORIO DE MONTAJE TIENE LA DIRECCION COMPLETA DONDE SE VA A GUARDAR EL VALOR
 
 	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
-	data = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
+	printf(ANSI_COLOR_BOLDWHITE"Buscando el valor de la entrada num %d\n"ANSI_COLOR_RESET, entrada->numero);
+	valor = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
 
 	if((fd = open(directorioMontaje, O_CREAT | O_RDWR , S_IRWXU )) < 0){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open "ANSI_COLOR_RESET);
 	}
 
-	size_t tamanio = strlen(data) + 1;
+	size_t tamanio = strlen(valor) + 1;
 
 	lseek(fd, tamanio-1, SEEK_SET);
 	write(fd, "", 1);
 
 	mem_ptr = mmap(NULL, tamanio , PROT_WRITE | PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
 
-	memcpy(mem_ptr, data, tamanio);
+	memcpy(mem_ptr, valor, tamanio);
 
 	msync(mem_ptr, tamanio, MS_SYNC);
 
@@ -361,9 +322,7 @@ entrada_t* buscarEnTablaDeEntradas(char* clave) {
 
 /*Busca el data que contenga esa entrada*/
 char* buscarEnStorage(int entrada) {
-	char* data;
-	data = storage[entrada];
-	return data;
+	return storage[entrada];
 }
 
 /* Recibir sentencia del coordinador*/
@@ -392,7 +351,6 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
 }
 
-
 int main(void) {
 	struct sigaction finalizacion;
 	finalizacion.sa_handler = pipeHandler;
@@ -403,13 +361,13 @@ int main(void) {
 	setearConfigEnVariables();
 	int socket = conectarSocket();
 
+	tablaEntradas = list_create();
+	listaStorage = list_create();
+
 	reciboHandshake(socket);
 	envioIdentificador(socket);
 
-
 	conectarConCoordinador(socket);
-
-
 
 	close(socket);
 
