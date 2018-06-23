@@ -277,6 +277,3 @@ int cantidadSentencias(FILE* script){
 	free(instruccion);
 	return sentencias;
 }
-
-
-

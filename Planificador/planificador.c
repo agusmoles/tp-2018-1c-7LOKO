@@ -895,7 +895,6 @@ int hayEsisBloqueadosEsperandoPor(char* clave) {
 
 void intHandler() {
 	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
-	log_destroy(logger);
 	exit(1);
 }
 
