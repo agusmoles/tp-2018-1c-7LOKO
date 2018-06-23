@@ -535,11 +535,10 @@ int seleccionLeastSpaceUsed(){
 		entradasLibresPorInstancia[h] = 0;
 	}
 
-	header->codigoOperacion = 5;
+	header->codigoOperacion = 4;
 
 	/*Falta avisar a la instancia */
 	for(int i=0; i<cantidadInstanciasConectadas; i++){
-		printf(ANSI_COLOR_BOLDWHITE"FD INSTANCIA A MANDAR HEADER: %d\n"ANSI_COLOR_RESET, v_instanciasConectadas[i].fd);
 		enviarHeader(v_instanciasConectadas[i].fd, header);
 
 		if(recv(v_instanciasConectadas[i].fd, entradasLibres, sizeof(int), 0) < 0){
@@ -549,7 +548,6 @@ int seleccionLeastSpaceUsed(){
 		entradasLibresPorInstancia[i] = *entradasLibres;
 	}
 
-	free(header);
 	free(entradasLibres);
 
 	int minimo = entradasLibresPorInstancia[0];
