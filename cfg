@@ -6,11 +6,11 @@ IP Planificador=127.0.0.1
 
 Puerto Planificador=8001
 
-Algoritmo de planificación=SJF-SD
+Algoritmo de planificación=SJF-CD
 
 Alfa planificación=50
 
-Estimación inicial=3
+Estimación inicial=0
 
 Claves inicialmente bloqueadas=
 
@@ -29,3 +29,5 @@ Punto de montaje=/home/utnso/inst1/
 Nombre de la Instancia=Inst1
 
 Intervalo de dump=10
+
+ID de Instancia=1

@@ -28,7 +28,6 @@ int estimacionInicial;
 
 t_log* logger;
 t_config* config;
-t_list* ejecutando;
 sem_t mutexEjecutando;
 sem_t esisListos;
 fd_set descriptoresLectura;
@@ -55,7 +54,6 @@ void recibirHeader(int socket, header_t* header);
 void recibirClave(int socket, int tamanioClave, char* clave);
 void recibirIDDeESI(int socket, int* ID);
 void recibirMensaje(cliente* ESI);
-void ordenarProximoAEjecutar();
 cliente* getPrimerESIListo();
 void ordenarColaDeListosPorSJF();
 void verificarDesalojoPorSJF(cliente* ESIEjecutando);

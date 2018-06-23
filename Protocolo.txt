@@ -33,6 +33,8 @@ COD. OP
 0. Para indicar que es una operacion de GET
 1. Para indicar que es una operacion de SET
 2. Para indicar que es una operacion de STR
+3. Para indicar que es una operacion del comando Status del Planificador
+4. Clave larga
 
 El Planificador, luego de recibir una sentencia por parte del Coordinador, le devuelve a éste un 0 si el ESI se bloqueo/aborto y un 1 si se ejecuto con normalidad.
 
@@ -49,4 +51,5 @@ Cuando se ejecute el "status clave" en la consola, la secuencia va a ser:
 3. Planificador recibe tamaño del valor almacenado y, en caso de no tenerlo, un -1
 4. Si no lo tiene, solo manda en que instancia (un INT) se guardaria el valor (sin efecto en el algoritmo para el proximo guardado de valor)
 5. Si lo tiene, manda el valor y luego en que instancia esta guardado
+
 
