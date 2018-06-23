@@ -73,6 +73,7 @@ void escuchar(int socket);
 /* Asigna nombre a cada cliente particular:  Instancia, ESI, Planificador */
 void asignarNombreAlSocketCliente(cliente_t* socketCliente, char* nombre);
 
+
 void enviarMensaje(int socketCliente, char* msg);
 
 /* Recibe sentencia del ESI */
@@ -113,8 +114,7 @@ int verificarSiExistenInstanciasConectadas();
 int seleccionEquitativeLoad();
 
 /*Envia la sentencia a la instancia correspondiente*/
-int enviarSetInstancia(int socket, header_t* header, char* clave, char* valor);
-int enviarStoreInstancia(int socket, header_t* header, char* clave);
+void enviarSentenciaESI(int socket, header_t* header, char* clave, char* valor);
 
 /* Envia la sentencia al planificador */
 void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int idESI);
@@ -152,8 +152,6 @@ int verificarClaveTomada(int socket);
 cliente_t* buscarESI(int* IDESI);
 
 int buscarInstanciaEncargada(char* clave);
-
-int existeIdInstancia(int idInstancia);
 
 void desconectarInstancia(int idInstancia);
 int buscarInstanciaDesconectada();
