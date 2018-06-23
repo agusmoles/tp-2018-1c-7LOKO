@@ -36,7 +36,6 @@ typedef struct Cliente{
 t_log* loggerConsola;
 t_list* bloqueados;
 t_list* listos;
-t_list* ejecutando;
 t_list* finalizados;
 t_dictionary* diccionarioClaves;
 sem_t pausado;
@@ -58,7 +57,6 @@ int esiEstaEjecutando(cliente* ESI);
 int esiEstaEnListos(cliente* ESI);
 int esiEstaEnBloqueados(cliente* ESI);
 int hayEsisBloqueadosEsperandoPor(char* clave);
-void ordenarProximoAEjecutar();
 void eliminarClavesTomadasPorEsiFinalizado(char* clave, void* ESI);
 
 int conectarSocketStatus();

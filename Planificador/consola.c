@@ -426,56 +426,10 @@ int com_deadlock(char **args){
 		return error_no_lleva_parametros(args);
 	}
 
-	t_list* deadlock = list_create();
-	int* IDESI;
-	int* IDESISiguiente;
-	cliente* ESI, *ESIQueTieneElRecurso;
+	// NO OLVIDARSE DE LIBERAR PARAMETROS
 
-	for(int i=0; i<list_size(bloqueados); i++) {
-		ESI = list_get(bloqueados, i);
-
-		list_add(deadlock, ESI);
-
-		IDESI = dictionary_get(diccionarioClaves, ESI->recursoSolicitado);
-
-		ESIQueTieneElRecurso = buscarESI(IDESI);
-
-		if(!esiEstaEnBloqueados(ESIQueTieneElRecurso)) {
-			// SI YA NO ESTA BLOQUEADO, NO HAY DEADLOCK
-			list_remove(deadlock, 0);
-		} else {
-			IDESISiguiente = dictionary_get(diccionarioClaves, ESIQueTieneElRecurso->recursoSolicitado);
-
-			if (*IDESISiguiente == *IDESI) {
-				list_add(deadlock, ESIQueTieneElRecurso);
-			}
-		}
-	}
-
-	for(int i=0; i<list_size(deadlock); i++) {
-		cliente* esi = list_get(deadlock, i);
-
-		printf(ANSI_COLOR_BOLDWHITE"ESI %d\n"ANSI_COLOR_RESET, esi->identificadorESI);
-	}
-
-	list_destroy(deadlock);
-	liberar_parametros(args);
-
+	puts("Estas en deadlock");
 	return 1;
-}
-
-cliente* buscarESIEnBloqueados(int* IDESI) {
-	cliente* ESI;
-
-	for (int i=0; i<list_size(bloqueados); i++) {
-		ESI = list_get(bloqueados, i);
-
-		if (ESI->identificadorESI == *IDESI) {
-			return ESI;
-		}
-	}
-
-	return NULL;
 }
 
 int com_man(char **args){

@@ -823,8 +823,9 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
 			break;
-		case 4: /* Clave Larga */
+		case 4: /* Clave larga */
 			log_error(logger, ANSI_COLOR_BOLDRED"Clave excede tamanio maximo"ANSI_COLOR_RESET);
+
 			enviarHeader(socketPlanificador, header);
 			break;
 		default:
