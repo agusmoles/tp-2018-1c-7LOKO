@@ -28,9 +28,7 @@ void setearConfigEnVariables() {
 	CANTIDADENTRADAS  = config_get_int_value(config, "Cantidad de Entradas");
 	IDENTIFICADORINSTANCIA = config_get_int_value(config, "ID de Instancia");
 
-    storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
-
-    storage = storageFijo; 			// SIEMPRE TOCAR EL STORAGE AUXILIAR (STORAGE), EL OTRO NO
+    storage = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
 }
 
 int conectarSocket() {
@@ -99,7 +97,7 @@ void envioIdentificador(int socket) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
 	}
 
-	if (send(socket, &IDENTIFICADORINSTANCIA, sizeof(int), 0) < 0) {
+	if (send(socket, IDENTIFICADORINSTANCIA, sizeof(int), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar ID de Instancia"ANSI_COLOR_RESET);
 	}
 
@@ -231,8 +229,7 @@ void set(char* clave, char* valor){
 			int diferenciaEspacios = espaciosNecesariosValorViejo - espaciosNecesarios;
 
 			for (int i=1; i<=diferenciaEspacios; i++) {
-				storage = buscarEnStorage(entrada->numero + espaciosNecesarios + i);
-				strcpy(storage, "");
+				strcpy(storage[entrada->numero + espaciosNecesarios + i], "");
 			}
 
 			asignarAEntrada(entrada, valor, espaciosNecesarios);
@@ -279,8 +276,7 @@ int hayEspaciosContiguosPara(int espaciosNecesarios) {
 	int contador = 0;
 
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
-		storage = buscarEnStorage(i);
-		if (strcmp(storage, "") ==  0) {		// SI ESA POSICION ESTA VACIO
+		if (strcmp(storage[i], "") ==  0) {		// SI ESA POSICION ESTA VACIO
 			contador++;
 		} else {
 			contador = 0;
@@ -300,20 +296,20 @@ void asignarAEntrada(entrada_t* entrada, char* valor, int largo) {
 }
 
 void copiarValorAlStorage(entrada_t* entrada, char* valor, int posicion) {
+	int posicionAuxiliar = posicion;
+
 	for (int i=0; i<entrada->largo; i++) {
 		char* valorRecortado = string_substring(valor, i*TAMANIOENTRADA, TAMANIOENTRADA);	// NO SE SI TIENE EN CUENTA EL \0 O NO
 
-		storage = buscarEnStorage(posicion);
-		strcpy(storage, valorRecortado);
-		posicion++;
+		strcpy(storage[posicionAuxiliar], valorRecortado);
+		posicionAuxiliar++;
 		free(valorRecortado);
 	}
 }
 
 void limpiarValores(entrada_t* entrada) {
 	for (int i=0; i<entrada->largo; i++) {
-		storage = buscarEnStorage(entrada->numero+i);
-		strcpy(storage, "");				// LE ASIGNO STRING VACIO
+		strcpy(storage[entrada->numero+i], "");				// LE ASIGNO STRING VACIO
 	}
 }
 
@@ -333,8 +329,7 @@ void store(char* clave){
 	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
 
 	for (int i=0; i<entrada->largo; i++) {			// ENTRADA LARGO ES EL NUM DE ESPACIOS QUE OCUPA EL VALOR
-		storage = buscarEnStorage(entrada->numero + i);
-		string_append(&valor, storage); 		// CONCATENO EL STRING USANDO TODOS LOS ESPACIOS DEL STORAGE
+		string_append(&valor, storage[entrada->numero + i]); 		// CONCATENO EL STRING USANDO TODOS LOS ESPACIOS DEL STORAGE
 	}
 
 
@@ -376,7 +371,7 @@ entrada_t* buscarEnTablaDeEntradas(char* clave) {
 
 /*Busca el data que contenga esa entrada*/
 char* buscarEnStorage(int numeroEntrada) {
-	return storageFijo + numeroEntrada * TAMANIOENTRADA;
+	return storage + numeroEntrada * TAMANIOENTRADA;
 }
 
 /* Recibir sentencia del coordinador*/

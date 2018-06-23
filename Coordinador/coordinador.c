@@ -37,8 +37,6 @@ void crearConfig() {
 
 void setearConfigEnVariables() {
 	PUERTO = config_get_string_value(config, "Puerto Coordinador");
-	ALGORITMODEDISTRIBUCION = config_get_string_value(config, "Algoritmo de Distribución");
-	RETARDO = config_get_int_value(config, "Retardo");
 }
 
 int conectarSocketYReservarPuerto() {
@@ -94,8 +92,6 @@ int envioHandshake(int socketCliente) {
 
 void intHandler() {
 	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
-	log_destroy(logOperaciones);
-	log_destroy(logger);
 	exit(1);
 }
 
@@ -795,13 +791,9 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 			/*Ahora envio la sentencia a la Instancia encargada */
 			if((instanciaEncargada = buscarInstanciaEncargada(bufferClave)) == -1){
-				if (strcmp(ALGORITMODEDISTRIBUCION, "EL") == 0) {
-					instanciaEncargada = seleccionEquitativeLoad();
-				} else if (strcmp(ALGORITMODEDISTRIBUCION, "LSU") == 0) {
-					instanciaEncargada = seleccionLeastSpaceUsed();
-				} else if (strcmp(ALGORITMODEDISTRIBUCION, "KE") == 0) {
-					instanciaEncargada = seleccionKeyExplicit(bufferClave[0]);
-				}
+				//instanciaEncargada = seleccionEquitativeLoad();
+				//instanciaEncargada = seleccionLeastSpaceUsed();
+				instanciaEncargada = seleccionKeyExplicit(bufferClave[0]);
 				setearInstancia(bufferClave, instanciaEncargada);
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
@@ -843,13 +835,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 			/*Ahora envio la sentencia a la Instancia encargada */
 			if((instanciaEncargada = buscarInstanciaEncargada(bufferClave)) == -1){
-				if (strcmp(ALGORITMODEDISTRIBUCION, "EL") == 0) {
-					instanciaEncargada = seleccionEquitativeLoad();
-				} else if (strcmp(ALGORITMODEDISTRIBUCION, "LSU") == 0) {
-					instanciaEncargada = seleccionLeastSpaceUsed();
-				} else if (strcmp(ALGORITMODEDISTRIBUCION, "KE") == 0) {
-					instanciaEncargada = seleccionKeyExplicit(bufferClave[0]);
-				}
+				instanciaEncargada = seleccionEquitativeLoad();
+				//instanciaEncargada = seleccionLeastSpaceUsed();
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			actualizarVectorInstanciasConectadas();
