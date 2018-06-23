@@ -15,6 +15,8 @@
 #include <semaphore.h>
 
 char* PUERTO;
+char* ALGORITMODEDISTRIBUCION;
+int RETARDO;
 #define NUMEROCLIENTES 20
 #define CANTIDADCLAVES 20
 #define TAMANIOMAXIMOCLAVE 40
