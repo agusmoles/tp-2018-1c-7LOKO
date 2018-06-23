@@ -1,9 +1,10 @@
 #include "coordinador.h"
 
 cliente_t v_instanciasConectadas[NUMEROCLIENTES];
+instancia_t instanciasIDsUsados[NUMEROCLIENTES];
 int instanciaSiguiente = 0;
 int cantidadInstanciasConectadas = 0;
-int identificadorInstancia = 0;
+//int identificadorInstancia = 0;
 int idEsiEjecutando = 0;
 int* tamanioValorStatus;
 char* valorStatus;
@@ -176,7 +177,7 @@ void recibirSentenciaESI(void* argumentos){
 /* Asigna ID a cada Instancia para identificarlas */
 void asignarIDdeInstancia(cliente_t* socketCliente, int id){
 	socketCliente->identificadorInstancia = id;
-	log_info(logger, ANSI_COLOR_BOLDCYAN "Se recibio el identificador de la Instancia %d"ANSI_COLOR_RESET, socketCliente->identificadorInstancia);
+	log_info(logger, ANSI_COLOR_BOLDCYAN "Se asigno el identificador de la Instancia %d"ANSI_COLOR_RESET, socketCliente->identificadorInstancia);
 }
 
 /* Creacion de hilos para cada cliente */
@@ -200,10 +201,12 @@ void crearHiloPlanificador(cliente_t socketCliente){
 void crearHiloInstancia(cliente_t socketCliente){
 	pthread_t threadInstancia;
 
-	arg_t* args = malloc(sizeof(socketCliente)+sizeof(int));
-	//args->socket=socket;
+	arg_t* args = malloc(sizeof(socketCliente) + sizeof(int));
 	args->socketCliente.fd = socketCliente.fd;
 	strcpy(args->socketCliente.nombre, socketCliente.nombre);
+	args->socketCliente.identificadorInstancia = socketCliente.identificadorInstancia;
+	args->socketCliente.primeraLetra = socketCliente.primeraLetra;
+	args->socketCliente.ultimaLetra = socketCliente.ultimaLetra;
 
 	if(pthread_create(&threadInstancia, NULL, (void *) recibirMensaje_Instancias, args)!=0){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo instancia"ANSI_COLOR_RESET);
@@ -267,9 +270,11 @@ void recibirMensaje_Instancias(void* argumentos) {
 				case 0: log_info(logger, ANSI_COLOR_BOLDRED"Se desconecto el cliente %s"ANSI_COLOR_RESET, args->socketCliente.nombre);
 
 						if(strcmp(args->socketCliente.nombre, "Instancia") == 0){
+							desconectarInstancia(args->socketCliente.identificadorInstancia);
 							cantidadInstanciasConectadas--;
 							instanciasConectadas();
 						}
+
 						close(args->socketCliente.fd); 		//CIERRO EL SOCKET
 						free(args);							//LIBERO MEMORIA CUANDO SE DESCONECTA
 						flag = 0; 							//FLAG 0 PARA SALIR DEL WHILE CUANDO SE DESCONECTA
@@ -277,6 +282,7 @@ void recibirMensaje_Instancias(void* argumentos) {
 
 				default:
 						sem_wait(&semaforo_instancia);
+						/* comando status */
 						if(*tamanioValorStatus > 0){
 							valorStatus = malloc(*tamanioValorStatus);
 							if(recv(args->socketCliente.fd, valorStatus, *tamanioValorStatus, 0) < 0){
@@ -284,6 +290,7 @@ void recibirMensaje_Instancias(void* argumentos) {
 							}
 						}
 						sem_post(&semaforo_instanciaOK);
+
 						break;
 
 			}
@@ -314,10 +321,10 @@ void recibirMensaje_Planificador(void* argumentos) {
 			printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI FD: %d\n"ANSI_COLOR_RESET, socketESI);
 
 			if(verificarClaveTomada(args->socketCliente.fd) == 0){
-				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
+				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - SET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
 				enviarMensaje(socketESI, "OPBL");
 			} else {
-				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET/STORE correctamente"ANSI_COLOR_RESET);
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET/SET/STORE correctamente"ANSI_COLOR_RESET);
 				enviarMensaje(socketESI, "OPOK");
 			}
 
@@ -504,10 +511,10 @@ int seleccionEquitativeLoad(){
 
 		if(instanciaSiguiente < cantidadInstanciasConectadas){
 			instanciaSiguiente++;
-		return (instanciaSiguiente-1);
+			return (instanciaSiguiente-1);
 		}else {
 			instanciaSiguiente = 1;
-		return (instanciaSiguiente -1 );
+			return (instanciaSiguiente -1 );
 		}
 
 	} else {
@@ -516,39 +523,30 @@ int seleccionEquitativeLoad(){
 }
 
 int seleccionLeastSpaceUsed(){
-	int entradasOcupadasPorInstancia[cantidadInstanciasConectadas];
+	int entradasLibresPorInstancia[cantidadInstanciasConectadas];
+	int *entradasLibres = malloc(sizeof(int));
 
 	for(int h=0; h<cantidadInstanciasConectadas; h++){
-		entradasOcupadasPorInstancia[h] = 0;
+		entradasLibresPorInstancia[h] = 0;
 	}
 
-	/*Buscar entradas ocupadas de cada instancia*/
-	for(int i=0; i<CANTIDADCLAVES; i++){
-		switch(clavesExistentes[i].instancia){
-		case 0:
-			entradasOcupadasPorInstancia[0] ++;
-			break;
-		case 1:
-			entradasOcupadasPorInstancia[1] ++;
-			break;
-		case 2:
-			entradasOcupadasPorInstancia[2] ++;
-			break;
-		case 3:
-			entradasOcupadasPorInstancia[3] ++;
-			break;
-		default:
-			break;
+	/*Falta avisar a la instancia */
+	for(int i=0; i<cantidadInstanciasConectadas; i++){
+		if(recv(v_instanciasConectadas[i].fd, entradasLibres, sizeof(int), 0) < 0){
+			_exit_with_error(v_instanciasConectadas[i].fd, ANSI_COLOR_BOLDRED"No se recibieron las entradas libres"ANSI_COLOR_RESET);
 		}
+		entradasLibresPorInstancia[i] = *entradasLibres;
 	}
 
-	int minimo = entradasOcupadasPorInstancia[0];
+	free(entradasLibres);
+
+	int minimo = entradasLibresPorInstancia[0];
 	int instanciaSeleccionada = 0;
 
 	/*Busco la que tenga menos entradas ocupadas*/
 	for(int j=0; j<cantidadInstanciasConectadas; j++){
-		if(entradasOcupadasPorInstancia[j] < minimo){
-			minimo = entradasOcupadasPorInstancia[j];
+		if(entradasLibresPorInstancia[j] < minimo){
+			minimo = entradasLibresPorInstancia[j];
 			instanciaSeleccionada = j;
 		}
 	}
@@ -642,11 +640,19 @@ void enviarHeader(int socket, header_t* header) {
 	}
 }
 
+//int enviarHeader(int socket, header_t* header) {
+//	return send(socket, header, sizeof(header_t), 0);
+//}
+
 void enviarClave(int socket, char* clave) {
 	if (send(socket, clave, strlen(clave)+1, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la clave"ANSI_COLOR_RESET);
 	}
 }
+
+//int enviarClave(int socket, char* clave) {
+//	return send(socket, clave, strlen(clave)+1, 0);
+//}
 
 void enviarValor(int socket, char* valor) {
 	int32_t* tamanioValor = malloc(sizeof(int32_t));
@@ -662,6 +668,12 @@ void enviarValor(int socket, char* valor) {
 	}
 	free(tamanioValor);
 }
+
+//int enviarValor(int socket, char* valor){
+//	int32_t* tamanioValor = malloc(sizeof(int32_t));
+//	*tamanioValor = strlen(valor) +1;
+//
+//}
 
 void enviarIDEsi(int socket, int idESI){
 	int* idEsi = malloc(sizeof(int));
@@ -747,6 +759,10 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
 
+			sem_post(&semaforo_planificador);
+
+			sem_wait(&semaforo_planificadorOK);
+
 			recibirTamanioValor(socketESI->fd, tamanioValor);
 			bufferValor = malloc(*tamanioValor);
 			recibirValor(socketESI->fd, tamanioValor, bufferValor);
@@ -807,6 +823,11 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
 			break;
+		case 4: /* Clave larga */
+			log_error(logger, ANSI_COLOR_BOLDRED"Clave excede tamanio maximo"ANSI_COLOR_RESET);
+
+			enviarHeader(socketPlanificador, header);
+			break;
 		default:
 			_exit_with_error(socketESI->fd, "No cumpliste el protocolo de enviar Header");
 	}
@@ -843,6 +864,8 @@ void aceptarCliente(int socket, cliente_t* socketCliente) {
 	socklen_t addrlen = sizeof(addr);
 	fd_set descriptores;
 	int socketPlanificador;
+	int idReincorporada;
+	int* identificadorInstancia = malloc(sizeof(int));
 
 	FD_ZERO(&descriptores);
 	FD_SET(socket, &descriptores);
@@ -876,10 +899,37 @@ void aceptarCliente(int socket, cliente_t* socketCliente) {
 						break;
 
 				case 2: asignarNombreAlSocketCliente(&socketCliente[i], "Instancia");
-						asignarIDdeInstancia(&socketCliente[i], identificadorInstancia);
-						crearHiloInstancia(socketCliente[i]);
-						identificadorInstancia++;
-						cantidadInstanciasConectadas++;
+
+						/* Recibir identificador de instancia */
+						if(recv(socketCliente[i].fd, identificadorInstancia , sizeof(int) ,0 ) < 0){
+							_exit_with_error(socketCliente[i].fd, "No se pudo recibir el ID Instancia");
+						}
+
+						log_info(logger, "InstanciasIDsUsados: %d - Hay instancias desconectadas: %d",cantidadinstanciasIDsUsados(), hayInstanciasDesconectadas());
+
+						/* Si es la primer instancia a conectarese o tiene id nuevo*/
+						if(cantidadinstanciasIDsUsados() == 0 || existeIdInstancia(*identificadorInstancia)< 0){
+							asignarIDdeInstancia(&socketCliente[i], *identificadorInstancia);
+							crearHiloInstancia(socketCliente[i]);
+							agregarInstanciaAVectorIDs(*identificadorInstancia);
+							/* Avisar que es una instancia nueva -> envio 0*/
+
+							//identificadorInstancia++;
+							cantidadInstanciasConectadas++;
+						}else if( existeIdInstancia() == 1){ /* Si ya existia el ID*/
+							//idReincorporada = buscarInstanciaDesconectada();
+							conectarInstancia(*identificadorInstancia);
+							asignarIDdeInstancia(&socketCliente[i], *identificadorInstancia);
+							log_info(logger, "** SE REINCORPORO LA INSTANCIA %d**", socketCliente[i].identificadorInstancia);
+							crearHiloInstancia(socketCliente[i]);
+							/* Avisar que es una instancia reconectada -> envio 1*/
+
+							/* Envio cantidad de claves que tenia */
+
+							/* Envio claves */
+							cantidadInstanciasConectadas++;
+						}
+
 						break;
 
 				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
@@ -943,6 +993,70 @@ cliente_t* buscarESI(int* IDESI) {
 	return NULL;
 }
 
+int cantidadinstanciasIDsUsados(){
+	int cantidad = 0;
+
+	for(int i =0; i < NUMEROCLIENTES; i++){
+		if(instanciasIDsUsados[i].identificadorInstancia >= 0){
+			cantidad ++;
+		}
+	}
+	return cantidad;
+}
+
+int hayInstanciasDesconectadas(){
+	for(int i =0; i < NUMEROCLIENTES; i++){
+		if(instanciasIDsUsados[i].identificadorInstancia >= 0 && instanciasIDsUsados[i].conectada == 0){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int buscarInstanciaDesconectada(){
+	for(int i =0; i < NUMEROCLIENTES; i++){
+		if(instanciasIDsUsados[i].identificadorInstancia >= 0 && instanciasIDsUsados[i].conectada == 0){
+			return instanciasIDsUsados[i].identificadorInstancia;
+		}
+	}
+	return -1;
+}
+
+void desconectarInstancia(int idInstancia){
+	for(int i =0; i < NUMEROCLIENTES; i++){
+		if(instanciasIDsUsados[i].identificadorInstancia == idInstancia){
+			instanciasIDsUsados[i].conectada = 0;
+		}
+	}
+}
+
+void agregarInstanciaAVectorIDs(int identificadorInstancia){
+	for(int i =0; i < NUMEROCLIENTES; i++){
+		if(instanciasIDsUsados[i].identificadorInstancia < 0){
+			instanciasIDsUsados[i].identificadorInstancia = identificadorInstancia;
+			instanciasIDsUsados[i].conectada = 1;
+			break;
+		}
+	}
+}
+
+void conectarInstancia(int idInstancia){
+	for(int i =0; i < NUMEROCLIENTES; i++){
+		if(instanciasIDsUsados[i].identificadorInstancia == idInstancia){
+			instanciasIDsUsados[i].conectada = 1;
+		}
+	}
+}
+
+int existeIdInstancia(int idInstancia){
+	for(int i =0; i < NUMEROCLIENTES; i++){
+		if(instanciasIDsUsados[i].identificadorInstancia == idInstancia){
+			return 1;
+		}
+	}
+	return -1;
+}
+
 int main(void) {
 	struct sigaction finalizacion;
 	finalizacion.sa_handler = intHandler;
@@ -968,6 +1082,8 @@ int main(void) {
 		v_instanciasConectadas[i].identificadorInstancia = -1;
 		socketCliente[i].identificadorESI = -1;
 		socketCliente[i].identificadorInstancia = -1;
+		instanciasIDsUsados[i].conectada = 0;
+		instanciasIDsUsados[i].identificadorInstancia = -1;
 	}
 
 	for(int j=0; j<CANTIDADCLAVES; j++){

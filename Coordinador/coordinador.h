@@ -24,7 +24,6 @@ typedef struct Cliente{
 	int fd; 				//ESTRUCTURA PARA RECONOCER A LOS ESI Y DEMAS CLIENTES
 	int identificadorESI;
 	int identificadorInstancia;
-	int cantidadLetras;
 	char primeraLetra;
 	char ultimaLetra;
 }cliente_t;
@@ -43,6 +42,11 @@ typedef struct clave{
 	char* clave;
 	int instancia;
 }clave_t;
+
+typedef struct instancia{
+	int identificadorInstancia;
+	int conectada;
+}instancia_t;
 
 t_log* logger;
 t_log* logOperaciones;
@@ -148,3 +152,10 @@ int verificarClaveTomada(int socket);
 cliente_t* buscarESI(int* IDESI);
 
 int buscarInstanciaEncargada(char* clave);
+
+void desconectarInstancia(int idInstancia);
+int buscarInstanciaDesconectada();
+int cantidadinstanciasIDsUsados();
+int hayInstanciasDesconectadas();
+void conectarInstancia(int idInstancia);
+void agregarInstanciaAVectorIDs(int identificadorInstancia);
