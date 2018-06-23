@@ -34,8 +34,6 @@ t_config* config;
 t_list* tablaEntradas;
 t_list* listaStorage;
 
-char* claveBuscada;
-
 typedef struct Entrada{
 	char* clave;
 	int numero;
@@ -57,6 +55,9 @@ void pipeHandler();
 void recibirInstruccion(int socket);
 void set(char* clave, char* valor);
 int hayEspaciosContiguosPara(int espaciosNecesarios);
+void asignarAEntrada(entrada_t* entrada, char* valor, int largo);
+void copiarValorAlStorage(entrada_t* entrada, char* valor, int posicion);
+void limpiarValores(entrada_t* entrada);
 void store(char* clave);
 void recibirClave(int socket, header_t* header, char* bufferClave);
 void recibirTamanioValor(int socket, int32_t* tamanioValor);

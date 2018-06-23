@@ -190,21 +190,53 @@ void enviarValor(int socket, int tamanioValor, char* valor){
 void set(char* clave, char* valor){
 	entrada_t* entrada;
 	char* valorViejo;
-	int posicion = -1; 			// LA INICIALIZO NEGATIVA PARA NOTAR ERROR EN LOS LOGS
+	int posicion = -2; 			// LA INICIALIZO NEGATIVA PARA NOTAR ERROR EN LOS LOGS
 
-	int espaciosNecesarios = ceil((double) strlen(valor) / (double) TAMANIOENTRADA);		// DEVUELVE REDONDEADO PARA ARRIBA
+	int espaciosNecesarios = ceil((double) (strlen(valor) + 1) / (double) TAMANIOENTRADA);		// DEVUELVE REDONDEADO PARA ARRIBA
 
 	log_info(logger, ANSI_COLOR_BOLDWHITE"ESPACIOS NECESARIOS PARA EL VALOR: %d"ANSI_COLOR_RESET, espaciosNecesarios);
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
 		valorViejo = buscarEnStorage(entrada->numero);
 
+		int espaciosNecesariosValorViejo = ceil((double) (strlen(valorViejo) + 1) / (double) TAMANIOENTRADA);
+
 		//  HAY QUE VER SI EL NUEVO VALOR OCUPA MENOS O MAS QUE EL NUEVO
+		if (espaciosNecesarios > espaciosNecesariosValorViejo) {		// SI OCUPA MAS QUE EL ESPACIO VIEJO...
 
+			if ( (posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {		// SI HAY ESPACIOS CONTIGUOS...
+				if (posicion != entrada->numero) {					// SI LO ASIGNO EN OTRO LUGAR, PRIMERO LIBERO LOS QUE TENIA ASIGNADOS
+					limpiarValores(entrada);
 
-		strcpy(valorViejo, valor);			// COPIO EL NUEVO VALOR A LA DATA
+					asignarAEntrada(entrada, valor, espaciosNecesarios);
+					entrada->numero = posicion;
 
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se modifico el valor de la clave %s con %s"ANSI_COLOR_RESET, entrada->clave, valor);
+					copiarValorAlStorage(entrada, valor, posicion);		// BAJO AL STORAGE EL VALOR
+				}
+
+			} else {
+				// UTILIZAR ALGORITMO DE REEMPLAZO
+			}
+
+		}
+
+		else if (espaciosNecesarios == espaciosNecesariosValorViejo) {	// SI NECESITO LOS QUE YA ESTAN ASIGNADOS, SOLO COPIO..
+			asignarAEntrada(entrada, valor, espaciosNecesarios);
+			copiarValorAlStorage(entrada, valor, entrada->numero);
+		}
+
+		else {			// SI OCUPA MENOS ESPACIO QUE EL VIEJO VALOR LIMPIO LOS ESPACIOS QUE DEJO DE USAR
+			int diferenciaEspacios = espaciosNecesariosValorViejo - espaciosNecesarios;
+
+			for (int i=1; i<=diferenciaEspacios; i++) {
+				strcpy(storage[entrada->numero + espaciosNecesarios + i], "");
+			}
+
+			asignarAEntrada(entrada, valor, espaciosNecesarios);
+			copiarValorAlStorage(entrada, valor, entrada->numero);
+		}
+
+		log_info(logger, ANSI_COLOR_BOLDCYAN"Se modifico el valor de la clave %s con %s"ANSI_COLOR_RESET, entrada->clave, valor);
 
 	}
 	else {		// SINO CREO UNA NUEVA ENTRADA
@@ -212,41 +244,31 @@ void set(char* clave, char* valor){
 		entrada = malloc(sizeof(entrada_t));
 
 		/* Creo entrada */
-		entrada->tamanio_valor = strlen(valor) + 1;
+		asignarAEntrada(entrada, valor, espaciosNecesarios);
 		entrada->clave = malloc(strlen(clave) + 1);
 		strcpy(entrada->clave, clave);
-		entrada->largo = espaciosNecesarios;
 
 		/*************** FINALIZO LO DE LA ENTRADA **************************/
 
 		if (espaciosNecesarios > 1) {
 			if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {		// SI LA POSICION ES >= 0 OK (SINO DEVUELVE -1)
-				// ASIGNAR EL VALOR DESDE POSICION HASTA LOS ESPACIOS NECESARIOS
+				copiarValorAlStorage(entrada, valor, posicion);
 			} else {
 				// REEMPLAZAR SEGUN ALGORITMO
 			}
 
 		} else {	// SI SOLO NECESITA UN ESPACIO
-			int libre = 0;
-
-			for (int i=0; i<CANTIDADENTRADAS; i++) {
-				if (strcmp(storage[i], "") == 0) {		// SI ESTA VACIO YA ESTA
-					strcpy(storage[i], valor);
-					posicion = i;
-					libre = 1;
-					break;								// TERMINO EL CICLO FOR
-				}
-			}
-
-			if (!libre) {								// SI NO HABIA ESPACIO VACIO...
+			if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {		// SI LA POSICION ES >= 0 OK (SINO DEVUELVE -1)
+				copiarValorAlStorage(entrada, valor, posicion);
+			} else {
 				// REEMPLAZAR SEGUN ALGORITMO
 			}
 		}
 
 		entrada->numero = posicion;
 		list_add(tablaEntradas, entrada);
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
-		log_info(logger, ANSI_COLOR_BOLDGREEN"Se agrego el valor %s al storage en la posicion %d"ANSI_COLOR_RESET, storage[posicion], posicion);
+		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
+		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego el valor %s al storage en la posicion %d"ANSI_COLOR_RESET, valor, posicion);
 	}
 }
 
@@ -268,11 +290,34 @@ int hayEspaciosContiguosPara(int espaciosNecesarios) {
 	return -1;
 }
 
+void asignarAEntrada(entrada_t* entrada, char* valor, int largo) {
+	entrada->tamanio_valor = strlen(valor) + 1;
+	entrada->largo = largo;
+}
+
+void copiarValorAlStorage(entrada_t* entrada, char* valor, int posicion) {
+	int posicionAuxiliar = posicion;
+
+	for (int i=0; i<entrada->largo; i++) {
+		char* valorRecortado = string_substring(valor, i*TAMANIOENTRADA, TAMANIOENTRADA);	// NO SE SI TIENE EN CUENTA EL \0 O NO
+
+		strcpy(storage[posicionAuxiliar], valorRecortado);
+		posicionAuxiliar++;
+		free(valorRecortado);
+	}
+}
+
+void limpiarValores(entrada_t* entrada) {
+	for (int i=0; i<entrada->largo; i++) {
+		strcpy(storage[entrada->numero+i], "");				// LE ASIGNO STRING VACIO
+	}
+}
+
 void store(char* clave){
 	entrada_t* entrada;
 	int fd;
 	char* mem_ptr;
-	char* valor;
+	char* valor = string_new();
 	char* directorioMontaje = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
 
 	mkdir(PUNTOMONTAJE, 0777);			// CREO EL DIRECTORIO SI NO ESTA CREADO
@@ -282,14 +327,17 @@ void store(char* clave){
 	strcat(directorioMontaje, clave);		// DIRECTORIO DE MONTAJE TIENE LA DIRECCION COMPLETA DONDE SE VA A GUARDAR EL VALOR
 
 	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
-	printf(ANSI_COLOR_BOLDWHITE"Buscando el valor de la entrada num %d\n"ANSI_COLOR_RESET, entrada->numero);
-	valor = buscarEnStorage(entrada->numero);	// BUSCO EL STORAGE DE ESE NUM DE ENTRADA
+
+	for (int i=0; i<entrada->largo; i++) {			// ENTRADA LARGO ES EL NUM DE ESPACIOS QUE OCUPA EL VALOR
+		string_append(&valor, storage[entrada->numero + i]); 		// CONCATENO EL STRING USANDO TODOS LOS ESPACIOS DEL STORAGE
+	}
+
 
 	if((fd = open(directorioMontaje, O_CREAT | O_RDWR , S_IRWXU )) < 0){
 		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open "ANSI_COLOR_RESET);
 	}
 
-	size_t tamanio = strlen(valor) + 1;
+	size_t tamanio = entrada->tamanio_valor;
 
 	lseek(fd, tamanio-1, SEEK_SET);
 	write(fd, "", 1);
@@ -303,6 +351,7 @@ void store(char* clave){
 	munmap(mem_ptr, tamanio);
 
 	free(directorioMontaje);
+	free(valor);
 }
 
 /* Busca la entrada que contenga esa clave */
