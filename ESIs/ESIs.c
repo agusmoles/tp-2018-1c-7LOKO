@@ -6,7 +6,7 @@ int main(){
 	crearConfig();
 	setearConfigEnVariables();
 	int socketPlanificador,socketCoordinador;
-	FILE* script = fopen("ESI_MultiClave","r");
+	FILE* script = fopen("ESI","r");
 	char* instruccion;
 	size_t len = 0;
 	int sentencias = 0;
@@ -33,7 +33,7 @@ int main(){
 
 		recibirMensaje(socketPlanificador,"EXEOR");		// ESPERO ORDEN DE EJECUCION
 
-		ejecutarInstruccion(instruccion,socketCoordinador);	// EJECUTO
+		ejecutarInstruccion(instruccion,socketCoordinador, socketPlanificador);	// EJECUTO
 
 		if (recv(socketCoordinador, buffer, strlen("OPOK") + 1, 0) < 0) {		// RECIBO RESULTADO DEL COORDINADOR
 			exitError(socketCoordinador, "No se pudo recibir el resultado de la operacion");
@@ -204,7 +204,7 @@ void enviarValor(int socket, char* valor) {
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s"ANSI_COLOR_RESET, valor);
 }
 
-void ejecutarInstruccion(char* instruccion, int socketCoordinador){
+void ejecutarInstruccion(char* instruccion, int socketCoordinador, int socketPlanificador){
 	t_esi_operacion parsed = parse(instruccion);
 	header_t* header;
 	int32_t tamanioClave;
@@ -246,7 +246,10 @@ void ejecutarInstruccion(char* instruccion, int socketCoordinador){
 		destruir_operacion(parsed);
 
 	} else {
-		fprintf(stderr, "La linea <%s> no es valida\n", instruccion);
+		header=crearHeader(4, 0);
+		enviarHeader(socketCoordinador, header);
+		enviarMensaje(socketPlanificador, "EXEEND");
+		free(header);
 		exit(EXIT_FAILURE);
 	}
 }

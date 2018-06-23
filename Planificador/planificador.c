@@ -169,6 +169,7 @@ void conectarConCoordinador() {
 	int* IDESI = malloc(sizeof(int));
 	char* clave;
 	cliente* ESI;
+	int* idEsiParaDiccionario;
 
 	while(1) {
 		FD_ZERO(&descriptorCoordinador);
@@ -181,20 +182,20 @@ void conectarConCoordinador() {
 
 			recibirHeader(socket, buffer_header);
 
-			clave = malloc(buffer_header->tamanioClave);
-
-			recibirClave(socket, buffer_header->tamanioClave, clave);
-
-			recibirIDDeESI(socket, IDESI);
-
-			int* idEsiParaDiccionario = malloc(sizeof(int));
-
-			*idEsiParaDiccionario = *IDESI;
-
-			ESI = buscarESI(IDESI);
-
 			switch(buffer_header->codigoOperacion) {
 			case 0: // OPERACION GET
+				clave = malloc(buffer_header->tamanioClave);
+
+				recibirClave(socket, buffer_header->tamanioClave, clave);
+
+				recibirIDDeESI(socket, IDESI);
+
+				idEsiParaDiccionario = malloc(sizeof(int));
+
+				*idEsiParaDiccionario = *IDESI;
+
+				ESI = buscarESI(IDESI);
+
 				if (dictionary_has_key(diccionarioClaves, clave)) {
 
 					sem_wait(&mutexDiccionarioClaves);
@@ -221,12 +222,43 @@ void conectarConCoordinador() {
 				break;
 			case 1: //OPERACION SET
 
-				// VERIFICAR SI YO TENGO QUE VER SI EL SET TIRA ERROR POR CLAVE NO IDENTIFICADA O EL COORDINADOR
+				clave = malloc(buffer_header->tamanioClave);
+
+				recibirClave(socket, buffer_header->tamanioClave, clave);
+
+				recibirIDDeESI(socket, IDESI);
+
+				ESI = buscarESI(IDESI);
+
+				// VERIFICAR SI YO TENGO QUE VER SI EL SET TIRA ERROR POR CLAVE NO TOMADA
+				if (!dictionary_has_key(diccionarioClaves, clave)) {
+					informarAlCoordinador(socket, 0);			// SALIO MAL
+				} else {
+					int* IDESIQueTieneLaClave = dictionary_get(diccionarioClaves, clave);
+
+					if (*IDESIQueTieneLaClave == ESI->identificadorESI) {
+						informarAlCoordinador(socket, 1);			// SALIO BIEN
+					} else {
+						informarAlCoordinador(socket, 0);		// SALIO MAL
+					}
+				}
 
 				recibirMensaje(ESI);
 
 				break;
 			case 2: //OPERACION STORE
+				clave = malloc(buffer_header->tamanioClave);
+
+				recibirClave(socket, buffer_header->tamanioClave, clave);
+
+				recibirIDDeESI(socket, IDESI);
+
+				idEsiParaDiccionario = malloc(sizeof(int));
+
+				*idEsiParaDiccionario = *IDESI;
+
+				ESI = buscarESI(IDESI);
+
 				if (dictionary_has_key(diccionarioClaves, clave)) {
 					sem_wait(&mutexDiccionarioClaves);
 					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
@@ -271,6 +303,11 @@ void conectarConCoordinador() {
 					ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 				}
 
+				break;
+			case 4: 			// CLAVE LARGA
+				clave = malloc(2);		// TAMANIO ABSURDO ASI NO FALLABA EL FREE
+				log_error(logger, ANSI_COLOR_BOLDRED"La clave era demasiado larga"ANSI_COLOR_RESET);
+				recibirMensaje(ESI);
 				break;
 			default:
 				_exit_with_error(ANSI_COLOR_BOLDRED"No se esperaba un codigo de operacion distinto de 0 (GET) o 2 (STORE) del Coordinador"ANSI_COLOR_RESET);

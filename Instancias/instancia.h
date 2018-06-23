@@ -27,6 +27,7 @@ char* NOMBREINSTANCIA;
 int INTERVALODUMP;
 int TAMANIOENTRADA;
 int CANTIDADENTRADAS;
+int IDENTIFICADORINSTANCIA;
 
 t_log* logger;
 t_config* config;
@@ -41,7 +42,7 @@ typedef struct Entrada{
 	int largo;
 }entrada_t ;
 
-char** storage;
+char* storage;
 
 void _exit_with_error(int socket, char* mensaje);
 void configurarLogger();

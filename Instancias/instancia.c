@@ -26,13 +26,9 @@ void setearConfigEnVariables() {
 	INTERVALODUMP = config_get_int_value(config, "Intervalo de dump");
 	TAMANIOENTRADA = config_get_int_value(config, "Tamanio de Entrada");
 	CANTIDADENTRADAS  = config_get_int_value(config, "Cantidad de Entradas");
+	IDENTIFICADORINSTANCIA = config_get_int_value(config, "ID de Instancia");
 
-    storage = calloc(CANTIDADENTRADAS, sizeof(char*)); // CREO VECTOR CON TAMAÑO PARA PUNTERO DE CHARS
-
-    for (int i=0; i<CANTIDADENTRADAS; i++) {
-		storage[i] = malloc(TAMANIOENTRADA);
-		strcpy(storage[i], "");  // INICIALIZO CON STRING VACIO
-    }
+    storage = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
 }
 
 int conectarSocket() {
@@ -101,7 +97,11 @@ void envioIdentificador(int socket) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
 	}
 
-	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el identificador"ANSI_COLOR_RESET);
+	if (send(socket, IDENTIFICADORINSTANCIA, sizeof(int), 0) < 0) {
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar ID de Instancia"ANSI_COLOR_RESET);
+	}
+
+	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el identificador e instancia"ANSI_COLOR_RESET);
 }
 
 void pipeHandler() {
@@ -370,8 +370,8 @@ entrada_t* buscarEnTablaDeEntradas(char* clave) {
 }
 
 /*Busca el data que contenga esa entrada*/
-char* buscarEnStorage(int entrada) {
-	return storage[entrada];
+char* buscarEnStorage(int numeroEntrada) {
+	return storage + numeroEntrada * TAMANIOENTRADA;
 }
 
 /* Recibir sentencia del coordinador*/
