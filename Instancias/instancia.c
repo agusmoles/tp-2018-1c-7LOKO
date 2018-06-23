@@ -126,7 +126,7 @@ void recibirInstruccion(int socket){
 	header_t* buffer_header = malloc(sizeof(header_t));
 	char* bufferClave;
 	char* bufferValor;
-	int32_t* tamanioValor;
+	int32_t* tamanioValor = malloc(sizeof(int32_t));
 	entrada_t* entrada;
 	int* tamanioValorStatus = malloc(sizeof(int));
 	char* valorStatus;
@@ -137,12 +137,11 @@ void recibirInstruccion(int socket){
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el Header"ANSI_COLOR_RESET);
 	}
 
+	bufferClave = malloc(buffer_header->tamanioClave);
+
 	switch(buffer_header->codigoOperacion){
 	case 1: /* SET */
 		/* Recibo clave y valor */
-		bufferClave = malloc(buffer_header->tamanioClave);
-		tamanioValor = malloc(sizeof(int32_t));
-
 		recibirClave(socket, buffer_header, bufferClave);
 		recibirTamanioValor(socket, tamanioValor);
 		bufferValor = malloc(*tamanioValor);
@@ -153,13 +152,11 @@ void recibirInstruccion(int socket){
 		break;
 	case 2: /* STORE */
 		/* Recibo clave */
-		bufferClave = malloc(buffer_header->tamanioClave);
 		recibirClave(socket, buffer_header, bufferClave);
 
 		store(bufferClave);
 		break;
 	case 3: /* Status */
-		bufferClave = malloc(buffer_header->tamanioClave);
 		recibirClave(socket, buffer_header, bufferClave);
 
 		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL && (valor = buscarEnStorage(entrada->numero)) != NULL){

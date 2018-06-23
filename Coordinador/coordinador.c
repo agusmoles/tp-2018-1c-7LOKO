@@ -322,8 +322,6 @@ void recibirMensaje_Planificador(void* argumentos) {
 			/* Buscar socket ESI */
 			socketESI = buscarSocketESI(idEsiEjecutando);
 
-			printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI FD: %d\n"ANSI_COLOR_RESET, socketESI);
-
 			if(verificarClaveTomada(args->socketCliente.fd) == 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - SET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
 				enviarMensaje(socketESI, "OPBL");
@@ -539,7 +537,6 @@ int seleccionLeastSpaceUsed(){
 
 	/*Falta avisar a la instancia */
 	for(int i=0; i<cantidadInstanciasConectadas; i++){
-		printf(ANSI_COLOR_BOLDWHITE"FD INSTANCIA A MANDAR HEADER: %d\n"ANSI_COLOR_RESET, v_instanciasConectadas[i].fd);
 		enviarHeader(v_instanciasConectadas[i].fd, header);
 
 		if(recv(v_instanciasConectadas[i].fd, entradasLibres, sizeof(int), 0) < 0){
@@ -795,6 +792,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			bufferValor = malloc(*tamanioValor);
 			recibirValor(socketESI->fd, tamanioValor, bufferValor);
 
+			actualizarVectorInstanciasConectadas();
+
 			/*Ahora envio la sentencia a la Instancia encargada */
 			if((instanciaEncargada = buscarInstanciaEncargada(bufferClave)) == -1){
 				if (strcmp(ALGORITMODEDISTRIBUCION, "EL") == 0) {
@@ -842,6 +841,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			sem_post(&semaforo_planificador);
 
 			sem_wait(&semaforo_planificadorOK);
+
+			actualizarVectorInstanciasConectadas();
 
 			/*Ahora envio la sentencia a la Instancia encargada */
 			if((instanciaEncargada = buscarInstanciaEncargada(bufferClave)) == -1){
