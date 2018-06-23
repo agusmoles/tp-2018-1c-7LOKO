@@ -42,6 +42,7 @@ typedef struct Entrada{
 	int largo;
 }entrada_t ;
 
+char* storageFijo;
 char* storage;
 
 void _exit_with_error(int socket, char* mensaje);
