@@ -1,16 +1,28 @@
-GET futbol:ansaldi
-SET futbol:ansaldi TraeVodka
-GET futbol:messi
-SET futbol:messi TraemeLaCopa
-SET futbol:messi TraemeLaCo
-SET futbol:messi TraemeLaCopa
-SET futbol:messi TraemeLaCo
-SET futbol:messi TraemeLaCopa
-SET futbol:messi TraemeLaCo
-SET futbol:messi TraemeLaCopa
-SET futbol:messi TraemeLaCo
-SET futbol:messi PorqueMessi
-SET futbol:messi SeLoMeressi
-SET futbol:messi TraemeLaCopa
-STORE futbol:messi
-STORE futbol:ansaldi
+GET sony:consola:ps1
+GET sony:consola:ps2
+GET sony:consola:ps3
+GET sony:consola:ps4
+GET microsoft:consola:xbox
+GET microsoft:consola:xbox360
+GET microsoft:consola:xboxone
+GET nintendo:consola:nes
+GET nintendo:consola:snes
+GET nintendo:consola:nintendo64
+GET nintendo:consola:gamecube
+GET nintendo:consola:wii
+GET nintendo:consola:wiiu
+GET nintendo:consola:switch
+SET nintendo:consola:nes Mario
+SET nintendo:consola:snes SuperMario
+SET nintendo:consola:nintendo64 Mario64
+SET nintendo:consola:gamecube Mario
+SET nintendo:consola:wii MarioGalaxy
+SET nintendo:consola:wiiu RIP
+SET nintendo:consola:switch MarioOddysey
+SET sony:consola:ps1 FinalFantasy
+SET sony:consola:ps2 GodOfWar
+SET sony:consola:ps3 TLOU
+SET sony:consola:ps4 Bloodborne
+SET microsoft:consola:xbox Halo
+SET microsoft:consola:xbox360 Halo
+SET microsoft:consola:xboxone Halo

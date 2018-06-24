@@ -232,18 +232,27 @@ void conectarConCoordinador() {
 
 				// VERIFICAR SI YO TENGO QUE VER SI EL SET TIRA ERROR POR CLAVE NO TOMADA
 				if (!dictionary_has_key(diccionarioClaves, clave)) {
+					log_error(logger, ANSI_COLOR_BOLDRED"Error SET - La clave no estaba tomada por ningun ESI"ANSI_COLOR_RESET);
+					abortarESI(IDESI);
+
 					informarAlCoordinador(socket, 0);			// SALIO MAL
+					ordenarProximoAEjecutar();				// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 				} else {
 					int* IDESIQueTieneLaClave = dictionary_get(diccionarioClaves, clave);
 
 					if (*IDESIQueTieneLaClave == ESI->identificadorESI) {
+						log_info(logger, ANSI_COLOR_BOLDCYAN"El ESI %d pudo hacer el SET de la clave %s"ANSI_COLOR_RESET, ESI->identificadorESI, clave);
 						informarAlCoordinador(socket, 1);			// SALIO BIEN
+
+						recibirMensaje(ESI);
 					} else {
+						log_error(logger, ANSI_COLOR_BOLDRED"Error SET - La clave estaba tomada por otro ESI (%d)"ANSI_COLOR_RESET, *IDESIQueTieneLaClave);
+						abortarESI(IDESI);
+
 						informarAlCoordinador(socket, 0);		// SALIO MAL
+						ordenarProximoAEjecutar();			// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 					}
 				}
-
-				recibirMensaje(ESI);
 
 				break;
 			case 2: //OPERACION STORE
@@ -895,6 +904,7 @@ int hayEsisBloqueadosEsperandoPor(char* clave) {
 
 void intHandler() {
 	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
+	log_destroy(logger);
 	exit(1);
 }
 

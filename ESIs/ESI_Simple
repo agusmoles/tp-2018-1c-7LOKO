@@ -1,0 +1,3 @@
+GET e3:sony:juegos
+SET e3:sony:juegos TLOU2
+STORE e3:sony:juegos

@@ -1,0 +1,3 @@
+GET consola:ps4
+SET consola:ps4 Fifa
+SET consola:xbox360 Halo

@@ -1,0 +1,8 @@
+GET consola:ps4
+SET consola:ps4 Fifa
+GET consola:xboxone
+SET consola:xboxone Halo
+STORE consola:xboxone
+SET consola:xboxone Forza
+STORE consola:ps4
+STORE consola:xboxone

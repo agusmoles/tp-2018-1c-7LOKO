@@ -30,7 +30,16 @@ void setearConfigEnVariables() {
 
     storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
 
+    inicializarStorage();
+
     storage = storageFijo; 			// SIEMPRE TOCAR EL STORAGE AUXILIAR (STORAGE), EL OTRO NO
+}
+
+void inicializarStorage() {
+	for (int i=0; i<CANTIDADENTRADAS; i++) {
+		storage = buscarEnStorage(i);
+		strcpy(storage, "");
+	}
 }
 
 int conectarSocket() {
@@ -117,18 +126,18 @@ void recibirInstruccion(int socket){
 	header_t* buffer_header = malloc(sizeof(header_t));
 	char* bufferClave;
 	char* bufferValor;
-	int32_t* tamanioValor;
+	int32_t* tamanioValor = malloc(sizeof(int32_t));
 	entrada_t* entrada;
 	int* tamanioValorStatus = malloc(sizeof(int));
 	char* valorStatus;
 	char* valor;
+	int* entradasLibresCoordinador;
 
 	if(recv(socket, buffer_header, sizeof(header_t), MSG_WAITALL)< 0){
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el Header"ANSI_COLOR_RESET);
 	}
 
 	bufferClave = malloc(buffer_header->tamanioClave);
-	tamanioValor = malloc(sizeof(int32_t));
 
 	switch(buffer_header->codigoOperacion){
 	case 1: /* SET */
@@ -167,6 +176,15 @@ void recibirInstruccion(int socket){
 		}
 
 		break;
+	case 5: /* NOTIFICAR ENTRADAS LIBRES */
+		entradasLibresCoordinador = malloc(sizeof(int));
+		*entradasLibresCoordinador = entradasLibres();
+		if (send(socket, entradasLibres, sizeof(int), 0) < 0) {
+			_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la cantidad de entradas libres"ANSI_COLOR_RESET);
+		}
+
+		free(entradasLibresCoordinador);
+		break;
 	default:
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No existe el codigo de operacion"ANSI_COLOR_RESET);
 		break;
@@ -187,6 +205,19 @@ void enviarValor(int socket, int tamanioValor, char* valor){
 	if (send(socket, valor, tamanioValor, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
 	}
+}
+
+int entradasLibres() {
+	int contador = 0;
+
+	for (int i=0; i<CANTIDADENTRADAS; i++) {
+		storage = buscarEnStorage(i);
+		if (strcmp(storage, "") == 0) {
+			contador++;
+		}
+	}
+
+	return contador;
 }
 
 void set(char* clave, char* valor){

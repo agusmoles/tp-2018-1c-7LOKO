@@ -1,0 +1,8 @@
+GET consola:ps4
+SET consola:ps4 Fifa
+GET consola:xboxone
+SET consola:xboxone Forza
+GET consola:nintendoswitch
+SET consola:nintendoswitch Pokemon
+GET juego:supersmashbrossultimate:personaje:mario
+SET juego:supersmashbrossultimate:personaje:mario Novasallegaraca
