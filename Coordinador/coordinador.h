@@ -55,7 +55,6 @@ t_log* logOperaciones;
 t_config* config;
 cliente_t socketCliente[NUMEROCLIENTES];
 clave_t clavesExistentes[CANTIDADCLAVES];
-//t_list* clavesExistentes;
 sem_t semaforo_planificador;
 sem_t semaforo_instancia;
 sem_t semaforo_planificadorOK;
@@ -163,3 +162,6 @@ int cantidadinstanciasIDsUsados();
 int hayInstanciasDesconectadas();
 void conectarInstancia(int idInstancia);
 void agregarInstanciaAVectorIDs(int identificadorInstancia);
+
+void enviarClavesInstancia(cliente_t socketInstancia);
+int cantidadClavesDeInstancia(int idInstancia);

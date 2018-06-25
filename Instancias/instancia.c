@@ -103,6 +103,10 @@ void reciboHandshake(int socket) {
 
 void envioIdentificador(int socket) {
 	char* identificador = "2";			//INSTANCIA ES 2
+	int* instanciaNueva = malloc(sizeof(int));
+	int* cantidadClaves = malloc(sizeof(int));
+	int* tamanioClave = malloc(sizeof(int));
+	char* clave;
 
 	if (send(socket, identificador, strlen(identificador)+1, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
@@ -111,9 +115,41 @@ void envioIdentificador(int socket) {
 	if (send(socket, &IDENTIFICADORINSTANCIA, sizeof(int), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar ID de Instancia"ANSI_COLOR_RESET);
 	}
-
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio correctamente el identificador e instancia"ANSI_COLOR_RESET);
+
+	if(recv(socket, instanciaNueva, sizeof(int), 0) < 0){
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir si es instancia nueva o vieja"ANSI_COLOR_RESET);
+	}
+
+	if(*instanciaNueva == 1){
+		if(recv(socket, cantidadClaves, sizeof(int), 0) < 0){
+			_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir la cantidad de claves"ANSI_COLOR_RESET);
+		}
+
+		while(*cantidadClaves){
+			if(recv(socket, tamanioClave, sizeof(int), 0) < 0){
+				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el tamanio de la clave"ANSI_COLOR_RESET);
+			}
+
+			clave = malloc(*tamanioClave);
+
+			if(recv(socket, clave, *tamanioClave, 0) < 0){
+				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir la clave"ANSI_COLOR_RESET);
+			}
+
+			log_info(logger,ANSI_COLOR_BOLDYELLOW"Se recibio la clave %s"ANSI_COLOR_RESET, clave);
+
+			(*cantidadClaves)--;
+
+			free(clave);
+		}
+	}
+
+	free(instanciaNueva);
+	free(cantidadClaves);
+	free(tamanioClave);
 }
+
 
 void pipeHandler() {
 	printf(ANSI_COLOR_BOLDRED"***********************************EL SERVIDOR SE CERRO***********************************\n"ANSI_COLOR_RESET);
@@ -178,8 +214,9 @@ void recibirInstruccion(int socket){
 		break;
 	case 5: /* NOTIFICAR ENTRADAS LIBRES */
 		entradasLibresCoordinador = malloc(sizeof(int));
+
 		*entradasLibresCoordinador = entradasLibres();
-		if (send(socket, entradasLibres, sizeof(int), 0) < 0) {
+		if (send(socket, entradasLibresCoordinador, sizeof(int), 0) < 0) {
 			_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la cantidad de entradas libres"ANSI_COLOR_RESET);
 		}
 

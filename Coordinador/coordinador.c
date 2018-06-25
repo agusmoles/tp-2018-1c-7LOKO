@@ -513,10 +513,10 @@ int seleccionEquitativeLoad(){
 
 		if(instanciaSiguiente < cantidadInstanciasConectadas){
 			instanciaSiguiente++;
-			return (instanciaSiguiente-1);
+			return v_instanciasConectadas[(instanciaSiguiente-1)].identificadorInstancia;
 		}else {
 			instanciaSiguiente = 1;
-			return (instanciaSiguiente -1 );
+			return v_instanciasConectadas[(instanciaSiguiente -1 )].identificadorInstancia;
 		}
 
 	} else {
@@ -534,8 +534,6 @@ int seleccionLeastSpaceUsed(){
 	}
 
 	header->codigoOperacion = 5;
-
-	/*Falta avisar a la instancia */
 	for(int i=0; i<cantidadInstanciasConectadas; i++){
 		enviarHeader(v_instanciasConectadas[i].fd, header);
 
@@ -543,24 +541,26 @@ int seleccionLeastSpaceUsed(){
 			_exit_with_error(v_instanciasConectadas[i].fd, ANSI_COLOR_BOLDRED"No se recibieron las entradas libres"ANSI_COLOR_RESET);
 		}
 
+		log_info(logger, "Entradas libres instancia %d: %d", v_instanciasConectadas[i].identificadorInstancia, *entradasLibres);
+
 		entradasLibresPorInstancia[i] = *entradasLibres;
 	}
 
 	free(header);
 	free(entradasLibres);
 
-	int minimo = entradasLibresPorInstancia[0];
-	int instanciaSeleccionada = 0;
+	int maximo = entradasLibresPorInstancia[0];
+	int instanciaSeleccionada = v_instanciasConectadas[0].identificadorInstancia;
 
-	/*Busco la que tenga menos entradas ocupadas*/
+	/*Busco la que tenga mas entradas libres*/
 	for(int j=0; j<cantidadInstanciasConectadas; j++){
-		if(entradasLibresPorInstancia[j] < minimo){
-			minimo = entradasLibresPorInstancia[j];
+		if(entradasLibresPorInstancia[j] > maximo){
+			maximo = entradasLibresPorInstancia[j];
 			instanciaSeleccionada = j;
 		}
 	}
 
-	return instanciaSeleccionada;
+	return v_instanciasConectadas[instanciaSeleccionada].identificadorInstancia;
 }
 
 int seleccionKeyExplicit(char inicial){
@@ -598,7 +598,7 @@ int seleccionKeyExplicit(char inicial){
 		printf("Instancia %d: Primera letra %c - Ultima letra %c\n", h, v_instanciasConectadas[h].primeraLetra, v_instanciasConectadas[h].ultimaLetra);
 
 		if(inicial >= v_instanciasConectadas[h].primeraLetra && inicial <= v_instanciasConectadas[h].ultimaLetra){
-			return h;
+			return v_instanciasConectadas[h].identificadorInstancia;
 		}
 	}
 	return -1;
@@ -806,7 +806,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				setearInstancia(bufferClave, instanciaEncargada);
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
-			actualizarVectorInstanciasConectadas();
+			//actualizarVectorInstanciasConectadas();
 
 			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
 			if(enviarSetInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor) == 0){
@@ -816,8 +816,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
-
-			/*Falta respuesta de la instancia */
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: SET %s %s",socketESI->identificadorESI, bufferClave, bufferValor);
@@ -854,7 +852,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				}
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
-			actualizarVectorInstanciasConectadas();
+			//actualizarVectorInstanciasConectadas();
 
 			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
 			if(enviarStoreInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave)==0){
@@ -864,7 +862,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
-			/*Falta respuesta de la instancia */
 
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
@@ -910,6 +907,7 @@ void aceptarCliente(int socket, cliente_t* socketCliente) {
 	fd_set descriptores;
 	int socketPlanificador;
 	int* identificadorInstancia = malloc(sizeof(int));
+	int* instanciaNueva = malloc(sizeof(int));
 
 	FD_ZERO(&descriptores);
 	FD_SET(socket, &descriptores);
@@ -954,24 +952,39 @@ void aceptarCliente(int socket, cliente_t* socketCliente) {
 							asignarIDdeInstancia(&socketCliente[i], *identificadorInstancia);
 							crearHiloInstancia(socketCliente[i]);
 							agregarInstanciaAVectorIDs(*identificadorInstancia);
-							/* Avisar que es una instancia nueva -> envio 0*/
 
-							//identificadorInstancia++;
+							/* Avisar que es una instancia nueva -> envio 0*/
+							*instanciaNueva = 0;
+							if(send(socketCliente[i].fd, instanciaNueva, sizeof(int), 0) < 0){
+								_exit_with_error(socketCliente[i].fd, "No se pudo enviar estado de la instancia (nueva - vieja)");
+							}
 							cantidadInstanciasConectadas++;
 						}else if( existeIdInstancia(*identificadorInstancia) == 1){ /* Si ya existia el ID*/
-							//idReincorporada = buscarInstanciaDesconectada();
+							int* cantidadClaves = malloc(sizeof(int));
 							conectarInstancia(*identificadorInstancia);
 							asignarIDdeInstancia(&socketCliente[i], *identificadorInstancia);
 							log_info(logger, "** SE REINCORPORO LA INSTANCIA %d**", socketCliente[i].identificadorInstancia);
 							crearHiloInstancia(socketCliente[i]);
+
 							/* Avisar que es una instancia reconectada -> envio 1*/
+							*instanciaNueva = 1;
+							if(send(socketCliente[i].fd, instanciaNueva, sizeof(int), 0) < 0){
+								_exit_with_error(socketCliente[i].fd, "No se pudo enviar estado de la instancia (nueva - vieja)");
+							}
 
 							/* Envio cantidad de claves que tenia */
+							*cantidadClaves = cantidadClavesDeInstancia(*identificadorInstancia);
+							if(send(socketCliente[i].fd, cantidadClaves, sizeof(int), 0) < 0){
+								_exit_with_error(socketCliente[i].fd, "No se pudo enviar estado de la instancia (nueva - vieja)");
+							}
 
 							/* Envio claves */
-							cantidadInstanciasConectadas++;
-						}
+							enviarClavesInstancia(socketCliente[i]);
 
+							cantidadInstanciasConectadas++;
+							free(cantidadClaves);
+						}
+						free(instanciaNueva);
 						break;
 
 				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
@@ -1024,6 +1037,40 @@ int buscarSocketInstancia(int idInstancia){
 		}
 	}
 	return -1;
+}
+
+/* Obtener cantidad de claves que tiene una instancia */
+int cantidadClavesDeInstancia(int idInstancia){
+	int cantidad = 0;
+
+	for(int i=0; i < CANTIDADCLAVES ; i++){
+		if(clavesExistentes[i].instancia == idInstancia){
+			cantidad ++;
+		}
+	}
+
+	return cantidad;
+}
+
+/* Enviar claves que tiene una instancia */
+void enviarClavesInstancia(cliente_t socketInstancia){
+	int tamanioClave;
+
+	for(int i=0; i < CANTIDADCLAVES ; i++){
+		if(clavesExistentes[i].instancia == socketInstancia.identificadorInstancia){
+			tamanioClave = strlen(clavesExistentes[i].clave) + 1;
+
+			if(send(socketInstancia.fd, &tamanioClave , sizeof(int), 0) < 0){
+				_exit_with_error(socketInstancia.fd, "No se pudo enviar el tamanio de la clave");
+			}
+
+			if(send(socketInstancia.fd, clavesExistentes[i].clave, tamanioClave, 0) < 0){
+				_exit_with_error(socketInstancia.fd, "No se pudo enviar la clave");
+			}
+		}
+	}
+
+	log_info(logger,ANSI_COLOR_BOLDGREEN"Se enviaron las claves a la instancia"ANSI_COLOR_RESET);
 }
 
 cliente_t* buscarESI(int* IDESI) {
