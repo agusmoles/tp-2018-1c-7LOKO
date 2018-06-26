@@ -1,0 +1,30 @@
+GET bebida1
+GET bebida10
+GET bebida11
+GET bebida12
+GET bebida13
+GET bebida14
+GET bebida15
+GET bebida2
+GET bebida3
+GET bebida4
+GET bebida5
+GET bebida6
+GET bebida7
+GET bebida8
+GET bebida9
+SET bebida1 cerveza
+SET bebida2 fernet
+SET bebida3 cocacola
+SET bebida4 smirnoff
+SET bebida5 whisky
+SET bebida6 ron
+SET bebida7 gin
+SET bebida8 gancia
+SET bebida9 sprite
+SET bebida10 tequila
+SET bebida11 cachaza
+SET bebida12 caña
+SET bebida13 vinoespumante
+SET bebida14 speed
+SET bebida15 agua

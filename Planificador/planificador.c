@@ -727,7 +727,7 @@ void ordenarProximoAEjecutar() {
 	sem_post(&pausado);
 
 	if(list_is_empty(listos) && list_is_empty(ejecutando)) {		// SI LAS DOS LISTAS ESTAN VACIAS, NADIE VA A EJECUTAR
-		printf(ANSI_COLOR_BOLDRED"\nNo hay ESIs para ejecutar\n\n"ANSI_COLOR_RESET);
+		printf(ANSI_COLOR_BOLDRED"No hay ESIs para ejecutar\n"ANSI_COLOR_RESET);
 	} else if (!list_is_empty(ejecutando)){							// SI EJECUTANDO NO ESTA VACIA, DEBERIA SEGUIR EJECUTANDO EL...
 		esiProximoAEjecutar = list_get(ejecutando, 0);
 
