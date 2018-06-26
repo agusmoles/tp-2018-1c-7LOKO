@@ -9,7 +9,7 @@ int idEsiEjecutando = 0;
 int* tamanioValorStatus;
 char* valorStatus;
 
-/* Funciomes de conexion */
+/* Funciones de conexion */
 void _exit_with_error(int socket, char* mensaje) {
 	close(socket);
 
@@ -20,6 +20,8 @@ void _exit_with_error(int socket, char* mensaje) {
 	}
 
 	log_error(logger, mensaje);
+	log_destroy(logOperaciones);
+	log_destroy(logger);
 	exit(1);
 }
 
@@ -94,8 +96,6 @@ int envioHandshake(int socketCliente) {
 
 void intHandler() {
 	printf(ANSI_COLOR_BOLDRED"\n************************************SE INTERRUMPIO EL PROGRAMA************************************\n"ANSI_COLOR_RESET);
-	log_destroy(logOperaciones);
-	log_destroy(logger);
 	exit(1);
 }
 
@@ -169,12 +169,11 @@ void recibirSentenciaESI(void* argumentos){
 
 						tratarSegunOperacion(buffer_header, args->socketCliente, args->socketPlanificador);
 
-						//enviarMensaje(args->socketCliente->fd, "OPOK");
 						break;
 			}
 		}
 	}
-
+	free(buffer_header);
 	pthread_exit(NULL);
 }
 
@@ -732,11 +731,14 @@ void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int
 
 int verificarClaveTomada(int socket){
 	int* resultado = malloc(sizeof(int));
+	int resultadoOp;
 	if(recv(socket, resultado, sizeof(int), 0) < 0){
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se recibio el resultado de la operacion por el planificador"ANSI_COLOR_RESET);
 		return -1;
 	}
-	return *resultado;
+	resultadoOp = *resultado;
+	free(resultado);
+	return resultadoOp;
 }
 
 /* Realiza GET, SET, STORE */
@@ -858,7 +860,10 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			if(enviarStoreInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave)==0){
 				log_error(logger, ANSI_COLOR_BOLDRED"La instancia esta desconectada"ANSI_COLOR_RESET);
 				log_error(logOperaciones, "Error Instancia %d caida", instanciaEncargada);
+
 				/* Abortar ESI */
+
+
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
@@ -868,6 +873,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			break;
 		case 4: /* Clave Larga */
 			log_error(logger, ANSI_COLOR_BOLDRED"Clave excede tamanio maximo"ANSI_COLOR_RESET);
+			log_error(logOperaciones, "ESI %d: **Clave excede tamanio maximo**", socketESI->identificadorESI);
+
 			enviarHeader(socketPlanificador, header);
 			break;
 		default:
@@ -906,8 +913,8 @@ void aceptarCliente(int socket, cliente_t* socketCliente) {
 	socklen_t addrlen = sizeof(addr);
 	fd_set descriptores;
 	int socketPlanificador;
-	int* identificadorInstancia = malloc(sizeof(int));
-	int* instanciaNueva = malloc(sizeof(int));
+	int* identificadorInstancia;
+	int* instanciaNueva;
 
 	FD_ZERO(&descriptores);
 	FD_SET(socket, &descriptores);
@@ -941,12 +948,14 @@ void aceptarCliente(int socket, cliente_t* socketCliente) {
 						break;
 
 				case 2: asignarNombreAlSocketCliente(&socketCliente[i], "Instancia");
+						identificadorInstancia = malloc(sizeof(int));
 
 						/* Recibir identificador de instancia */
 						if(recv(socketCliente[i].fd, identificadorInstancia , sizeof(int) ,0 ) < 0){
 							_exit_with_error(socketCliente[i].fd, "No se pudo recibir el ID Instancia");
 						}
 
+						instanciaNueva = malloc(sizeof(int));
 						/* Si es la primer instancia a conectarese o tiene id nuevo*/
 						if(cantidadinstanciasIDsUsados() == 0 || existeIdInstancia(*identificadorInstancia)< 0){
 							asignarIDdeInstancia(&socketCliente[i], *identificadorInstancia);
@@ -985,6 +994,7 @@ void aceptarCliente(int socket, cliente_t* socketCliente) {
 							free(cantidadClaves);
 						}
 						free(instanciaNueva);
+						free(identificadorInstancia);
 						break;
 
 				case 3: asignarNombreAlSocketCliente(&socketCliente[i], "ESI");
