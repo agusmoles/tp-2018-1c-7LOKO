@@ -64,6 +64,8 @@ void setearConfigEnVariables() {
 
 		free(clavesSeparadas);
 	}
+
+	free(IDSistema);
 }
 
 void setearListaDeEstados() {
@@ -206,6 +208,8 @@ void conectarConCoordinador() {
 
 					bloquearESI(clave, IDESI);
 
+					free(idEsiParaDiccionario);
+
 					informarAlCoordinador(socket, 0);	// 0 PORQUE SALIO MAL
 				} else {
 
@@ -262,10 +266,6 @@ void conectarConCoordinador() {
 
 				recibirIDDeESI(socket, IDESI);
 
-				idEsiParaDiccionario = malloc(sizeof(int));
-
-				*idEsiParaDiccionario = *IDESI;
-
 				ESI = buscarESI(IDESI);
 
 				if (dictionary_has_key(diccionarioClaves, clave)) {
@@ -273,13 +273,13 @@ void conectarConCoordinador() {
 					int* IDEsiQueTieneLaClaveTomada = dictionary_get(diccionarioClaves, clave);
 					sem_post(&mutexDiccionarioClaves);
 
-					if(*idEsiParaDiccionario == *IDEsiQueTieneLaClaveTomada) {	// SI EL QUE QUIERE STOREAR ES EL MISMO QUE LA TIENE STOREADA, OK.
+					if(*IDESI == *IDEsiQueTieneLaClaveTomada) {	// SI EL QUE QUIERE STOREAR ES EL MISMO QUE LA TIENE STOREADA, OK.
 						sem_wait(&mutexDiccionarioClaves);
 						int* value = dictionary_remove(diccionarioClaves, clave);
 						sem_post(&mutexDiccionarioClaves);
 						free(value);	// NO LO NECESITO MAS
 
-						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el ESI %d"ANSI_COLOR_RESET, clave, *idEsiParaDiccionario);
+						log_info(logger, ANSI_COLOR_BOLDCYAN"Se removio la clave %s tomada por el ESI %d"ANSI_COLOR_RESET, clave, *IDESI);
 
 						informarAlCoordinador(socket, 1); // 1 PORQUE SALIO BIEN
 
@@ -294,8 +294,6 @@ void conectarConCoordinador() {
 
 						log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por querer hacer STORE de la clave %s que no es de el"ANSI_COLOR_RESET, *idEsiParaDiccionario, clave);
 
-						free(idEsiParaDiccionario);	// NO LA NECESITO
-
 						informarAlCoordinador(socket, 0); // 0 PORQUE SALIO MAL
 
 						ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
@@ -304,8 +302,6 @@ void conectarConCoordinador() {
 					abortarESI(IDESI);
 
 					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, *idEsiParaDiccionario, clave);
-
-					free(idEsiParaDiccionario);	// NO LA NECESITO
 
 					informarAlCoordinador(socket, 0); // 0 PORQUE SALIO MAL
 
