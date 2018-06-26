@@ -1,0 +1,30 @@
+GET postre:ingrediente1
+GET postre:ingrediente2
+GET postre:ingrediente3
+GET postre:ingrediente4
+GET postre:ingrediente5
+GET postre:ingrediente6
+GET postre:ingrediente7
+GET postre:ingrediente8
+GET postre:ingrediente9
+GET postre:ingrediente10
+SET postre:ingrediente1 huevos
+SET postre:ingrediente2 azucar
+SET postre:ingrediente3 quesomascarpone
+SET postre:ingrediente4 crema
+SET postre:ingrediente5 escenciavainilla
+SET postre:ingrediente6 oporto
+SET postre:ingrediente7 cafe
+SET postre:ingrediente8 vainillas
+SET postre:ingrediente9 cacaoamargo
+SET postre:ingrediente10 licordecafe
+STORE postre:ingrediente1
+STORE postre:ingrediente2
+STORE postre:ingrediente3
+STORE postre:ingrediente4
+STORE postre:ingrediente5
+STORE postre:ingrediente6
+STORE postre:ingrediente7
+STORE postre:ingrediente8
+STORE postre:ingrediente9
+STORE postre:ingrediente10

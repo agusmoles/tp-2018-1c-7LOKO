@@ -152,7 +152,10 @@ void envioIdentificador(int socket) {
 
 
 void pipeHandler() {
-	printf(ANSI_COLOR_BOLDRED"***********************************EL SERVIDOR SE CERRO***********************************\n"ANSI_COLOR_RESET);
+	printf(ANSI_COLOR_BOLDRED"***********************************LA INSTANCIA SE CERRO***********************************\n"ANSI_COLOR_RESET);
+	printf(ANSI_COLOR_BOLDRED"Liberando memoria...\n"ANSI_COLOR_RESET);
+
+	free(storageFijo);
 	exit(1);
 }
 
@@ -184,6 +187,8 @@ void recibirInstruccion(int socket){
 		recibirValor(socket, tamanioValor, bufferValor);
 
 		set(bufferClave, bufferValor);
+
+		free(bufferValor);
 
 		break;
 	case 2: /* STORE */
@@ -230,6 +235,7 @@ void recibirInstruccion(int socket){
 	free(buffer_header);
 	free(tamanioValor);
 	free(tamanioValorStatus);
+	free(bufferClave);
 }
 
 void enviarTamanioValor(int socket, int* tamanioValor){

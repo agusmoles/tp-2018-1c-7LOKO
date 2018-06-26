@@ -1,0 +1,15 @@
+GET platoprincipal:ingrediente1
+GET platoprincipal:ingrediente2
+GET platoprincipal:ingrediente3
+GET platoprincipal:ingrediente4
+GET platoprincipal:ingrediente5
+SET primerplato:ingrediente1 milanesadecarne
+SET primerplato:ingrediente2 queso
+SET primerplato:ingrediente3 jamon
+SET primerplato:ingrediente4 lechuga
+SET primerplato:ingrediente5 tomate
+STORE platoprincipal:ingrediente1
+STORE platoprincipal:ingrediente2
+STORE platoprincipal:ingrediente3
+STORE platoprincipal:ingrediente4
+STORE platoprincipal:ingrediente5
