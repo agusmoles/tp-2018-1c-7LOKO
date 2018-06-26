@@ -165,3 +165,5 @@ void agregarInstanciaAVectorIDs(int identificadorInstancia);
 
 void enviarClavesInstancia(cliente_t socketInstancia);
 int cantidadClavesDeInstancia(int idInstancia);
+
+void eliminarClaveDeTabla(char* clave);
