@@ -753,12 +753,14 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 	idEsiEjecutando = socketESI->identificadorESI;
 	sem_post(&mutexEsiEjecutando);
 
+	sleep(RETARDO);
+
 	switch(header->codigoOperacion){
 		case 0: /* GET */
+			recibirClave(socketESI->fd, header,bufferClave);
+
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
-
-			recibirClave(socketESI->fd, header,bufferClave);
 
 			/* Agregar clave nueva */
 			if(verificarSiExisteClave(bufferClave) < 0){
@@ -775,12 +777,16 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			sem_wait(&semaforo_planificadorOK);
 			break;
 		case 1: /* SET */
-			/*Logea sentencia */
-			log_info(logOperaciones, "ESI %d: OPERACION: SET %s %s",socketESI->identificadorESI, bufferClave, bufferValor);
-
 			/* Primero recibo all*/
 			tamanioValor = malloc(sizeof(int32_t));
 			recibirClave(socketESI->fd, header, bufferClave);
+
+			recibirTamanioValor(socketESI->fd, tamanioValor);
+			bufferValor = malloc(*tamanioValor);
+			recibirValor(socketESI->fd, tamanioValor, bufferValor);
+
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: SET %s %s",socketESI->identificadorESI, bufferClave, bufferValor);
 
 			/* Chequear que exista la clave */
 			if(verificarSiExisteClave(bufferClave) < 0){
@@ -795,10 +801,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			sem_post(&semaforo_planificador);
 
 			sem_wait(&semaforo_planificadorOK);
-
-			recibirTamanioValor(socketESI->fd, tamanioValor);
-			bufferValor = malloc(*tamanioValor);
-			recibirValor(socketESI->fd, tamanioValor, bufferValor);
 
 			actualizarVectorInstanciasConectadas();
 
@@ -833,10 +835,10 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			free(bufferValor);
 			break;
 		case 2: /* STORE */
+			recibirClave(socketESI->fd, header,bufferClave);
+
 			/*Logea sentencia */
 			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
-
-			recibirClave(socketESI->fd, header,bufferClave);
 
 			/* Chequear que exista la clave */
 			if(verificarSiExisteClave(bufferClave) < 0){
