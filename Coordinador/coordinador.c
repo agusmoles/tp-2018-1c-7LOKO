@@ -323,6 +323,7 @@ void recibirMensaje_Planificador(void* argumentos) {
 
 			if(verificarClaveTomada(args->socketCliente.fd) == 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - SET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
+				log_error(logOperaciones, "ESI %d: **Error: Clave no bloqueada**",args->socketCliente.identificadorESI);
 				enviarMensaje(socketESI, "OPBL");
 			} else {
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET/SET/STORE correctamente"ANSI_COLOR_RESET);
@@ -752,9 +753,14 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 	idEsiEjecutando = socketESI->identificadorESI;
 	sem_post(&mutexEsiEjecutando);
 
+	sleep(RETARDO);
+
 	switch(header->codigoOperacion){
 		case 0: /* GET */
 			recibirClave(socketESI->fd, header,bufferClave);
+
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
 
 			/* Agregar clave nueva */
 			if(verificarSiExisteClave(bufferClave) < 0){
@@ -769,17 +775,23 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			sem_post(&semaforo_planificador);
 
 			sem_wait(&semaforo_planificadorOK);
-			/*Logea sentencia */
-			log_info(logOperaciones, "ESI %d: OPERACION: GET %s", socketESI->identificadorESI, bufferClave);
 			break;
 		case 1: /* SET */
 			/* Primero recibo all*/
 			tamanioValor = malloc(sizeof(int32_t));
 			recibirClave(socketESI->fd, header, bufferClave);
 
+			recibirTamanioValor(socketESI->fd, tamanioValor);
+			bufferValor = malloc(*tamanioValor);
+			recibirValor(socketESI->fd, tamanioValor, bufferValor);
+
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: SET %s %s",socketESI->identificadorESI, bufferClave, bufferValor);
+
 			/* Chequear que exista la clave */
 			if(verificarSiExisteClave(bufferClave) < 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"Error de Clave no Identificada"ANSI_COLOR_RESET);
+				log_error(logOperaciones, "ESI %d: OPERACION: SET %s %s **Error: Clave no Identificada**",socketESI->identificadorESI, bufferClave, bufferValor);
 			}
 
 			/* Avisa a Planificador */
@@ -789,10 +801,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			sem_post(&semaforo_planificador);
 
 			sem_wait(&semaforo_planificadorOK);
-
-			recibirTamanioValor(socketESI->fd, tamanioValor);
-			bufferValor = malloc(*tamanioValor);
-			recibirValor(socketESI->fd, tamanioValor, bufferValor);
 
 			actualizarVectorInstanciasConectadas();
 
@@ -813,14 +821,15 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
 			if(enviarSetInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor) == 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"La instancia esta desconectada"ANSI_COLOR_RESET);
-				log_error(logOperaciones, "Error Instancia %d caida", instanciaEncargada);
+				log_error(logOperaciones, "ESI %d: OPERACION: SET %s %s **Error: Clave Innacesible (instancia caida)**",socketESI->identificadorESI, bufferClave, bufferValor);
+
+				/* Eliminar clave */
+				eliminarClaveDeTabla(bufferClave);
+
 				/* Abortar ESI */
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
-
-			/*Logea sentencia */
-			log_info(logOperaciones, "ESI %d: OPERACION: SET %s %s",socketESI->identificadorESI, bufferClave, bufferValor);
 
 			free(tamanioValor);
 			free(bufferValor);
@@ -828,9 +837,12 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 		case 2: /* STORE */
 			recibirClave(socketESI->fd, header,bufferClave);
 
+			/*Logea sentencia */
+			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
+
 			/* Chequear que exista la clave */
 			if(verificarSiExisteClave(bufferClave) < 0){
-				log_error(logger, ANSI_COLOR_BOLDRED"Error de Clave no Identificada"ANSI_COLOR_RESET);
+				log_error(logOperaciones, "ESI %d: OPERACION: STORE %s **Error: Clave no Identificada**",socketESI->identificadorESI, bufferClave);
 			}
 
 			/* Avisa a Planificador */
@@ -859,21 +871,20 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
 			if(enviarStoreInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave)==0){
 				log_error(logger, ANSI_COLOR_BOLDRED"La instancia esta desconectada"ANSI_COLOR_RESET);
-				log_error(logOperaciones, "Error Instancia %d caida", instanciaEncargada);
+				log_error(logOperaciones, "ESI %d: OPERACION: STORE %s **Error: Clave Innacesible (instancia caida)**",socketESI->identificadorESI, bufferClave);
+
+				/* Eliminar clave */
+				eliminarClaveDeTabla(bufferClave);
 
 				/* Abortar ESI */
-
 
 			}
 
 			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
-
-			/*Logea sentencia */
-			log_info(logOperaciones, "ESI %d: OPERACION: STORE %s", socketESI->identificadorESI, bufferClave);
 			break;
 		case 4: /* Clave Larga */
 			log_error(logger, ANSI_COLOR_BOLDRED"Clave excede tamanio maximo"ANSI_COLOR_RESET);
-			log_error(logOperaciones, "ESI %d: **Clave excede tamanio maximo**", socketESI->identificadorESI);
+			log_error(logOperaciones, "ESI %d: **Error: Clave excede tamanio maximo**", socketESI->identificadorESI);
 
 			enviarHeader(socketPlanificador, header);
 			break;
@@ -1081,6 +1092,20 @@ void enviarClavesInstancia(cliente_t socketInstancia){
 	}
 
 	log_info(logger,ANSI_COLOR_BOLDGREEN"Se enviaron las claves a la instancia"ANSI_COLOR_RESET);
+}
+
+/* Elimina la clave de la tabla de claves */
+void eliminarClaveDeTabla(char* clave){
+	for(int i=0; i < CANTIDADCLAVES ; i++){
+		if(strcmp(clavesExistentes[i].clave, clave) == 0){
+			char* flag = "Nada";
+			int tamanioFlag = strlen(flag) + 1;
+			free(clavesExistentes[i].clave);
+			clavesExistentes[i].clave = malloc(tamanioFlag);
+			strcpy(clavesExistentes[i].clave, "Nada");
+			clavesExistentes[i].instancia = -1;
+		}
+	}
 }
 
 cliente_t* buscarESI(int* IDESI) {
