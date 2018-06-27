@@ -791,16 +791,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			/* Chequear que exista la clave */
 			if(verificarSiExisteClave(bufferClave) < 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"Error de Clave no Identificada"ANSI_COLOR_RESET);
-				log_error(logOperaciones, "ESI %d: OPERACION: SET %s %s **Error: Clave no Identificada**",socketESI->identificadorESI, bufferClave, bufferValor);
+				log_error(logOperaciones, "ESI %d: **Error: Clave no Identificada**",socketESI->identificadorESI);
 			}
-
-			/* Avisa a Planificador */
-			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
-
-			sem_post(&semaforo_planificador);
-
-			sem_wait(&semaforo_planificadorOK);
 
 			actualizarVectorInstanciasConectadas();
 
@@ -821,7 +813,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			/* Verificar que este conectada la instancia -> sino notificar al Planificador */
 			if(verificarInstanciaConectada(instanciaEncargada) < 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"La instancia esta desconectada"ANSI_COLOR_RESET);
-				log_error(logOperaciones, "ESI %d: OPERACION: SET %s %s **Error: Clave Innacesible (instancia caida)**",socketESI->identificadorESI, bufferClave, bufferValor);
+				log_error(logOperaciones, "ESI %d: **Error: Clave Innacesible (instancia caida)**",socketESI->identificadorESI);
 
 				/* Eliminar clave */
 				eliminarClaveDeTabla(bufferClave);
@@ -831,11 +823,19 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				headerAbortar->codigoOperacion = 5;
 				headerAbortar->tamanioClave = -1;
 
-				notificarAbortoAPlanificador(socketPlanificador, header, socketESI->identificadorESI);
+				notificarAbortoAPlanificador(socketPlanificador, headerAbortar, socketESI->identificadorESI);
 
 				free(headerAbortar);
 
 			} else{
+				/* Avisa a Planificador */
+				enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
+
+				sem_post(&semaforo_planificador);
+
+				sem_wait(&semaforo_planificadorOK);
+
 				enviarSetInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
 			}
@@ -851,16 +851,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 			/* Chequear que exista la clave */
 			if(verificarSiExisteClave(bufferClave) < 0){
-				log_error(logOperaciones, "ESI %d: OPERACION: STORE %s **Error: Clave no Identificada**",socketESI->identificadorESI, bufferClave);
+				log_error(logOperaciones, "ESI %d: **Error: Clave no Identificada**",socketESI->identificadorESI);
 			}
-
-			/* Avisa a Planificador */
-			enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
-
-			sem_post(&semaforo_planificador);
-
-			sem_wait(&semaforo_planificadorOK);
 
 			actualizarVectorInstanciasConectadas();
 
@@ -880,7 +872,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			/* Verificar que este conectada la instancia -> sino notificar al Planificador */
 			if(verificarInstanciaConectada(instanciaEncargada) < 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"La instancia esta desconectada"ANSI_COLOR_RESET);
-				log_error(logOperaciones, "ESI %d: OPERACION: STORE %s **Error: Clave Innacesible (instancia caida)**",socketESI->identificadorESI, bufferClave);
+				log_error(logOperaciones, "ESI %d: **Error: Clave Innacesible (instancia caida)**",socketESI->identificadorESI);
 
 				/* Eliminar clave */
 				eliminarClaveDeTabla(bufferClave);
@@ -890,8 +882,15 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				headerAbortar->codigoOperacion = 5;
 				headerAbortar->tamanioClave = -1;
 
-				notificarAbortoAPlanificador(socketPlanificador, header, socketESI->identificadorESI);
+				notificarAbortoAPlanificador(socketPlanificador, headerAbortar, socketESI->identificadorESI);
 			}else{
+				/* Avisa a Planificador */
+				enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente al Planificador: header - clave - idESI"ANSI_COLOR_RESET);
+
+				sem_post(&semaforo_planificador);
+
+				sem_wait(&semaforo_planificadorOK);
 
 				enviarStoreInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
