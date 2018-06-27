@@ -683,14 +683,12 @@ void enviarIDEsi(int socket, int idESI){
 
 
 /*Envia la sentencia a Instancia - Planificador*/
-int enviarSetInstancia(int socket, header_t* header, char* clave, char* valor){
-	int sendHeader, sendClave, sendTamanio, sendValor;
-
-	if((sendHeader = send(socket, header, sizeof(header_t), 0)) < 0) {
+void enviarSetInstancia(int socket, header_t* header, char* clave, char* valor){
+	if(send(socket, header, sizeof(header_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
 	}
 
-	if((sendClave = send(socket, clave, strlen(clave)+1, 0)) < 0) {
+	if(send(socket, clave, strlen(clave)+1, 0) < 0) {
 			_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la clave"ANSI_COLOR_RESET);
 	}
 
@@ -698,30 +696,25 @@ int enviarSetInstancia(int socket, header_t* header, char* clave, char* valor){
 
 	*tamanioValor = strlen(valor) +1;
 
-	if((sendTamanio = send(socket, tamanioValor, sizeof(int32_t), 0)) < 0) {
+	if(send(socket, tamanioValor, sizeof(int32_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
 	}
 
-	if((sendValor = send(socket, valor, *tamanioValor, 0)) < 0) {
+	if(send(socket, valor, *tamanioValor, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el valor"ANSI_COLOR_RESET);
 	}
-	free(tamanioValor);
 
-	return sendHeader && sendClave && sendTamanio && sendValor;
+	free(tamanioValor);
 }
 
-int enviarStoreInstancia(int socket, header_t* header, char* clave){
-	int sendHeader, sendClave;
-
-	if((sendHeader = send(socket, header, sizeof(header_t), 0)) < 0) {
+void enviarStoreInstancia(int socket, header_t* header, char* clave){
+	if(send(socket, header, sizeof(header_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
 	}
 
-	if((sendClave = send(socket, clave, strlen(clave)+1, 0)) < 0) {
+	if(send(socket, clave, strlen(clave)+1, 0) < 0) {
 				_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la clave"ANSI_COLOR_RESET);
 	}
-
-	return sendHeader && sendClave;
 }
 
 void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int idESI){
@@ -729,6 +722,12 @@ void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int
 	enviarClave(socket, clave);
 	enviarIDEsi(socket, idESI);
 }
+
+void notificarAbortoAPlanificador(int socket, header_t* header, int idEsi){
+	enviarHeader(socket, header);
+	enviarIdEsi(socket, idEsi);
+}
+
 
 int verificarClaveTomada(int socket){
 	int* resultado = malloc(sizeof(int));
@@ -748,6 +747,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 	int instanciaEncargada;
 	int32_t * tamanioValor;
 	char* bufferValor;
+	header_t* headerAbortar;
 
 	sem_wait(&mutexEsiEjecutando);
 	idEsiEjecutando = socketESI->identificadorESI;
@@ -818,8 +818,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			//actualizarVectorInstanciasConectadas();
 
-			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
-			if(enviarSetInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor) == 0){
+			/* Verificar que este conectada la instancia -> sino notificar al Planificador */
+			if(verificarInstanciaConectada(instanciaEncargada) < 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"La instancia esta desconectada"ANSI_COLOR_RESET);
 				log_error(logOperaciones, "ESI %d: OPERACION: SET %s %s **Error: Clave Innacesible (instancia caida)**",socketESI->identificadorESI, bufferClave, bufferValor);
 
@@ -827,9 +827,16 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				eliminarClaveDeTabla(bufferClave);
 
 				/* Abortar ESI */
-			}
+				headerAbortar = malloc(sizeof(header_t));
+				headerAbortar->codigoOperacion = 5;
+				headerAbortar->tamanioClave = -1;
 
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
+				notificarAbortoAPlanificador(socketPlanificador, header, socketESI->identificadorESI);
+
+			} else{
+				enviarSetInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
+			}
 
 			free(tamanioValor);
 			free(bufferValor);
@@ -868,8 +875,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			//actualizarVectorInstanciasConectadas();
 
-			/* Faltaria verificar que se pueda realizar el send -> que este conectada la instancia */
-			if(enviarStoreInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave)==0){
+			/* Verificar que este conectada la instancia -> sino notificar al Planificador */
+			if(verificarInstanciaConectada(instanciaEncargada) < 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"La instancia esta desconectada"ANSI_COLOR_RESET);
 				log_error(logOperaciones, "ESI %d: OPERACION: STORE %s **Error: Clave Innacesible (instancia caida)**",socketESI->identificadorESI, bufferClave);
 
@@ -877,16 +884,22 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				eliminarClaveDeTabla(bufferClave);
 
 				/* Abortar ESI */
+				headerAbortar = malloc(sizeof(header_t));
+				headerAbortar->codigoOperacion = 5;
+				headerAbortar->tamanioClave = -1;
 
+				notificarAbortoAPlanificador(socketPlanificador, header, socketESI->identificadorESI);
+			}else{
+
+				enviarStoreInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
 			}
-
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
 			break;
 		case 4: /* Clave Larga */
 			log_error(logger, ANSI_COLOR_BOLDRED"Clave excede tamanio maximo"ANSI_COLOR_RESET);
 			log_error(logOperaciones, "ESI %d: **Error: Clave excede tamanio maximo**", socketESI->identificadorESI);
 
-			enviarHeader(socketPlanificador, header);
+			notificarAbortoAPlanificador(socketPlanificador, header, socketESI->identificadorESI);
 			break;
 		default:
 			_exit_with_error(socketESI->fd, "No cumpliste el protocolo de enviar Header");
@@ -1157,6 +1170,15 @@ void conectarInstancia(int idInstancia){
 int existeIdInstancia(int idInstancia){
 	for(int i =0; i < NUMEROCLIENTES; i++){
 		if(instanciasIDsUsados[i].identificadorInstancia == idInstancia){
+			return 1;
+		}
+	}
+	return -1;
+}
+
+int verificarInstanciaConectada(int idInstancia){
+	for(int i =0; i < NUMEROCLIENTES; i++){
+		if(instanciasIDsUsados[i].identificadorInstancia == idInstancia && instanciasIDsUsados[i].conectada == 1){
 			return 1;
 		}
 	}
