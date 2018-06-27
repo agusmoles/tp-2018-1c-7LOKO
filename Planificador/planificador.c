@@ -234,7 +234,7 @@ void conectarConCoordinador() {
 
 				ESI = buscarESI(IDESI);
 
-				// VERIFICAR SI YO TENGO QUE VER SI EL SET TIRA ERROR POR CLAVE NO TOMADA
+				// VERIFICAR SI EL SET TIRA ERROR POR CLAVE NO TOMADA
 				if (!dictionary_has_key(diccionarioClaves, clave)) {
 					log_error(logger, ANSI_COLOR_BOLDRED"Error SET - La clave no estaba tomada por ningun ESI"ANSI_COLOR_RESET);
 					abortarESI(IDESI);
@@ -312,7 +312,15 @@ void conectarConCoordinador() {
 			case 4: 			// CLAVE LARGA
 				clave = malloc(2);		// TAMANIO ABSURDO ASI NO FALLABA EL FREE
 				log_error(logger, ANSI_COLOR_BOLDRED"La clave era demasiado larga"ANSI_COLOR_RESET);
+				recibirIDDeESI(socket, IDESI);
+				ESI = buscarESI(IDESI);
 				recibirMensaje(ESI);
+				break;
+			case 5:
+				clave = malloc(2);		// TAMANIO ABSURDO ASI NO FALLABA EL FREE
+				recibirIDDeESI(socket, IDESI);
+				abortarESI(IDESI);
+				log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por acceso a Instancia desconectada"ANSI_COLOR_RESET, *IDESI);
 				break;
 			default:
 				_exit_with_error(ANSI_COLOR_BOLDRED"No se esperaba un codigo de operacion distinto de 0 (GET) o 2 (STORE) del Coordinador"ANSI_COLOR_RESET);
