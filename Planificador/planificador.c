@@ -210,7 +210,7 @@ void conectarConCoordinador() {
 
 					free(idEsiParaDiccionario);
 
-					informarAlCoordinador(socket, 0);	// 0 PORQUE SALIO MAL
+					informarAlCoordinador(socket, 0);	// 0 PORQUE SE BLOQUEO EL ESI
 				} else {
 
 					sem_wait(&mutexDiccionarioClaves);
@@ -239,7 +239,8 @@ void conectarConCoordinador() {
 					log_error(logger, ANSI_COLOR_BOLDRED"Error SET - La clave no estaba tomada por ningun ESI"ANSI_COLOR_RESET);
 					abortarESI(IDESI);
 
-					informarAlCoordinador(socket, 0);			// SALIO MAL
+					informarAlCoordinador(socket, -1); // -1 PORQUE SE ABORTO UN ESI
+
 					ordenarProximoAEjecutar();				// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 				} else {
 					int* IDESIQueTieneLaClave = dictionary_get(diccionarioClaves, clave);
@@ -253,7 +254,7 @@ void conectarConCoordinador() {
 						log_error(logger, ANSI_COLOR_BOLDRED"Error SET - La clave estaba tomada por otro ESI (%d)"ANSI_COLOR_RESET, *IDESIQueTieneLaClave);
 						abortarESI(IDESI);
 
-						informarAlCoordinador(socket, 0);		// SALIO MAL
+						informarAlCoordinador(socket, -1); // -1 PORQUE SE ABORTO UN ESI
 						ordenarProximoAEjecutar();			// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 					}
 				}
@@ -294,7 +295,7 @@ void conectarConCoordinador() {
 
 						log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por querer hacer STORE de la clave %s que no es de el"ANSI_COLOR_RESET, *idEsiParaDiccionario, clave);
 
-						informarAlCoordinador(socket, 0); // 0 PORQUE SALIO MAL
+						informarAlCoordinador(socket, -1); // -1 PORQUE SE ABORTO UN ESI
 
 						ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 					}
@@ -303,7 +304,7 @@ void conectarConCoordinador() {
 
 					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, *idEsiParaDiccionario, clave);
 
-					informarAlCoordinador(socket, 0); // 0 PORQUE SALIO MAL
+					informarAlCoordinador(socket, -1); // -1 PORQUE SE ABORTO UN ESI
 
 					ordenarProximoAEjecutar();	// ORDENO PROXIMO A EJECUTAR YA QUE ABORTE A UN ESI...
 				}
@@ -320,6 +321,9 @@ void conectarConCoordinador() {
 				clave = malloc(2);		// TAMANIO ABSURDO ASI NO FALLABA EL FREE
 				recibirIDDeESI(socket, IDESI);
 				abortarESI(IDESI);
+
+				// NO INFORMO PORQUE EL COORDINADOR YA SABE QUE LO TIENE QUE ABORTAR POR LA INSTANCIA CAIDA
+
 				log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por acceso a Instancia desconectada"ANSI_COLOR_RESET, *IDESI);
 				break;
 			default:
