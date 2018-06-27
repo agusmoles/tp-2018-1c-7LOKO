@@ -27,6 +27,7 @@ void setearConfigEnVariables() {
 	TAMANIOENTRADA = config_get_int_value(config, "Tamanio de Entrada");
 	CANTIDADENTRADAS  = config_get_int_value(config, "Cantidad de Entradas");
 	IDENTIFICADORINSTANCIA = config_get_int_value(config, "ID de Instancia");
+	sem_init(&mutexTablaDeEntradas, 0, 1);				// INICIALIZO EL SEMAFORO DEL MUTEX DE LA TABLA DE ENTRADAS
 
     storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
 
@@ -139,6 +140,8 @@ void envioIdentificador(int socket) {
 
 			log_info(logger,ANSI_COLOR_BOLDYELLOW"Se recibio la clave %s"ANSI_COLOR_RESET, clave);
 
+			levantarClaveDeDisco(clave);
+
 			(*cantidadClaves)--;
 
 			free(clave);
@@ -148,6 +151,40 @@ void envioIdentificador(int socket) {
 	free(instanciaNueva);
 	free(cantidadClaves);
 	free(tamanioClave);
+}
+
+void levantarClaveDeDisco(char* clave) {
+	entrada_t* entrada = malloc(sizeof(entrada_t));
+	int posicion = -1;
+	char* directorio = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
+	char* valor;
+	size_t len = 0;
+
+	strcpy(directorio, PUNTOMONTAJE);
+	strcat(directorio, clave);
+
+	FILE* f = fopen(directorio, "r");
+
+	entrada->clave = malloc(strlen(clave) + 1);
+	strcpy(entrada->clave, clave);
+
+	getline(&valor, &len, f);
+
+	int espaciosNecesarios = ceil((double) (strlen(valor) + 1) / (double) TAMANIOENTRADA);
+
+	entrada->largo = espaciosNecesarios;
+	entrada->tamanio_valor = strlen(valor) + 1;
+
+	if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {
+		entrada->numero = posicion;
+
+		log_info (logger, ANSI_COLOR_BOLDWHITE"Entrada %d de clave %s agregada en la tabla"ANSI_COLOR_RESET, entrada->numero, entrada->clave);
+		copiarValorAlStorage(entrada, valor, posicion);
+	} else {
+		// REEMPLAZAR SEGUN ALGORITMO
+	}
+
+	fclose(f);
 }
 
 
@@ -380,6 +417,8 @@ void copiarValorAlStorage(entrada_t* entrada, char* valor, int posicion) {
 		storage = buscarEnStorage(posicion);
 		strcpy(storage, valorRecortado);
 		posicion++;
+
+		log_info(logger, ANSI_COLOR_BOLDWHITE"Se copio el valor %s al storage %d", valorRecortado, posicion);
 		free(valorRecortado);
 	}
 }
@@ -438,7 +477,9 @@ entrada_t* buscarEnTablaDeEntradas(char* clave) {
 	entrada_t* entrada;
 
 	for(int i=0; i<list_size(tablaEntradas); i++) {	// RECORRO LA LISTA DE ENTRADAS
+		sem_wait(&mutexTablaDeEntradas);
 		entrada = list_get(tablaEntradas, i);		// VOY TOMANDO ELEMENTOS
+		sem_post(&mutexTablaDeEntradas);
 
 		if (strcmp(entrada->clave, clave) == 0) {	// SI LA CLAVE DE LA ENTRADA COINCIDE CON LA DEL STORE
 			return entrada;							// DEVUELVO LA ENTRADA ENCONTRADA
@@ -479,6 +520,23 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 	log_info(logger, ANSI_COLOR_BOLDGREEN"Se recibio el valor de la clave %s"ANSI_COLOR_RESET, bufferValor);
 }
 
+void dump() {
+	entrada_t* entrada;
+	while (1) {
+		sleep(INTERVALODUMP);
+
+		for (int i=0; i<list_size(tablaEntradas); i++) {
+			sem_wait(&mutexTablaDeEntradas);
+			entrada = list_get(tablaEntradas, i);
+			sem_post(&mutexTablaDeEntradas);
+
+			store(entrada->clave);
+		}
+
+		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************");
+	}
+}
+
 int main(void) {
 	struct sigaction finalizacion;
 	finalizacion.sa_handler = pipeHandler;
@@ -488,6 +546,17 @@ int main(void) {
 	crearConfig();
 	setearConfigEnVariables();
 	int socket = conectarSocket();
+
+	/************************************** CREO THREAD PARA DUMP **********************************/
+
+	pthread_t threadDump;
+
+	if(pthread_create(&threadDump, NULL, (void *)dump, NULL) != 0) {
+		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo crear el hilo de dump"ANSI_COLOR_RESET);
+		exit(-1);
+	}else{
+		log_info(logger, ANSI_COLOR_BOLDCYAN"Se creo el hilo de dump"ANSI_COLOR_RESET);
+	}
 
 	tablaEntradas = list_create();
 	listaStorage = list_create();
