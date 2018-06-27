@@ -16,7 +16,9 @@
 #include "sharedlib.h"
 #include <math.h>
 #include <sys/mman.h>
+#include <semaphore.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 
 char* IP;
@@ -28,6 +30,8 @@ int INTERVALODUMP;
 int TAMANIOENTRADA;
 int CANTIDADENTRADAS;
 int IDENTIFICADORINSTANCIA;
+
+sem_t mutexTablaDeEntradas;
 
 t_log* logger;
 t_config* config;
@@ -54,6 +58,7 @@ int conectarSocket();
 void conectarConCoordinador(int socket);
 void reciboHandshake(int socket);
 void envioIdentificador(int socket);
+void levantarClaveDeDisco(char* clave);
 void pipeHandler();
 void recibirInstruccion(int socket);
 int entradasLibres();
@@ -70,3 +75,4 @@ entrada_t* buscarEnTablaDeEntradas(char* clave);
 char* buscarEnStorage(int entrada);
 void enviarTamanioValor(int socket, int* tamanioValor);
 void enviarValor(int socket, int tamanioValor, char* valor);
+void dump();
