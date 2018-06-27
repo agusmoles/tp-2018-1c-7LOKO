@@ -51,6 +51,10 @@ int main(){
 				enviarMensaje(socketPlanificador,"EXEEND");		// SI LO ES, ENVIO EXEEND
 			}
 		}
+
+		if (strcmp(buffer, "OPFL") == 0) {
+			exitError(socket, ANSI_COLOR_BOLDRED"*********** ME ABORTARON **************"ANSI_COLOR_RESET);
+		}
 	}
 
 	free(instruccion);
