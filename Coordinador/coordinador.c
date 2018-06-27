@@ -325,9 +325,12 @@ void recibirMensaje_Planificador(void* argumentos) {
 				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - SET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
 				log_error(logOperaciones, "ESI %d: **Error: Clave no bloqueada**",args->socketCliente.identificadorESI);
 				enviarMensaje(socketESI, "OPBL");
-			} else {
+			} else if (verificarClaveTomada(args->socketCliente.fd) == 1){
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET/SET/STORE correctamente"ANSI_COLOR_RESET);
 				enviarMensaje(socketESI, "OPOK");
+			} else{
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se aborto el ESI"ANSI_COLOR_RESET);
+				enviarMensaje(socketESI, "OPFL");
 			}
 
 			sem_post(&semaforo_planificadorOK);
@@ -824,9 +827,9 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				headerAbortar->tamanioClave = -1;
 
 				notificarAbortoAPlanificador(socketPlanificador, headerAbortar, socketESI->identificadorESI);
+				enviarMensaje(socketESI, "OPFL");
 
 				free(headerAbortar);
-
 			} else{
 				/* Avisa a Planificador */
 				enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
@@ -883,6 +886,9 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				headerAbortar->tamanioClave = -1;
 
 				notificarAbortoAPlanificador(socketPlanificador, headerAbortar, socketESI->identificadorESI);
+				enviarMensaje(socketESI, "OPFL");
+
+				free(headerAbortar);
 			}else{
 				/* Avisa a Planificador */
 				enviarSentenciaAPlanificador(socketPlanificador, header, bufferClave, socketESI->identificadorESI);
