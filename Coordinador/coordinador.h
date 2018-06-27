@@ -144,6 +144,8 @@ void enviarValor(int socket, char* valor);
 
 void enviarIDEsi(int socket, int idESI);
 
+int verificarInstanciaConectada(int idInstancia);
+
 int buscarSocketPlanificador();
 int buscarSocketESI();
 int buscarSocketInstancia(int idInstancia);

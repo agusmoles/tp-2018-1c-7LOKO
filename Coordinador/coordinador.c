@@ -725,7 +725,7 @@ void enviarSentenciaAPlanificador(int socket, header_t* header, char* clave, int
 
 void notificarAbortoAPlanificador(int socket, header_t* header, int idEsi){
 	enviarHeader(socket, header);
-	enviarIdEsi(socket, idEsi);
+	enviarIDEsi(socket, idEsi);
 }
 
 
@@ -753,7 +753,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 	idEsiEjecutando = socketESI->identificadorESI;
 	sem_post(&mutexEsiEjecutando);
 
-	sleep(RETARDO);
+	usleep(RETARDO);
 
 	switch(header->codigoOperacion){
 		case 0: /* GET */
@@ -832,6 +832,8 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				headerAbortar->tamanioClave = -1;
 
 				notificarAbortoAPlanificador(socketPlanificador, header, socketESI->identificadorESI);
+
+				free(headerAbortar);
 
 			} else{
 				enviarSetInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
