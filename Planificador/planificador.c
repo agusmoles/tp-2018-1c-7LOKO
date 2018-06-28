@@ -247,6 +247,7 @@ void conectarConCoordinador() {
 
 					if (*IDESIQueTieneLaClave == ESI->identificadorESI) {
 						log_info(logger, ANSI_COLOR_BOLDCYAN"El ESI %d pudo hacer el SET de la clave %s"ANSI_COLOR_RESET, ESI->identificadorESI, clave);
+
 						informarAlCoordinador(socket, 1);			// SALIO BIEN
 
 						recibirMensaje(ESI);

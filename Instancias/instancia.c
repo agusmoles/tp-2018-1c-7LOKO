@@ -364,22 +364,16 @@ void set(char* clave, char* valor){
 
 		/*************** FINALIZO LO DE LA ENTRADA **************************/
 
-		if (espaciosNecesarios > 1) {
-			if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {		// SI LA POSICION ES >= 0 OK (SINO DEVUELVE -1)
-				copiarValorAlStorage(entrada, valor, posicion);
-			} else {
-				// REEMPLAZAR SEGUN ALGORITMO
-			}
+		if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {		// SI LA POSICION ES >= 0 OK (SINO DEVUELVE -1)
+			asignarAEntrada(entrada, valor, espaciosNecesarios);		// SETEO LOS DATOS DE LA ENTRADA
+			entrada->numero = posicion;
 
-		} else {	// SI SOLO NECESITA UN ESPACIO
-			if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {		// SI LA POSICION ES >= 0 OK (SINO DEVUELVE -1)
-				copiarValorAlStorage(entrada, valor, posicion);
-			} else {
-				// REEMPLAZAR SEGUN ALGORITMO
-			}
+			copiarValorAlStorage(entrada, valor, posicion);
+		} else {
+			// REEMPLAZAR SEGUN ALGORITMO
 		}
 
-		entrada->numero = posicion;
+
 		list_add(tablaEntradas, entrada);
 		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
 		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego el valor %s al storage en la posicion %d"ANSI_COLOR_RESET, valor, posicion);
