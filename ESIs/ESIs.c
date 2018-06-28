@@ -6,7 +6,7 @@ int main(){
 	crearConfig();
 	setearConfigEnVariables();
 	int socketPlanificador,socketCoordinador;
-	FILE* script = fopen("Scripts/ESI_Largo","r");
+	FILE* script = fopen("Scripts/ESI_Simple","r");
 	char* instruccion;
 	size_t len = 0;
 	int sentencias = 0;
@@ -53,7 +53,7 @@ int main(){
 		}
 
 		if (strcmp(buffer, "OPFL") == 0) {
-			exitError(socket, ANSI_COLOR_BOLDRED"*********** ME ABORTARON **************"ANSI_COLOR_RESET);
+			exitError(socketCoordinador, ANSI_COLOR_BOLDRED"*********** ME ABORTARON **************"ANSI_COLOR_RESET);
 		}
 	}
 

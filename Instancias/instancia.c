@@ -41,6 +41,18 @@ void inicializarStorage() {
 		storage = buscarEnStorage(i);
 		strcpy(storage, "");
 	}
+
+	storage = buscarEnStorage(0);
+
+	strcpy(storage, "AA");
+	storage = buscarEnStorage(3);
+
+	strcpy(storage, "AA");
+	storage = buscarEnStorage(5);
+
+	strcpy(storage, "AA");
+
+
 }
 
 int conectarSocket() {
@@ -217,6 +229,7 @@ void recibirInstruccion(int socket){
 
 	switch(buffer_header->codigoOperacion){
 	case 1: /* SET */
+
 		/* Recibo clave y valor */
 		recibirClave(socket, buffer_header, bufferClave);
 		recibirTamanioValor(socket, tamanioValor);
@@ -224,6 +237,8 @@ void recibirInstruccion(int socket){
 		recibirValor(socket, tamanioValor, bufferValor);
 
 		set(bufferClave, bufferValor);
+
+		mostrarStorage();
 
 		free(bufferValor);
 
@@ -530,6 +545,45 @@ void dump() {
 		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************");
 	}
 }
+
+void mostrarStorage(){
+	for (int i=0; i<CANTIDADENTRADAS; i++) {
+			storage = buscarEnStorage(i);
+			log_info(logger, "Storage %d: %s", i, storage);
+	}
+}
+
+void compactar(){
+	char* storageCompactado;
+	char* storageCompactadoFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA);
+	int j = 0;
+
+	for (int h=0; h<CANTIDADENTRADAS; h++) {
+		storageCompactado = storageCompactadoFijo + h * TAMANIOENTRADA;;
+		strcpy(storageCompactado, "");
+	}
+
+	storageCompactado = storageCompactadoFijo;
+
+	for(int i=0; i< CANTIDADENTRADAS; i++){
+		storage = buscarEnStorage(i);
+		if(strcmp(storage, "") != 0){
+			/* Faltaria actualizar tabla de entradas para que sea consistente*/
+			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
+			strcpy(storageCompactado, storage);
+			j++;
+		}
+	}
+
+	if(j > 0){
+		free(storageFijo);
+		storageFijo = storageCompactadoFijo;
+		storage = storageFijo;
+	} else{
+		free(storageCompactadoFijo);
+	}
+}
+
 
 int main(void) {
 	struct sigaction finalizacion;
