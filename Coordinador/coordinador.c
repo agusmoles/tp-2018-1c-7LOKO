@@ -331,6 +331,7 @@ void recibirMensaje_Planificador(void* argumentos) {
 				enviarMensaje(socketESI, "OPOK");
 			} else if (resultado == -1){
 				log_info(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI"ANSI_COLOR_RESET);
+				log_error(logOperaciones, "ESI %d: **Se aborto el ESI**",args->socketCliente.identificadorESI);
 				enviarMensaje(socketESI, "OPFL");
 			}
 
@@ -829,6 +830,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 				notificarAbortoAPlanificador(socketPlanificador, headerAbortar, socketESI->identificadorESI);
 				enviarMensaje(socketESI->fd, "OPFL");
+				log_error(logOperaciones, "ESI %d: **Se aborto el ESI**",socketESI->identificadorESI);
 
 				free(headerAbortar);
 			} else{
