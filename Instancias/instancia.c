@@ -28,11 +28,10 @@ void setearConfigEnVariables() {
 	CANTIDADENTRADAS  = config_get_int_value(config, "Cantidad de Entradas");
 	IDENTIFICADORINSTANCIA = config_get_int_value(config, "ID de Instancia");
 	sem_init(&mutexTablaDeEntradas, 0, 1);				// INICIALIZO EL SEMAFORO DEL MUTEX DE LA TABLA DE ENTRADAS
+	ENTRADAAPUNTADA = 0;		// LA INICIALIZO
 
     storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
-
     inicializarStorage();
-
     storage = storageFijo; 			// SIEMPRE TOCAR EL STORAGE AUXILIAR (STORAGE), EL OTRO NO
 }
 
@@ -42,12 +41,12 @@ void inicializarStorage() {
 		strcpy(storage, "");
 	}
 
-	storage = buscarEnStorage(0);
-	strcpy(storage, "AA");
-	storage = buscarEnStorage(3);
-	strcpy(storage, "AA");
-	storage = buscarEnStorage(5);
-	strcpy(storage, "AA");
+//	storage = buscarEnStorage(0);
+//	strcpy(storage, "AA");
+//	storage = buscarEnStorage(3);
+//	strcpy(storage, "AA");
+//	storage = buscarEnStorage(5);
+//	strcpy(storage, "AA");
 }
 
 int conectarSocket() {
@@ -328,33 +327,36 @@ void set(char* clave, char* valor){
 		if (espaciosNecesarios > espaciosNecesariosValorViejo) {		// SI OCUPA MAS QUE EL ESPACIO VIEJO...
 
 			if ( (posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {		// SI HAY ESPACIOS CONTIGUOS...
-				if (posicion != entrada->numero) {					// SI LO ASIGNO EN OTRO LUGAR, PRIMERO LIBERO LOS QUE TENIA ASIGNADOS
-					limpiarValores(entrada);
+				limpiarValores(entrada);		// PRIMERO LIMPIO LOS VALORES QUE TENIA ASIGNADOS EN EL STORAGE
+
+				asignarAEntrada(entrada, valor, espaciosNecesarios);
+				entrada->numero = posicion;
+
+				copiarValorAlStorage(entrada, valor, posicion);		// BAJO AL STORAGE EL VALOR
+
+			} else {
+				// UTILIZAR ALGORITMO DE REEMPLAZO
+				if ((posicion = reemplazarSegunAlgoritmo(espaciosNecesarios)) >= 0) {
+					limpiarValores(entrada);		// PRIMERO LIMPIO LOS VALORES QUE TENIA ASIGNADOS EN EL STORAGE
 
 					asignarAEntrada(entrada, valor, espaciosNecesarios);
 					entrada->numero = posicion;
 
 					copiarValorAlStorage(entrada, valor, posicion);		// BAJO AL STORAGE EL VALOR
 				}
-
-			} else {
-				// UTILIZAR ALGORITMO DE REEMPLAZO
 			}
 
 		}
 
-		else if (espaciosNecesarios == espaciosNecesariosValorViejo) {	// SI NECESITO LOS QUE YA ESTAN ASIGNADOS, SOLO COPIO..
+		else if (espaciosNecesarios == espaciosNecesariosValorViejo) {	// SI NECESITO LOS QUE YA ESTAN ASIGNADOS
+			limpiarValores(entrada);
+
 			asignarAEntrada(entrada, valor, espaciosNecesarios);
 			copiarValorAlStorage(entrada, valor, entrada->numero);
 		}
 
-		else {			// SI OCUPA MENOS ESPACIO QUE EL VIEJO VALOR LIMPIO LOS ESPACIOS QUE DEJO DE USAR
-			int diferenciaEspacios = espaciosNecesariosValorViejo - espaciosNecesarios;
-
-			for (int i=1; i<=diferenciaEspacios; i++) {
-				storage = buscarEnStorage(entrada->numero + espaciosNecesarios + i);
-				strcpy(storage, "");
-			}
+		else {			// SI OCUPA MENOS ESPACIO QUE EL VIEJO VALOR
+			limpiarValores(entrada);
 
 			asignarAEntrada(entrada, valor, espaciosNecesarios);
 			copiarValorAlStorage(entrada, valor, entrada->numero);
@@ -381,6 +383,12 @@ void set(char* clave, char* valor){
 			copiarValorAlStorage(entrada, valor, posicion);
 		} else {
 			// REEMPLAZAR SEGUN ALGORITMO
+			if ((posicion = reemplazarSegunAlgoritmo(espaciosNecesarios)) >= 0) {
+				asignarAEntrada(entrada, valor, espaciosNecesarios);
+				entrada->numero = posicion;
+
+				copiarValorAlStorage(entrada, valor, posicion);
+			}
 		}
 
 
@@ -388,6 +396,46 @@ void set(char* clave, char* valor){
 		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
 		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego el valor %s al storage en la posicion %d"ANSI_COLOR_RESET, valor, posicion);
 	}
+}
+
+int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
+	// ESTO DEBERIA LIBERAR LOS ESPACIOS ATOMICOS CORRESPONDIENTES, COMPACTAR, VERIFICAR SI YA ENTRA Y DEVOLVER EL ESPACIO DONDE IRIA --> LOOP
+	int posicion;
+	do {
+		if (strcmp(ALGORITMOREEMPLAZO, "CIRC") == 0) {
+			printf(ANSI_COLOR_BOLDMAGENTA"ENTRADAAPUNTADA: %d\n"ANSI_COLOR_RESET, ENTRADAAPUNTADA);
+			entrada_t* entradaSeleccionada = list_get(tablaEntradas, ENTRADAAPUNTADA);
+
+			if (entradaSeleccionada != NULL) {
+				if (entradaSeleccionada->largo == 1) {		// SI ES ATOMICA LA ENTRADA...
+					limpiarValores(entradaSeleccionada);
+
+					list_remove(tablaEntradas, ENTRADAAPUNTADA);
+
+					free(entradaSeleccionada);
+				}
+
+				ENTRADAAPUNTADA++;		// PASO A LA OTRA ENTRADA
+				if (ENTRADAAPUNTADA == CANTIDADENTRADAS) {		// SI ESTA EN LA ULT
+					ENTRADAAPUNTADA = 0;			// SE VUELVE AL PRINCIPIO
+				}
+			}
+		}
+
+		if (strcmp(ALGORITMOREEMPLAZO, "BSU") == 0) {
+
+		}
+
+		if (strcmp(ALGORITMOREEMPLAZO, "LRU") == 0) {
+
+		}
+
+		compactar();		// COMPACTO PORQUE CAPAZ HAY ESPACIOS PERO SEPARADOS
+
+		mostrarStorage();
+	} while((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0);
+
+	return posicion;
 }
 
 int hayEspaciosContiguosPara(int espaciosNecesarios) {
@@ -563,7 +611,9 @@ void compactar(){
 	for(int i=0; i< CANTIDADENTRADAS; i++){
 		storage = buscarEnStorage(i);
 		if(strcmp(storage, "") != 0){
+
 			/* Faltaria actualizar tabla de entradas para que sea consistente*/
+
 			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
 			strcpy(storageCompactado, storage);
 			j++;

@@ -30,6 +30,7 @@ int INTERVALODUMP;
 int TAMANIOENTRADA;
 int CANTIDADENTRADAS;
 int IDENTIFICADORINSTANCIA;
+int ENTRADAAPUNTADA;
 
 sem_t mutexTablaDeEntradas;
 
@@ -63,6 +64,7 @@ void pipeHandler();
 void recibirInstruccion(int socket);
 int entradasLibres();
 void set(char* clave, char* valor);
+int reemplazarSegunAlgoritmo(int espaciosNecesarios);
 int hayEspaciosContiguosPara(int espaciosNecesarios);
 void asignarAEntrada(entrada_t* entrada, char* valor, int largo);
 void copiarValorAlStorage(entrada_t* entrada, char* valor, int posicion);
