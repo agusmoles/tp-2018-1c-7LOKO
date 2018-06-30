@@ -176,7 +176,7 @@ void levantarClaveDeDisco(char* clave) {
 
 	getline(&valor, &len, f);
 
-	int espaciosNecesarios = ceil((double) (strlen(valor) + 1) / (double) TAMANIOENTRADA);
+	int espaciosNecesarios = ceil((double) (strlen(valor)) / (double) TAMANIOENTRADA);
 
 	entrada->largo = espaciosNecesarios;
 	entrada->tamanio_valor = strlen(valor) + 1;
@@ -314,14 +314,14 @@ void set(char* clave, char* valor){
 	char* valorViejo;
 	int posicion = -2; 			// LA INICIALIZO NEGATIVA PARA NOTAR ERROR EN LOS LOGS
 
-	int espaciosNecesarios = ceil((double) (strlen(valor) + 1) / (double) TAMANIOENTRADA);		// DEVUELVE REDONDEADO PARA ARRIBA
+	int espaciosNecesarios = ceil((double) (strlen(valor)) / (double) TAMANIOENTRADA);		// DEVUELVE REDONDEADO PARA ARRIBA
 
 	log_info(logger, ANSI_COLOR_BOLDWHITE"ESPACIOS NECESARIOS PARA EL VALOR: %d"ANSI_COLOR_RESET, espaciosNecesarios);
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
 		valorViejo = buscarEnStorage(entrada->numero);
 
-		int espaciosNecesariosValorViejo = ceil((double) (strlen(valorViejo) + 1) / (double) TAMANIOENTRADA);
+		int espaciosNecesariosValorViejo = ceil((double) (strlen(valorViejo)) / (double) TAMANIOENTRADA);
 
 		//  HAY QUE VER SI EL NUEVO VALOR OCUPA MENOS O MAS QUE EL NUEVO
 		if (espaciosNecesarios > espaciosNecesariosValorViejo) {		// SI OCUPA MAS QUE EL ESPACIO VIEJO...
@@ -403,20 +403,21 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	int posicion = -1;
 	do {
 		if (strcmp(ALGORITMOREEMPLAZO, "CIRC") == 0) {
-//			printf(ANSI_COLOR_BOLDMAGENTA"ENTRADAAPUNTADA: %d\n"ANSI_COLOR_RESET, ENTRADAAPUNTADA);
+			printf(ANSI_COLOR_BOLDMAGENTA"ENTRADAAPUNTADA: %d\n"ANSI_COLOR_RESET, ENTRADAAPUNTADA);
 			entrada_t* entradaSeleccionada = list_get(tablaEntradas, ENTRADAAPUNTADA);
 
 			if (entradaSeleccionada != NULL) {
 				if (entradaSeleccionada->largo == 1) {		// SI ES ATOMICA LA ENTRADA...
 					limpiarValores(entradaSeleccionada);
 
-					entradaSeleccionada = list_remove(tablaEntradas, ENTRADAAPUNTADA);
+					free(entradaSeleccionada->clave);			// LIBERO LA CLAVE DE LA ENTRADA
+					list_remove(tablaEntradas, ENTRADAAPUNTADA);		// Y LA SACO DE LA LISTA
 
 					free(entradaSeleccionada);
 				}
 
 				ENTRADAAPUNTADA++;		// PASO A LA OTRA ENTRADA
-				if (ENTRADAAPUNTADA == CANTIDADENTRADAS) {		// SI ESTA EN LA ULT
+				if (ENTRADAAPUNTADA == list_size(tablaEntradas)) {		// SI ESTA EN LA ULT
 					ENTRADAAPUNTADA = 0;			// SE VUELVE AL PRINCIPIO
 				}
 			}
@@ -432,7 +433,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 
 		compactar();		// COMPACTO PORQUE CAPAZ HAY ESPACIOS PERO SEPARADOS
 
-	} while((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) < 0);
+	} while((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) < 0);			// MIENTRAS QUE NO HAYA ESPACIOS CONTIGUOS, QUE SIGA LIBERANDO
 
 	return posicion;
 }
