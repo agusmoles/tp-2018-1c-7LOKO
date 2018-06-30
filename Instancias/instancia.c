@@ -43,16 +43,11 @@ void inicializarStorage() {
 	}
 
 	storage = buscarEnStorage(0);
-
 	strcpy(storage, "AA");
 	storage = buscarEnStorage(3);
-
 	strcpy(storage, "AA");
 	storage = buscarEnStorage(5);
-
 	strcpy(storage, "AA");
-
-
 }
 
 int conectarSocket() {
@@ -471,9 +466,9 @@ void store(char* clave){
 
 	mem_ptr = mmap(NULL, tamanio , PROT_WRITE | PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
 
-	memcpy(mem_ptr, valor, tamanio);
+	memcpy(mem_ptr, valor, tamanio-1);
 
-	msync(mem_ptr, tamanio, MS_SYNC);
+	msync(mem_ptr, tamanio-1, MS_SYNC);
 
 	munmap(mem_ptr, tamanio);
 
