@@ -78,5 +78,6 @@ char* buscarEnStorage(int entrada);
 void enviarTamanioValor(int socket, int* tamanioValor);
 void enviarValor(int socket, int tamanioValor, char* valor);
 void dump();
+void mostrarTablaDeEntradas();
 void mostrarStorage();
 void compactar();

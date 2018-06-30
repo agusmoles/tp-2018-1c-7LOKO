@@ -400,17 +400,17 @@ void set(char* clave, char* valor){
 
 int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	// ESTO DEBERIA LIBERAR LOS ESPACIOS ATOMICOS CORRESPONDIENTES, COMPACTAR, VERIFICAR SI YA ENTRA Y DEVOLVER EL ESPACIO DONDE IRIA --> LOOP
-	int posicion;
+	int posicion = -1;
 	do {
 		if (strcmp(ALGORITMOREEMPLAZO, "CIRC") == 0) {
-			printf(ANSI_COLOR_BOLDMAGENTA"ENTRADAAPUNTADA: %d\n"ANSI_COLOR_RESET, ENTRADAAPUNTADA);
+//			printf(ANSI_COLOR_BOLDMAGENTA"ENTRADAAPUNTADA: %d\n"ANSI_COLOR_RESET, ENTRADAAPUNTADA);
 			entrada_t* entradaSeleccionada = list_get(tablaEntradas, ENTRADAAPUNTADA);
 
 			if (entradaSeleccionada != NULL) {
 				if (entradaSeleccionada->largo == 1) {		// SI ES ATOMICA LA ENTRADA...
 					limpiarValores(entradaSeleccionada);
 
-					list_remove(tablaEntradas, ENTRADAAPUNTADA);
+					entradaSeleccionada = list_remove(tablaEntradas, ENTRADAAPUNTADA);
 
 					free(entradaSeleccionada);
 				}
@@ -432,8 +432,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 
 		compactar();		// COMPACTO PORQUE CAPAZ HAY ESPACIOS PERO SEPARADOS
 
-		mostrarStorage();
-	} while((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0);
+	} while((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) < 0);
 
 	return posicion;
 }
@@ -577,6 +576,8 @@ void dump() {
 	while (1) {
 		sleep(INTERVALODUMP);
 
+		mostrarTablaDeEntradas();
+
 		for (int i=0; i<list_size(tablaEntradas); i++) {
 			sem_wait(&mutexTablaDeEntradas);
 			entrada = list_get(tablaEntradas, i);
@@ -586,6 +587,16 @@ void dump() {
 		}
 
 		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************");
+	}
+}
+
+void mostrarTablaDeEntradas() {
+	entrada_t* entrada;
+
+	for (int i=0; i<list_size(tablaEntradas); i++) {
+		entrada = list_get(tablaEntradas, i);
+
+		printf(ANSI_COLOR_BOLDWHITE"Num. Entrada: %d - Clave: %s - Largo: %d\n"ANSI_COLOR_RESET, entrada->numero, entrada->clave, entrada->largo);
 	}
 }
 
@@ -600,6 +611,7 @@ void compactar(){
 	char* storageCompactado;
 	char* storageCompactadoFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA);
 	int j = 0;
+	entrada_t* entrada;
 
 	for (int h=0; h<CANTIDADENTRADAS; h++) {
 		storageCompactado = storageCompactadoFijo + h * TAMANIOENTRADA;;
@@ -608,17 +620,33 @@ void compactar(){
 
 	storageCompactado = storageCompactadoFijo;
 
-	for(int i=0; i< CANTIDADENTRADAS; i++){
-		storage = buscarEnStorage(i);
-		if(strcmp(storage, "") != 0){
+	for (int i=0; i<list_size(tablaEntradas); i++) {
+		entrada = list_get(tablaEntradas, i);
 
-			/* Faltaria actualizar tabla de entradas para que sea consistente*/
-
-			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
-			strcpy(storageCompactado, storage);
-			j++;
+		if (entrada->numero != j) {				// SI LA ENTRADA ESTA EN OTRA POSICION DE J (J VA RECORRIENDO EN ORDEN DE VACIOS), ENTONCES COPIO
+			for (int h=0; h<entrada->largo; h++) {				// RECORRO CADA VALOR DE LA ENTRADA Y LO MUEVO
+				storage = buscarEnStorage(entrada->numero + h);
+				storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
+				strcpy(storageCompactado, storage);
+				j++;
+			}
+			entrada->numero += j;
+		} else {
+			j += entrada->largo;		// SI LA ENTRADA YA ESTABA EN LA POSICION DE J, ENTONCES MUEVO J
 		}
 	}
+
+//	for(int i=0; i< CANTIDADENTRADAS; i++){
+//		storage = buscarEnStorage(i);
+//		if(strcmp(storage, "") != 0){
+//
+//			/* Faltaria actualizar tabla de entradas para que sea consistente*/
+//
+//			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
+//			strcpy(storageCompactado, storage);
+//			j++;
+//		}
+//	}
 
 	if(j > 0){
 		free(storageFijo);
