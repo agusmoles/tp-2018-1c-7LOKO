@@ -425,9 +425,9 @@ void copiarValorAlStorage(entrada_t* entrada, char* valor, int posicion) {
 
 		storage = buscarEnStorage(posicion);
 		strcpy(storage, valorRecortado);
-		posicion++;
 
 		log_info(logger, ANSI_COLOR_BOLDWHITE"Se copio el valor %s al storage %d", valorRecortado, posicion);
+		posicion++;
 		free(valorRecortado);
 	}
 }
