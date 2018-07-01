@@ -160,8 +160,6 @@ void envioIdentificador(int socket) {
 }
 
 void levantarClaveDeDisco(char* clave) {
-	entrada_t* entrada = malloc(sizeof(entrada_t));
-	int posicion = -1;
 	char* directorio = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
 	char* valor;
 	size_t len = 0;
@@ -171,24 +169,9 @@ void levantarClaveDeDisco(char* clave) {
 
 	FILE* f = fopen(directorio, "r");
 
-	entrada->clave = malloc(strlen(clave) + 1);
-	strcpy(entrada->clave, clave);
+	getline(&valor, &len, f);		// COPIO EL VALOR
 
-	getline(&valor, &len, f);
-
-	int espaciosNecesarios = ceil((double) (strlen(valor)) / (double) TAMANIOENTRADA);
-
-	entrada->largo = espaciosNecesarios;
-	entrada->tamanio_valor = strlen(valor) + 1;
-
-	if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {
-		entrada->numero = posicion;
-
-		log_info (logger, ANSI_COLOR_BOLDWHITE"Entrada %d de clave %s agregada en la tabla"ANSI_COLOR_RESET, entrada->numero, entrada->clave);
-		copiarValorAlStorage(entrada, valor, posicion);
-	} else {
-		// REEMPLAZAR SEGUN ALGORITMO
-	}
+	set(clave, valor);			// HAGO EL SET DE CADA CLAVE
 
 	fclose(f);
 }
@@ -431,7 +414,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 
 		}
 
-		compactar();		// COMPACTO PORQUE CAPAZ HAY ESPACIOS PERO SEPARADOS
+//		compactar();		// COMPACTO PORQUE CAPAZ HAY ESPACIOS PERO SEPARADOS
 
 	} while((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) < 0);			// MIENTRAS QUE NO HAYA ESPACIOS CONTIGUOS, QUE SIGA LIBERANDO
 
@@ -463,16 +446,10 @@ void asignarAEntrada(entrada_t* entrada, char* valor, int largo) {
 }
 
 void copiarValorAlStorage(entrada_t* entrada, char* valor, int posicion) {
-	for (int i=0; i<entrada->largo; i++) {
-		char* valorRecortado = string_substring(valor, i*TAMANIOENTRADA, TAMANIOENTRADA);	// NO SE SI TIENE EN CUENTA EL \0 O NO
+	storage = buscarEnStorage(posicion);
+	memcpy(storage, valor, strlen(valor));
 
-		storage = buscarEnStorage(posicion);
-		strcpy(storage, valorRecortado);
-
-		log_info(logger, ANSI_COLOR_BOLDWHITE"Se copio el valor %s al storage %d", valorRecortado, posicion);
-		posicion++;
-		free(valorRecortado);
-	}
+	log_info(logger, ANSI_COLOR_BOLDWHITE"Se copio el valor %s al storage %d", valor, posicion);
 }
 
 void limpiarValores(entrada_t* entrada) {
