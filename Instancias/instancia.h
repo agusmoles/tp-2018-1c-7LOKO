@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 
+#define DEBUG 1
 
 char* IP;
 char* PUERTO;

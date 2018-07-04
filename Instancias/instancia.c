@@ -386,7 +386,9 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	int posicion = -1;
 	do {
 		if (strcmp(ALGORITMOREEMPLAZO, "CIRC") == 0) {
-			printf(ANSI_COLOR_BOLDMAGENTA"ENTRADAAPUNTADA: %d\n"ANSI_COLOR_RESET, ENTRADAAPUNTADA);
+			if (DEBUG) {
+				printf(ANSI_COLOR_BOLDMAGENTA"ENTRADAAPUNTADA: %d\n"ANSI_COLOR_RESET, ENTRADAAPUNTADA);
+			}
 			entrada_t* entradaSeleccionada = list_get(tablaEntradas, ENTRADAAPUNTADA);
 
 			if (entradaSeleccionada != NULL) {
@@ -397,10 +399,11 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 					list_remove(tablaEntradas, ENTRADAAPUNTADA);		// Y LA SACO DE LA LISTA
 
 					free(entradaSeleccionada);
+				} else {
+					ENTRADAAPUNTADA++;		// PASO A LA OTRA ENTRADA PORQUE NO BORRE LA ANTERIOR
 				}
 
-				ENTRADAAPUNTADA++;		// PASO A LA OTRA ENTRADA
-				if (ENTRADAAPUNTADA == list_size(tablaEntradas)) {		// SI ESTA EN LA ULT
+				if (ENTRADAAPUNTADA >= list_size(tablaEntradas)) {		// SI ESTA EN LA ULT
 					ENTRADAAPUNTADA = 0;			// SE VUELVE AL PRINCIPIO
 				}
 			}
@@ -426,8 +429,11 @@ int hayEspaciosContiguosPara(int espaciosNecesarios) {
 
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
 		storage = buscarEnStorage(i);
-		if (strcmp(storage, "") ==  0) {		// SI ESA POSICION ESTA VACIO
+		if (storage[0] == '\0') {		// SI ESA POSICION ESTA VACIO
 			contador++;
+			if(DEBUG) {
+				printf(ANSI_COLOR_BOLDWHITE"STORAGE %d VACIO: %s - Contador %d\n"ANSI_COLOR_RESET, i, storage, contador);
+			}
 		} else {
 			contador = 0;
 		}
@@ -455,7 +461,7 @@ void copiarValorAlStorage(entrada_t* entrada, char* valor, int posicion) {
 void limpiarValores(entrada_t* entrada) {
 	for (int i=0; i<entrada->largo; i++) {
 		storage = buscarEnStorage(entrada->numero+i);
-		strcpy(storage, "");				// LE ASIGNO STRING VACIO
+		storage[0] = '\0';
 	}
 }
 
@@ -574,7 +580,9 @@ void mostrarTablaDeEntradas() {
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
-		printf(ANSI_COLOR_BOLDWHITE"Num. Entrada: %d - Clave: %s - Largo: %d\n"ANSI_COLOR_RESET, entrada->numero, entrada->clave, entrada->largo);
+		if (DEBUG) {
+			printf(ANSI_COLOR_BOLDWHITE"Num. Entrada: %d - Clave: %s - Largo: %d\n"ANSI_COLOR_RESET, entrada->numero, entrada->clave, entrada->largo);
+		}
 	}
 }
 
