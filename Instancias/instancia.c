@@ -308,20 +308,25 @@ void set(char* clave, char* valor){
 
 		//  HAY QUE VER SI EL NUEVO VALOR OCUPA MENOS O MAS QUE EL NUEVO
 		if (espaciosNecesarios > espaciosNecesariosValorViejo) {		// SI OCUPA MAS QUE EL ESPACIO VIEJO...
+			limpiarValores(entrada);		// PRIMERO LIMPIO LOS VALORES QUE TENIA ASIGNADOS EN EL STORAGE
 
 			if ( (posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {		// SI HAY ESPACIOS CONTIGUOS...
-				limpiarValores(entrada);		// PRIMERO LIMPIO LOS VALORES QUE TENIA ASIGNADOS EN EL STORAGE
-
 				asignarAEntrada(entrada, valor, espaciosNecesarios);
 				entrada->numero = posicion;
 
 				copiarValorAlStorage(entrada, valor, posicion);		// BAJO AL STORAGE EL VALOR
 
+			} else if(hayEspaciosNoContiguosPara(espaciosNecesarios)) {
+				compactar();
+
+				posicion = hayEspaciosContiguosPara(espaciosNecesarios);
+				asignarAEntrada(entrada, valor, espaciosNecesarios);
+				entrada->numero = posicion;
+
+				copiarValorAlStorage(entrada, valor, posicion);		// BAJO AL STORAGE EL VALOR
 			} else {
 				// UTILIZAR ALGORITMO DE REEMPLAZO
 				if ((posicion = reemplazarSegunAlgoritmo(espaciosNecesarios)) >= 0) {
-					limpiarValores(entrada);		// PRIMERO LIMPIO LOS VALORES QUE TENIA ASIGNADOS EN EL STORAGE
-
 					asignarAEntrada(entrada, valor, espaciosNecesarios);
 					entrada->numero = posicion;
 
@@ -364,6 +369,14 @@ void set(char* clave, char* valor){
 			entrada->numero = posicion;
 
 			copiarValorAlStorage(entrada, valor, posicion);
+		}  else if(hayEspaciosNoContiguosPara(espaciosNecesarios)) {
+			compactar();
+
+			posicion = hayEspaciosContiguosPara(espaciosNecesarios);
+			asignarAEntrada(entrada, valor, espaciosNecesarios);
+			entrada->numero = posicion;
+
+			copiarValorAlStorage(entrada, valor, posicion);		// BAJO AL STORAGE EL VALOR
 		} else {
 			// REEMPLAZAR SEGUN ALGORITMO
 			if ((posicion = reemplazarSegunAlgoritmo(espaciosNecesarios)) >= 0) {
