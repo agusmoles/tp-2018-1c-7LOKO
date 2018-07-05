@@ -385,6 +385,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	// ESTO DEBERIA LIBERAR LOS ESPACIOS ATOMICOS CORRESPONDIENTES, COMPACTAR, VERIFICAR SI YA ENTRA Y DEVOLVER EL ESPACIO DONDE IRIA --> LOOP
 	int posicion = -1;
 	int posicionEntrada;
+
 	do {
 		if (strcmp(ALGORITMOREEMPLAZO, "CIRC") == 0) {
 			if (DEBUG) {
@@ -399,7 +400,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 
 					printf(ANSI_COLOR_BOLDMAGENTA"VALOR DE ENTRADA %d BORRADO: %s\n"ANSI_COLOR_RESET, entradaSeleccionada->numero, storage);
 
-//					store(entradaSeleccionada->clave);
+					store(entradaSeleccionada->clave);
 
 					free(entradaSeleccionada->clave);			// LIBERO LA CLAVE DE LA ENTRADA
 
@@ -426,9 +427,9 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 
 	} while(hayEspaciosNoContiguosPara(espaciosNecesarios) == 0);			// MIENTRAS QUE NO HAYA ESPACIOS (NO) CONTIGUOS, QUE SIGA LIBERANDO
 
-	if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {
+	if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {	// SI YA ESTABAN CONTIGUOS, ENTONCES DEVUELVO
 		return posicion;
-	} else {
+	} else {																// SINO, PRIMERO COMPACTO, ASIGNO Y DEVUELVO
 		compactar();
 		posicion = hayEspaciosContiguosPara(espaciosNecesarios);
 	}
@@ -444,9 +445,6 @@ int hayEspaciosNoContiguosPara(int espaciosNecesarios) {
 
 		if(storage[0] == '\0') {
 			contador++;
-			if(DEBUG) {
-				printf(ANSI_COLOR_BOLDWHITE"STORAGE %d VACIO: %s - Contador %d\n"ANSI_COLOR_RESET, i, storage, contador);
-			}
 		}
 
 		if (contador == espaciosNecesarios) {
@@ -464,9 +462,6 @@ int hayEspaciosContiguosPara(int espaciosNecesarios) {
 		storage = buscarEnStorage(i);
 		if (storage[0] == '\0') {		// SI ESA POSICION ESTA VACIO
 			contador++;
-			if(DEBUG) {
-				printf(ANSI_COLOR_BOLDWHITE"STORAGE %d VACIO: %s - Contador %d\n"ANSI_COLOR_RESET, i, storage, contador);
-			}
 		} else {
 			contador = 0;
 		}
