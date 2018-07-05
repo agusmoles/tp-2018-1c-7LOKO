@@ -31,7 +31,7 @@ int INTERVALODUMP;
 int TAMANIOENTRADA;
 int CANTIDADENTRADAS;
 int IDENTIFICADORINSTANCIA;
-int ENTRADAAPUNTADA;
+int STORAGEAPUNTADO;
 
 sem_t mutexTablaDeEntradas;
 
@@ -66,6 +66,7 @@ void recibirInstruccion(int socket);
 int entradasLibres();
 void set(char* clave, char* valor);
 int reemplazarSegunAlgoritmo(int espaciosNecesarios);
+int hayEspaciosNoContiguosPara(int espaciosNecesarios);
 int hayEspaciosContiguosPara(int espaciosNecesarios);
 void asignarAEntrada(entrada_t* entrada, char* valor, int largo);
 void copiarValorAlStorage(entrada_t* entrada, char* valor, int posicion);
@@ -76,6 +77,7 @@ void recibirTamanioValor(int socket, int32_t* tamanioValor);
 void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor);
 entrada_t* buscarEnTablaDeEntradas(char* clave);
 char* buscarEnStorage(int entrada);
+entrada_t* buscarEntrada(int numeroDeStorage, int* posicion);
 void enviarTamanioValor(int socket, int* tamanioValor);
 void enviarValor(int socket, int tamanioValor, char* valor);
 void dump();

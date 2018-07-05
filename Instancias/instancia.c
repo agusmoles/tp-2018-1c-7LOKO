@@ -28,7 +28,7 @@ void setearConfigEnVariables() {
 	CANTIDADENTRADAS  = config_get_int_value(config, "Cantidad de Entradas");
 	IDENTIFICADORINSTANCIA = config_get_int_value(config, "ID de Instancia");
 	sem_init(&mutexTablaDeEntradas, 0, 1);				// INICIALIZO EL SEMAFORO DEL MUTEX DE LA TABLA DE ENTRADAS
-	ENTRADAAPUNTADA = 0;		// LA INICIALIZO
+	STORAGEAPUNTADO = 0;		// LA INICIALIZO
 
     storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
     inicializarStorage();
@@ -384,28 +384,35 @@ void set(char* clave, char* valor){
 int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	// ESTO DEBERIA LIBERAR LOS ESPACIOS ATOMICOS CORRESPONDIENTES, COMPACTAR, VERIFICAR SI YA ENTRA Y DEVOLVER EL ESPACIO DONDE IRIA --> LOOP
 	int posicion = -1;
+	int posicionEntrada;
 	do {
 		if (strcmp(ALGORITMOREEMPLAZO, "CIRC") == 0) {
 			if (DEBUG) {
-				printf(ANSI_COLOR_BOLDMAGENTA"ENTRADAAPUNTADA: %d\n"ANSI_COLOR_RESET, ENTRADAAPUNTADA);
+				printf(ANSI_COLOR_BOLDMAGENTA"STORAGEAPUNTADO: %d\n"ANSI_COLOR_RESET, STORAGEAPUNTADO);
 			}
-			entrada_t* entradaSeleccionada = list_get(tablaEntradas, ENTRADAAPUNTADA);
+
+			entrada_t* entradaSeleccionada = buscarEntrada(STORAGEAPUNTADO, &posicionEntrada);
 
 			if (entradaSeleccionada != NULL) {
 				if (entradaSeleccionada->largo == 1) {		// SI ES ATOMICA LA ENTRADA...
 					limpiarValores(entradaSeleccionada);
 
+					printf(ANSI_COLOR_BOLDMAGENTA"VALOR DE ENTRADA %d BORRADO: %s\n"ANSI_COLOR_RESET, entradaSeleccionada->numero, storage);
+
+//					store(entradaSeleccionada->clave);
+
 					free(entradaSeleccionada->clave);			// LIBERO LA CLAVE DE LA ENTRADA
-					list_remove(tablaEntradas, ENTRADAAPUNTADA);		// Y LA SACO DE LA LISTA
+
+					list_remove(tablaEntradas, posicionEntrada);		// Y LA SACO DE LA LISTA
 
 					free(entradaSeleccionada);
-				} else {
-					ENTRADAAPUNTADA++;		// PASO A LA OTRA ENTRADA PORQUE NO BORRE LA ANTERIOR
 				}
+			}
 
-				if (ENTRADAAPUNTADA >= list_size(tablaEntradas)) {		// SI ESTA EN LA ULT
-					ENTRADAAPUNTADA = 0;			// SE VUELVE AL PRINCIPIO
-				}
+			STORAGEAPUNTADO++;		// PASO A LA OTRA ENTRADA
+
+			if (STORAGEAPUNTADO == CANTIDADENTRADAS) {		// SI ESTA EN LA ULT
+				STORAGEAPUNTADO = 0;			// SE VUELVE AL PRINCIPIO
 			}
 		}
 
@@ -417,11 +424,37 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 
 		}
 
-		compactar();		// COMPACTO PORQUE CAPAZ HAY ESPACIOS PERO SEPARADOS
+	} while(hayEspaciosNoContiguosPara(espaciosNecesarios) == 0);			// MIENTRAS QUE NO HAYA ESPACIOS (NO) CONTIGUOS, QUE SIGA LIBERANDO
 
-	} while((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) < 0);			// MIENTRAS QUE NO HAYA ESPACIOS CONTIGUOS, QUE SIGA LIBERANDO
+	if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {
+		return posicion;
+	} else {
+		compactar();
+		posicion = hayEspaciosContiguosPara(espaciosNecesarios);
+	}
 
 	return posicion;
+}
+
+int hayEspaciosNoContiguosPara(int espaciosNecesarios) {
+	int contador = 0;
+
+	for (int i=0; i<CANTIDADENTRADAS; i++) {
+		storage = buscarEnStorage(i);
+
+		if(storage[0] == '\0') {
+			contador++;
+			if(DEBUG) {
+				printf(ANSI_COLOR_BOLDWHITE"STORAGE %d VACIO: %s - Contador %d\n"ANSI_COLOR_RESET, i, storage, contador);
+			}
+		}
+
+		if (contador == espaciosNecesarios) {
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 int hayEspaciosContiguosPara(int espaciosNecesarios) {
@@ -529,6 +562,21 @@ char* buscarEnStorage(int numeroEntrada) {
 	return storageFijo + numeroEntrada * TAMANIOENTRADA;
 }
 
+entrada_t* buscarEntrada(int numeroDeStorage, int* posicion) {
+	entrada_t* entrada;
+
+	for (int i=0; i<list_size(tablaEntradas); i++) {
+		entrada = list_get(tablaEntradas, i);
+
+		if (numeroDeStorage == entrada->numero) {	// COMO ES ATOMICA, TIENE QUE SER LA MISMA
+			*posicion = i;
+			return entrada;
+		}
+	}
+
+	return NULL;
+}
+
 /* Recibir sentencia del coordinador*/
 void recibirClave(int socket, header_t* header, char* bufferClave){
 	if (recv(socket, bufferClave, header->tamanioClave, 0) < 0) {
@@ -595,26 +643,35 @@ void mostrarStorage(){
 
 void compactar(){
 	int j = 0;
-	char* storageAuxiliar = storage;
+	char* storageCompactadoFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA);
+	char* storageCompactado;
 	entrada_t* entrada;
+
+	for (int i=0; i<CANTIDADENTRADAS; i++) {
+		storageCompactado = storageCompactadoFijo + i * TAMANIOENTRADA;
+		strcpy(storageCompactado, "");
+	}
 
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
 		if (entrada->numero != j) {				// SI LA ENTRADA ESTA EN OTRA POSICION DE J (J VA RECORRIENDO EN ORDEN DE VACIOS), ENTONCES COPIO
-			storageAuxiliar = buscarEnStorage(entrada->numero);
-			storage = buscarEnStorage(j);
-			memcpy(storage, storageAuxiliar, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
+			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
+			storage = buscarEnStorage(entrada->numero);
+			memcpy(storageCompactado, storage, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
 
 			if (DEBUG) {
-				printf(ANSI_COLOR_BOLDWHITE"Movi ENTRADA %d a %d - Valor %s\n"ANSI_COLOR_RESET, entrada->numero, j + entrada->largo, storage);
+				printf(ANSI_COLOR_BOLDWHITE"Movi ENTRADA %d a %d - Valor %s\n"ANSI_COLOR_RESET, entrada->numero, j, storageCompactado);
 			}
 
-			entrada->numero = j + entrada->largo;
+			entrada->numero = j;
 		}
 
-		j += entrada->largo;		// SI LA ENTRADA YA ESTABA EN LA POSICION DE J, ENTONCES MUEVO J
+		j += entrada->largo;		// MUEVO J
 	}
+
+	free(storageFijo);
+	storageFijo = storageCompactadoFijo;
 
 }
 
