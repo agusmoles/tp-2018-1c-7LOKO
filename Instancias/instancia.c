@@ -417,7 +417,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 
 		}
 
-//		compactar();		// COMPACTO PORQUE CAPAZ HAY ESPACIOS PERO SEPARADOS
+		compactar();		// COMPACTO PORQUE CAPAZ HAY ESPACIOS PERO SEPARADOS
 
 	} while((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) < 0);			// MIENTRAS QUE NO HAYA ESPACIOS CONTIGUOS, QUE SIGA LIBERANDO
 
@@ -594,53 +594,28 @@ void mostrarStorage(){
 }
 
 void compactar(){
-	char* storageCompactado;
-	char* storageCompactadoFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA);
 	int j = 0;
+	char* storageAuxiliar = storage;
 	entrada_t* entrada;
-
-	for (int h=0; h<CANTIDADENTRADAS; h++) {
-		storageCompactado = storageCompactadoFijo + h * TAMANIOENTRADA;;
-		strcpy(storageCompactado, "");
-	}
-
-	storageCompactado = storageCompactadoFijo;
 
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
 		if (entrada->numero != j) {				// SI LA ENTRADA ESTA EN OTRA POSICION DE J (J VA RECORRIENDO EN ORDEN DE VACIOS), ENTONCES COPIO
-			for (int h=0; h<entrada->largo; h++) {				// RECORRO CADA VALOR DE LA ENTRADA Y LO MUEVO
-				storage = buscarEnStorage(entrada->numero + h);
-				storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
-				strcpy(storageCompactado, storage);
-				j++;
+			storageAuxiliar = buscarEnStorage(entrada->numero);
+			storage = buscarEnStorage(j);
+			memcpy(storage, storageAuxiliar, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
+
+			if (DEBUG) {
+				printf(ANSI_COLOR_BOLDWHITE"Movi ENTRADA %d a %d - Valor %s\n"ANSI_COLOR_RESET, entrada->numero, j + entrada->largo, storage);
 			}
-			entrada->numero += j;
-		} else {
-			j += entrada->largo;		// SI LA ENTRADA YA ESTABA EN LA POSICION DE J, ENTONCES MUEVO J
+
+			entrada->numero = j + entrada->largo;
 		}
+
+		j += entrada->largo;		// SI LA ENTRADA YA ESTABA EN LA POSICION DE J, ENTONCES MUEVO J
 	}
 
-//	for(int i=0; i< CANTIDADENTRADAS; i++){
-//		storage = buscarEnStorage(i);
-//		if(strcmp(storage, "") != 0){
-//
-//			/* Faltaria actualizar tabla de entradas para que sea consistente*/
-//
-//			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
-//			strcpy(storageCompactado, storage);
-//			j++;
-//		}
-//	}
-
-	if(j > 0){
-		free(storageFijo);
-		storageFijo = storageCompactadoFijo;
-		storage = storageFijo;
-	} else{
-		free(storageCompactadoFijo);
-	}
 }
 
 
