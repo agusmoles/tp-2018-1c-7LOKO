@@ -233,7 +233,8 @@ void recibirInstruccion(int socket){
 		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL && (valor = buscarEnStorage(entrada->numero)) != NULL){
 				*tamanioValorStatus = entrada->tamanio_valor;
 				valorStatus = malloc(*tamanioValorStatus);
-				strcpy(valorStatus, valor);
+				memcpy(valorStatus, valor, entrada->tamanio_valor-1);		// NO TIENE \0
+				valorStatus[entrada->tamanio_valor] = '\0';					// SE LO AGREGO
 
 				enviarTamanioValor(socket, tamanioValorStatus);
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el tamanio del valor al coordinador"ANSI_COLOR_RESET);
