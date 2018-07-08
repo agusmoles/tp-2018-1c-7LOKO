@@ -1,25 +1,23 @@
 GET primerplato:ingrediente1
-GET primerplato:ingrediente2
-GET primerplato:ingrediente3
-GET primerplato:ingrediente4
-GET primerplato:ingrediente5
 GET platoprincipal:ingrediente1
-GET platoprincipal:ingrediente2
-GET platoprincipal:ingrediente3
-GET platoprincipal:ingrediente4
-GET platoprincipal:ingrediente5
 GET segundoplato:ingrediente1
-GET segundoplato:ingrediente2
-GET segundoplato:ingrediente3
-GET segundoplato:ingrediente4
-GET segundoplato:ingrediente5
 GET postre:ingrediente1
+GET primerplato:ingrediente2
+GET platoprincipal:ingrediente2
+GET segundoplato:ingrediente2
 GET postre:ingrediente2
+GET primerplato:ingrediente3
+GET platoprincipal:ingrediente3
+GET segundoplato:ingrediente3
 GET postre:ingrediente3
+GET primerplato:ingrediente4
+GET platoprincipal:ingrediente4
+GET segundoplato:ingrediente4
 GET postre:ingrediente4
+GET primerplato:ingrediente5
+GET platoprincipal:ingrediente5
+GET segundoplato:ingrediente5
 GET postre:ingrediente5
-GET bebida1
-GET bebida2
 SET primerplato:ingrediente1 jamon
 SET primerplato:ingrediente2 queso
 SET primerplato:ingrediente3 harina

@@ -1,0 +1,6 @@
+GET principal1
+GET principal2
+SET principal1 lester
+SET principal2 malvo
+STORE principal1
+STORE principal2

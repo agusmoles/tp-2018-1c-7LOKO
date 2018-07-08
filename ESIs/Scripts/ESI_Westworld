@@ -1,0 +1,17 @@
+GET principal1
+GET principal2
+SET principal1 dolores
+SET principal1 teddy
+SET principal2 maeve
+GET principal3
+STORE principal1
+SET principal3 bernard
+STORE principal2
+GET principal4
+SET principal4 man-in-black
+GET principal1
+SET principal1 ford
+STORE principal4
+SET principal2 billy
+STORE principal3
+STORE principal4

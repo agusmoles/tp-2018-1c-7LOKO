@@ -1,0 +1,26 @@
+GET opcion1
+GET opcion2
+GET opcion3
+GET opcion4
+GET opcion5
+GET opcion6
+GET opcion7
+GET opcion8
+GET opcion9
+GET opcion10
+SET opcion1 docenadecarnealcuchillo
+SET opcion2 dosdocenasdecarnesuave
+SET opcion3 cuatrodocenasdehumita
+SET opcion4 tresempanadas
+SET opcion5 dosdocenasdecantimpalo
+SET opcion6 tresdocenasderoquefort
+SET opcion7 cuatrodocenasdejamonyqueso
+SET opcion1 docenadecarne
+SET opcion2 unadocenadecarne
+SET opcion3 unadocenadehumita
+SET opcion5 seisdecantimpalo
+SET opcion6 cuatroderoquefort
+SET opcion7 cuatrodejamonyqueso
+SET opcion8 sietedeprovolone
+SET opcion9 ochodeespinaca
+SET opcion10 tresdequesoycebolla

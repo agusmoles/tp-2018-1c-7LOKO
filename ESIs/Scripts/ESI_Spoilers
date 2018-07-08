@@ -1,0 +1,17 @@
+GET spoiler1
+GET spoiler2
+SET spoiler1 era-el-padre-de-luke
+SET spoler2 tambien-esta-muerto
+STORE spoiler1
+GET spoiler3
+SET spoiler1 y-de-leia
+SET spoiler1 de-chewie-no
+SET spoiler1 era-el-padre-de-luke
+SET spoiler1 y-de-leia
+SET spoiler1 era-el-padre-de-luke
+SET spoiler1 y-de-leia
+SET spoiler1 era-el-padre-de-luke
+STORE spoiler2
+SET spoiler3 es-keyzer-soze
+SET spoiler3 son-la-misma-persona
+STORE spoiler3

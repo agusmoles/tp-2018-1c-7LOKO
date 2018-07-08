@@ -1,0 +1,34 @@
+GET sony:consola:ps1
+GET sony:consola:ps2
+GET sony:consola:ps3
+GET sony:consola:ps4
+GET microsoft:consola:xbox
+GET microsoft:consola:xbox360
+GET microsoft:consola:xboxone
+GET nintendo:consola:nes
+GET nintendo:consola:snes
+GET nintendo:consola:nintendo64
+GET nintendo:consola:gamecube
+GET nintendo:consola:wii
+GET nintendo:consola:wiiu
+GET nintendo:consola:switch
+SET nintendo:consola:nes Mario
+SET nintendo:consola:snes SuperMario
+SET nintendo:consola:nintendo64 Mario64
+SET nintendo:consola:gamecube FinalFantasyTactics
+SET nintendo:consola:wii MarioGalaxy
+SET nintendo:consola:wii MarioGalaxy2
+SET nintendo:consola:wiiu RIP
+SET nintendo:consola:nintendo64 MarioKart
+SET sony:consola:ps1 FF7
+SET nintendo:consola:nintendo64 PkmnSnap
+SET sony:consola:ps2 GodOfWar
+SET sony:consola:ps1 FF8
+SET sony:consola:ps3 TLOU
+SET sony:consola:ps2 GodOfWar2
+SET sony:consola:ps4 Bloodborne
+SET sony:consola:ps3 GodOfWar3
+SET microsoft:consola:xbox Halo
+SET microsoft:consola:xbox360 Halo
+SET microsoft:consola:xboxone Halo
+SET nintendo:consola:switch ZeldaBOTW

@@ -1,0 +1,90 @@
+GET sandwich:bondiola:simple
+GET sandwich:bondiola:jyq
+GET sandwich:bondiola:completo
+GET sandwich:lomo:simple
+GET sandwich:lomo:jyq
+GET sandwich:lomo:completo
+GET sandwich:vacio:simple
+GET sandwich:vacio:jyq
+GET sandwich:vacio:completo
+GET sandwich:choripan
+GET sandwich:morcipan
+GET parrilla:chinchulines
+GET parrilla:rinion
+GET parrilla:tiraasado
+GET parrilla:vacio
+GET parrilla:entrania
+GET parrilla:bifedelomo
+GET parrilla:matambre:simple
+GET parrilla:matambre:alapizza
+GET parrilla:ojodebife
+GET parrilla:molleja
+GET parrilla:pareja
+GET cocina:papasfritas
+GET cocina:batatasfritas
+GET cocina:tallarines
+GET cocina:ravioles
+GET cocina:nioquis
+GET cocina:suprema
+GET cocina:milanesa:carne
+GET cocina:milanesa:pollo
+SET sandwich:bondiola:simple panbondiola
+SET sandwich:bondiola:jyq panjamonquesobondiola
+SET sandwich:bondiola:completo panjamonquesolechugatomatebondiola
+SET sandwich:lomo:simple panlomo
+SET sandwich:lomo:jyq panjamonquesolomo
+SET sandwich:lomo:completo panjamonquesolechugatomatelomo
+SET sandwich:vacio:simple panvacio
+SET sandwich:vacio:jyq panjamonquesovacio
+SET sandwich:vacio:completo panjamonquesolechugatomatevacio
+SET sandwich:choripan panchorizo
+SET sandwich:morcipan panmorcilla
+SET parrilla:chinchulines chinchulineslimon
+SET parrilla:rinion rinionylimon
+SET parrilla:tiraasado porcionde3o4huesos
+SET parrilla:vacio vacioconfritas
+SET parrilla:entrania entraniaconfritas
+SET parrilla:bifedelomo bifeconfritas
+SET parrilla:matambre:simple matambrefritas
+SET parrilla:matambre:alapizza matambrejamonquesooregano
+SET parrilla:ojodebife ojodebifeconfritas
+SET parrilla:molleja mollejaconlimon
+SET parrilla:pareja chorizoymorcilla
+SET cocina:papasfritas papayaceite
+SET cocina:batatasfritas batatayaceite
+SET cocina:tallarines tallarinescontuco
+SET cocina:ravioles raviolesdejyqcontuco
+SET cocina:nioquis nioquisdepapacontuco
+SET cocina:suprema supremaalamaryland
+SET cocina:milanesa:carne milanesadecarneconfritas
+SET cocina:milanesa:pollo milanesadepolloconfritas
+STORE sandwich:bondiola:simple
+STORE sandwich:bondiola:jyq
+STORE sandwich:bondiola:completo
+STORE sandwich:lomo:simple
+STORE sandwich:lomo:jyq
+STORE sandwich:lomo:completo
+STORE sandwich:vacio:simple
+STORE sandwich:vacio:jyq
+STORE sandwich:vacio:completo
+STORE sandwich:choripan
+STORE sandwich:morcipan
+STORE parrilla:chinchulines
+STORE parrilla:rinion
+STORE parrilla:tiraasado
+STORE parrilla:vacio
+STORE parrilla:entrania
+STORE parrilla:bifedelomo
+STORE parrilla:matambre:simple
+STORE parrilla:matambre:alapizza
+STORE parrilla:ojodebife
+STORE parrilla:molleja
+STORE parrilla:pareja
+STORE cocina:papasfritas
+STORE cocina:batatasfritas
+STORE cocina:tallarines
+STORE cocina:ravioles
+STORE cocina:nioquis
+STORE cocina:suprema
+STORE cocina:milanesa:carne
+STORE cocina:milanesa:pollo
