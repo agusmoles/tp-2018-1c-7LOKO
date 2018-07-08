@@ -437,7 +437,17 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 		}
 
 		if (strcmp(ALGORITMOREEMPLAZO, "BSU") == 0) {
+			entradaSeleccionada = buscarEntradaAtomicaMasGrande(&posicionEntrada);
 
+			limpiarValores(entradaSeleccionada);
+
+//			store(entradaSeleccionada->clave);	// NO SE SI HAY QUE HACERLO
+
+			free(entradaSeleccionada->clave);			// LIBERO LA CLAVE DE LA ENTRADA
+
+			list_remove(tablaEntradas, posicionEntrada);		// Y LA SACO DE LA LISTA
+
+			free(entradaSeleccionada);
 		}
 
 		if (strcmp(ALGORITMOREEMPLAZO, "LRU") == 0) {
@@ -466,6 +476,26 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	return posicion;
 }
 
+entrada_t* buscarEntradaAtomicaMasGrande(int* posicion) {
+	entrada_t* entrada;
+	entrada_t* entradaMasGrande;
+	int maximo = -1;
+
+	for (int i=0; i<list_size(tablaEntradas); i++) {
+		entrada = list_get(tablaEntradas, i);
+
+		if (entrada->largo == 1) {
+			if (entrada->tamanio_valor > maximo) {
+				entradaMasGrande = entrada;
+				maximo = entrada->tamanio_valor;
+				*posicion = i;
+			}
+		}
+	}
+
+	return entradaMasGrande;
+}
+
 entrada_t* buscarEntradaMenosReferenciada(int* posicion) {
 	entrada_t* entrada;
 	entrada_t* entradaMenosReferenciada;
@@ -473,8 +503,6 @@ entrada_t* buscarEntradaMenosReferenciada(int* posicion) {
 
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
-
-		printf(ANSI_COLOR_BOLDWHITE"Entrada %d - Cantidad No Referencias: %d\n"ANSI_COLOR_RESET, entrada->numero, entrada->cantidadDeNoReferencias);
 
 		if (entrada->largo == 1) {				// TIENE QUE SER ATOMICA
 			if (entrada->cantidadDeNoReferencias > maximo) {	// SI HACE MAS QUE NO SE REFERENCIO QUE EL MAXIMO...
