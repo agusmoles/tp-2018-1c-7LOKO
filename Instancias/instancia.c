@@ -297,12 +297,15 @@ void set(char* clave, char* valor){
 	char* valorViejo;
 	int posicion = -2; 			// LA INICIALIZO NEGATIVA PARA NOTAR ERROR EN LOS LOGS
 
+	list_iterate(tablaEntradas, (void*) sumarUnoALasNoReferencias);		// LE SUMO UNO A LA CANTIDAD DE NO REFERENCIAS A TODAS LAS ENTRADAS (LA QUE HIZO EL SET, TRES LINEAS ABAJO SE SETEA EN 0)
+
 	int espaciosNecesarios = ceil((double) (strlen(valor)) / (double) TAMANIOENTRADA);		// DEVUELVE REDONDEADO PARA ARRIBA
 
 	log_info(logger, ANSI_COLOR_BOLDWHITE"ESPACIOS NECESARIOS PARA EL VALOR: %d"ANSI_COLOR_RESET, espaciosNecesarios);
 
 	if ((entrada = buscarEnTablaDeEntradas(clave)) != NULL) {		// YA EXISTE UNA ENTRADA CON LA MISMA CLAVE, ENTONCES DEBO MODIFICAR EL STORAGE
 		valorViejo = buscarEnStorage(entrada->numero);
+		entrada->cantidadDeNoReferencias = 0;
 
 		int espaciosNecesariosValorViejo = ceil((double) (strlen(valorViejo)) / (double) TAMANIOENTRADA);
 
@@ -361,6 +364,7 @@ void set(char* clave, char* valor){
 		asignarAEntrada(entrada, valor, espaciosNecesarios);
 		entrada->clave = malloc(strlen(clave) + 1);
 		strcpy(entrada->clave, clave);
+		entrada->cantidadDeNoReferencias = 0;
 
 		/*************** FINALIZO LO DE LA ENTRADA **************************/
 
@@ -398,6 +402,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	// ESTO DEBERIA LIBERAR LOS ESPACIOS ATOMICOS CORRESPONDIENTES, COMPACTAR, VERIFICAR SI YA ENTRA Y DEVOLVER EL ESPACIO DONDE IRIA --> LOOP
 	int posicion = -1;
 	int posicionEntrada;
+	entrada_t* entradaSeleccionada;
 
 	do {
 		if (strcmp(ALGORITMOREEMPLAZO, "CIRC") == 0) {
@@ -405,7 +410,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 				printf(ANSI_COLOR_BOLDMAGENTA"STORAGEAPUNTADO: %d\n"ANSI_COLOR_RESET, STORAGEAPUNTADO);
 			}
 
-			entrada_t* entradaSeleccionada = buscarEntrada(STORAGEAPUNTADO, &posicionEntrada);
+			entradaSeleccionada = buscarEntrada(STORAGEAPUNTADO, &posicionEntrada);
 
 			if (entradaSeleccionada != NULL) {
 				if (entradaSeleccionada->largo == 1) {		// SI ES ATOMICA LA ENTRADA...
@@ -435,7 +440,17 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 		}
 
 		if (strcmp(ALGORITMOREEMPLAZO, "LRU") == 0) {
+			entradaSeleccionada = buscarEntradaMenosReferenciada(&posicionEntrada);
 
+			limpiarValores(entradaSeleccionada);
+
+			store(entradaSeleccionada->clave);
+
+			free(entradaSeleccionada->clave);			// LIBERO LA CLAVE DE LA ENTRADA
+
+			list_remove(tablaEntradas, posicionEntrada);		// Y LA SACO DE LA LISTA
+
+			free(entradaSeleccionada);
 		}
 
 	} while(hayEspaciosNoContiguosPara(espaciosNecesarios) == 0);			// MIENTRAS QUE NO HAYA ESPACIOS (NO) CONTIGUOS, QUE SIGA LIBERANDO
@@ -448,6 +463,30 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	}
 
 	return posicion;
+}
+
+entrada_t* buscarEntradaMenosReferenciada(int* posicion) {
+	entrada_t* entrada;
+	entrada_t* entradaMenosReferenciada;
+	int maximo = -1;
+
+	for (int i=0; i<list_size(tablaEntradas); i++) {
+		entrada = list_get(tablaEntradas, i);
+
+		if (entrada->largo == 1) {				// TIENE QUE SER ATOMICA
+			if (entrada->cantidadDeNoReferencias > maximo) {	// SI HACE MAS QUE NO SE REFERENCIO QUE EL MAXIMO...
+				entradaMenosReferenciada = entrada;				// ASIGNO
+				maximo = entrada->cantidadDeNoReferencias;
+				*posicion = i;
+			}
+		}
+	}
+
+	return entradaMenosReferenciada;
+}
+
+void sumarUnoALasNoReferencias(entrada_t* entrada) {
+	entrada->cantidadDeNoReferencias++;
 }
 
 int hayEspaciosNoContiguosPara(int espaciosNecesarios) {
@@ -519,7 +558,11 @@ void store(char* clave){
 
 	strcat(directorioMontaje, clave);		// DIRECTORIO DE MONTAJE TIENE LA DIRECCION COMPLETA DONDE SE VA A GUARDAR EL VALOR
 
+	list_iterate(tablaEntradas, (void*) sumarUnoALasNoReferencias);		// LE SUMO UNO A LA CANTIDAD DE NO REFERENCIAS A TODAS LAS ENTRADAS (LA QUE HIZO EL SET, TRES LINEAS ABAJO SE SETEA EN 0)
+
 	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
+
+	entrada->cantidadDeNoReferencias = 0;
 
 	for (int i=0; i<entrada->largo; i++) {			// ENTRADA LARGO ES EL NUM DE ESPACIOS QUE OCUPA EL VALOR
 		storage = buscarEnStorage(entrada->numero + i);

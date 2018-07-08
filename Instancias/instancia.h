@@ -46,6 +46,7 @@ typedef struct Entrada{
 	int numero;
 	int tamanio_valor;
 	int largo;
+	int cantidadDeNoReferencias;
 }entrada_t ;
 
 char* storageFijo;
