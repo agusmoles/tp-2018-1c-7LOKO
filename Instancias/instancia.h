@@ -32,6 +32,7 @@ int TAMANIOENTRADA;
 int CANTIDADENTRADAS;
 int IDENTIFICADORINSTANCIA;
 int STORAGEAPUNTADO;
+int DUMP;
 
 sem_t mutexTablaDeEntradas;
 
@@ -67,6 +68,8 @@ void recibirInstruccion(int socket);
 int entradasLibres();
 void set(char* clave, char* valor);
 int reemplazarSegunAlgoritmo(int espaciosNecesarios);
+entrada_t* buscarEntradaMenosReferenciada(int* posicion);
+void sumarUnoALasNoReferencias(entrada_t* entrada);
 int hayEspaciosNoContiguosPara(int espaciosNecesarios);
 int hayEspaciosContiguosPara(int espaciosNecesarios);
 void asignarAEntrada(entrada_t* entrada, char* valor, int largo);

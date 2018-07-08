@@ -29,6 +29,7 @@ void setearConfigEnVariables() {
 	IDENTIFICADORINSTANCIA = config_get_int_value(config, "ID de Instancia");
 	sem_init(&mutexTablaDeEntradas, 0, 1);				// INICIALIZO EL SEMAFORO DEL MUTEX DE LA TABLA DE ENTRADAS
 	STORAGEAPUNTADO = 0;		// LA INICIALIZO
+	DUMP = 0;		// INICIALIZO QUE EL DUMP NO ESTA EN CURSO
 
     storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
     inicializarStorage();
@@ -418,7 +419,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 
 					printf(ANSI_COLOR_BOLDMAGENTA"VALOR DE ENTRADA %d BORRADO: %s\n"ANSI_COLOR_RESET, entradaSeleccionada->numero, storage);
 
-					store(entradaSeleccionada->clave);
+//					store(entradaSeleccionada->clave);
 
 					free(entradaSeleccionada->clave);			// LIBERO LA CLAVE DE LA ENTRADA
 
@@ -444,7 +445,7 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 
 			limpiarValores(entradaSeleccionada);
 
-			store(entradaSeleccionada->clave);
+//			store(entradaSeleccionada->clave);	// NO SE SI HAY QUE HACERLO
 
 			free(entradaSeleccionada->clave);			// LIBERO LA CLAVE DE LA ENTRADA
 
@@ -473,6 +474,8 @@ entrada_t* buscarEntradaMenosReferenciada(int* posicion) {
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
+		printf(ANSI_COLOR_BOLDWHITE"Entrada %d - Cantidad No Referencias: %d\n"ANSI_COLOR_RESET, entrada->numero, entrada->cantidadDeNoReferencias);
+
 		if (entrada->largo == 1) {				// TIENE QUE SER ATOMICA
 			if (entrada->cantidadDeNoReferencias > maximo) {	// SI HACE MAS QUE NO SE REFERENCIO QUE EL MAXIMO...
 				entradaMenosReferenciada = entrada;				// ASIGNO
@@ -486,7 +489,7 @@ entrada_t* buscarEntradaMenosReferenciada(int* posicion) {
 }
 
 void sumarUnoALasNoReferencias(entrada_t* entrada) {
-	entrada->cantidadDeNoReferencias++;
+	entrada->cantidadDeNoReferencias += 1;
 }
 
 int hayEspaciosNoContiguosPara(int espaciosNecesarios) {
@@ -558,12 +561,12 @@ void store(char* clave){
 
 	strcat(directorioMontaje, clave);		// DIRECTORIO DE MONTAJE TIENE LA DIRECCION COMPLETA DONDE SE VA A GUARDAR EL VALOR
 
-	list_iterate(tablaEntradas, (void*) sumarUnoALasNoReferencias);		// LE SUMO UNO A LA CANTIDAD DE NO REFERENCIAS A TODAS LAS ENTRADAS (LA QUE HIZO EL SET, TRES LINEAS ABAJO SE SETEA EN 0)
-
 	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
 
-	entrada->cantidadDeNoReferencias = 0;
-
+	if (!DUMP) {
+		list_iterate(tablaEntradas, (void*) sumarUnoALasNoReferencias);		// LE SUMO UNO A LA CANTIDAD DE NO REFERENCIAS A TODAS LAS ENTRADAS (LA QUE HIZO EL SET ABAJO SE SETEA EN 0)
+		entrada->cantidadDeNoReferencias = 0;
+	}
 	for (int i=0; i<entrada->largo; i++) {			// ENTRADA LARGO ES EL NUM DE ESPACIOS QUE OCUPA EL VALOR
 		storage = buscarEnStorage(entrada->numero + i);
 		string_append(&valor, storage); 		// CONCATENO EL STRING USANDO TODOS LOS ESPACIOS DEL STORAGE
@@ -661,6 +664,7 @@ void dump() {
 
 		mostrarTablaDeEntradas();
 
+		DUMP = 1;
 		for (int i=0; i<list_size(tablaEntradas); i++) {
 			sem_wait(&mutexTablaDeEntradas);
 			entrada = list_get(tablaEntradas, i);
@@ -668,6 +672,7 @@ void dump() {
 
 			store(entrada->clave);
 		}
+		DUMP = 0;
 
 		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************");
 	}
