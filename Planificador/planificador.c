@@ -396,12 +396,14 @@ void bloquearESI(char* clave, int* IDESI) {
 	sem_post(&mutexBloqueados);
 
 	if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) {	// SI ES SJF, SETEO VARIABLES DEL ESI EJECUTANDO
+		ESI->rafagaActual++;			// CREO QUE AUNQUE SE HAYA BLOQUEADO CUENTA COMO UNA RAFAGA, ENTONCES ANTES DE SETEAR LAS VARIABLES LE SUMO UNO
 		ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
 		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
 		ESI->rafagaActual = 0; 	// LO SETEO EN 0 PORQUE FUE "DESALOJADO" PORQUE SE BLOQUEO
 	}
 
 	if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
+		ESI->rafagaActual++;			// CREO QUE AUNQUE SE HAYA BLOQUEADO CUENTA COMO UNA RAFAGA, ENTONCES ANTES DE SETEAR LAS VARIABLES LE SUMO UNO
 		ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
 		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
 		ESI->tiempoDeEspera = 0;
