@@ -404,11 +404,20 @@ void bloquearESI(char* clave, int* IDESI) {
 		ESI->rafagaActual++;			// CREO QUE AUNQUE SE HAYA BLOQUEADO CUENTA COMO UNA RAFAGA, ENTONCES ANTES DE SETEAR LAS VARIABLES LE SUMO UNO
 		ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
 		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
-		ESI->tiempoDeEspera = 0;
+		ESI->tasaDeRespuesta = (ESI->tiempoDeEspera + ESI->estimacionProximaRafaga) / ESI->estimacionProximaRafaga;
 
 		sem_wait(&mutexListos);
 		list_iterate(listos, (void *) sumarUnoAlWaitingTime);
 		sem_post(&mutexListos);
+
+		ESI->tiempoDeEspera = 0;
+	}
+
+	if(DEBUG) {
+		if (strncmp(algoritmoPlanificacion, "SJF", 3) == 0)
+		printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->estimacionRafagaActual);
+		if (strcmp(algoritmoPlanificacion, "HRRN") == 0)
+		printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Waiting Time: %d - RR: %f\n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->tiempoDeEspera, ESI->tasaDeRespuesta);
 	}
 
 	if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
@@ -636,7 +645,6 @@ void recibirMensaje(cliente* ESI) {
 					}
 
 					if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
-						ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
 						ESI->tiempoDeEspera = 0; 	// LO REINICIO CADA VEZ QUE DEVUELVE OPOK (DEBERIA SER SOLO UNA VEZ CUANDO ENTRA A EJECUTAR PERO BUE)
 
 						sem_wait(&mutexListos);
@@ -685,6 +693,8 @@ void recibirMensaje(cliente* ESI) {
 				}
 
 				if (strcmp(buffer, "EXEEND") == 0) {
+					ESI->rafagaActual++;
+
 					sem_wait(&mutexEjecutando);
 					list_remove(ejecutando, 0);
 					sem_post(&mutexEjecutando);
@@ -707,6 +717,17 @@ void recibirMensaje(cliente* ESI) {
 
 					/*************************************************************************************/
 
+					if(DEBUG) {
+						if (strncmp(algoritmoPlanificacion, "SJF", 3) == 0) {
+							ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
+							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->estimacionRafagaActual);
+						}
+						if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
+							ESI->tasaDeRespuesta = (ESI->tiempoDeEspera + ESI->estimacionProximaRafaga) / ESI->estimacionProximaRafaga;
+							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Waiting Time: %d - RR: %f\n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->tiempoDeEspera, ESI->tasaDeRespuesta);
+						}
+					}
+
 					close(ESI->fd);
 					ESI->fd = -1;	// LO SETEO EN -1 PORQUE YA SE DESCONECTO
 
@@ -717,6 +738,7 @@ void recibirMensaje(cliente* ESI) {
 
 						else if (strcmp(algoritmoPlanificacion, "HRRN") == 0) { //SI ES HRRN
 							sem_wait(&mutexListos);
+							list_iterate(listos, (void *) sumarUnoAlWaitingTime);
 							list_iterate(listos, (void*) calcularResponseRatio);	// CALCULO LA TASA DE RESPUESTA DE TODOS LOS ESIS LISTOS
 							sem_post(&mutexListos);
 							ordenarColaDeListosPorHRRN();
@@ -977,7 +999,7 @@ int main(void) {
 		socketCliente[i].fd = -1;				//INICIALIZO EL ARRAY DE FDS EN -1 PORQUE 0,1 Y 2 YA ESTAN RESERVADOS
 		socketCliente[i].estimacionProximaRafaga = estimacionInicial;	//ESTIMACION INICIAL POR DEFAULT
 		socketCliente[i].rafagaActual = 0;
-		socketCliente[i].estimacionRafagaActual = 0;
+		socketCliente[i].estimacionRafagaActual = estimacionInicial;
 		socketCliente[i].tasaDeRespuesta = 0;
 		socketCliente[i].desalojoPorComandoBloquear = 0;
 		socketCliente[i].desalojoPorComandoKill = 0;

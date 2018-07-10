@@ -692,7 +692,7 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 void dump() {
 	entrada_t* entrada;
 	while (1) {
-		usleep(INTERVALODUMP);
+		sleep(INTERVALODUMP);
 
 		mostrarTablaDeEntradas();
 

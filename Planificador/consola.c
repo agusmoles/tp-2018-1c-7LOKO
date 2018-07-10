@@ -247,8 +247,8 @@ int com_desbloquear(char **args){
 		desbloquearESI(args[1]);
 
 		if (!hayEsisBloqueadosEsperandoPor(args[1])) {		// SI NO HAY MAS ESIS BLOQUEADOS POR LA CLAVE, LA LIBERO
-			int* IDESI = dictionary_remove(diccionarioClaves, args[1]);
-			free(IDESI);
+			/*int* IDESI = */dictionary_remove(diccionarioClaves, args[1]);
+//			free(IDESI);
 		}
 	} else {
 		log_info(loggerConsola, ANSI_COLOR_BOLDWHITE"La clave %s no se encontraba en el sistema\n"ANSI_COLOR_RESET, args[1]);
