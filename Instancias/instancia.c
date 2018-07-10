@@ -164,17 +164,20 @@ void levantarClaveDeDisco(char* clave) {
 	char* directorio = malloc(strlen(PUNTOMONTAJE) + strlen(clave) + 1);
 	char* valor;
 	size_t len = 0;
+	FILE* f;
 
 	strcpy(directorio, PUNTOMONTAJE);
 	strcat(directorio, clave);
 
-	FILE* f = fopen(directorio, "r");
-
-	getline(&valor, &len, f);		// COPIO EL VALOR
+	if ((f = fopen(directorio, "r"))) {
+		getline(&valor, &len, f);		// COPIO EL VALOR
+		fclose(f);
+	} else {
+		valor = malloc(strlen("def") + 1);
+		strcpy(valor, "def");
+	}
 
 	set(clave, valor);			// HAGO EL SET DE CADA CLAVE
-
-	fclose(f);
 }
 
 
