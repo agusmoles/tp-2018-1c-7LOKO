@@ -166,6 +166,10 @@ void recibirSentenciaESI(void* argumentos){
 				default: /* Si no hay errores */
 						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
 
+						sem_wait(&mutexEsiEjecutando);
+						idEsiEjecutando = args->socketCliente->identificadorESI;
+						sem_post(&mutexEsiEjecutando);
+
 						tratarSegunOperacion(buffer_header, args->socketCliente, args->socketPlanificador);
 
 						break;
@@ -768,10 +772,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 	int32_t * tamanioValor;
 	char* bufferValor;
 	header_t* headerAbortar;
-
-	sem_wait(&mutexEsiEjecutando);
-	idEsiEjecutando = socketESI->identificadorESI;
-	sem_post(&mutexEsiEjecutando);
 
 	usleep(RETARDO);
 
