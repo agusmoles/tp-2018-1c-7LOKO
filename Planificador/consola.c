@@ -76,7 +76,6 @@ int ejecutar_consola(){
 
 	if(linea[0] != '\0'){
 		if(!strncmp(linea, "exit", 4)) { //Si es 'exit' termina la consola
-		   free(linea);
 		   break;
 		}
 
