@@ -74,20 +74,19 @@ int ejecutar_consola(){
 
 	linea = readline(ANSI_COLOR_BOLDGREEN "ConsolaPlanificador> " ANSI_COLOR_RESET);
 
-	if(!strncmp(linea, "exit", 4)) { //Si es 'exit' termina la consola
-       free(linea);
-       break;
-    }
+	if(linea[0] != '\0'){
+		if(!strncmp(linea, "exit", 4)) { //Si es 'exit' termina la consola
+		   break;
+		}
 
-	if(linea){
 		add_history(linea);
 		args = string_split(linea, " "); //Separo por espacios => la posicion 0 es el comando
 		ejecutar_linea(args);
+		free(args);
 	}
-
-	free(args);
-    free(linea);
   }
+
+  free(linea);
 
   return EXIT_SUCCESS;
 }
