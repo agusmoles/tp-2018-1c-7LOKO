@@ -319,19 +319,21 @@ void recibirMensaje_Planificador(void* argumentos) {
 			sem_wait(&semaforo_planificador);
 
 			/* Buscar socket ESI */
+			sem_wait(&mutexEsiEjecutando);
 			socketESI = buscarSocketESI(idEsiEjecutando);
+			sem_post(&mutexEsiEjecutando);
 			int resultado = verificarClaveTomada(args->socketCliente.fd);
 
 			if(resultado == 0){
 				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - SET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
-				log_error(logOperaciones, "ESI %d: **Error: Clave no bloqueada**",args->socketCliente.identificadorESI);
+				log_error(logOperaciones, "ESI %d: **Error: Clave no bloqueada**", idEsiEjecutando);
 				enviarMensaje(socketESI, "OPBL");
 			} else if (resultado == 1){
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se pudo realizar el GET/SET/STORE correctamente"ANSI_COLOR_RESET);
 				enviarMensaje(socketESI, "OPOK");
 			} else if (resultado == -1){
 				log_info(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI"ANSI_COLOR_RESET);
-				log_error(logOperaciones, "ESI %d: **Se aborto el ESI**",args->socketCliente.identificadorESI);
+				log_error(logOperaciones, "ESI %d: **Se aborto el ESI**", idEsiEjecutando);
 				enviarMensaje(socketESI, "OPFL");
 			}
 

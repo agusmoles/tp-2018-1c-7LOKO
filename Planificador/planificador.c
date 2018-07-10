@@ -64,8 +64,6 @@ void setearConfigEnVariables() {
 
 		free(clavesSeparadas);
 	}
-
-	free(IDSistema);
 }
 
 void setearListaDeEstados() {
