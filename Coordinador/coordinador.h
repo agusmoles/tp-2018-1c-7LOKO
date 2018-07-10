@@ -60,6 +60,8 @@ sem_t semaforo_instancia;
 sem_t semaforo_planificadorOK;
 sem_t semaforo_instanciaOK;
 sem_t mutexEsiEjecutando;
+sem_t mutexVectorInstanciasConectadas;
+sem_t mutexOperacionEsi;
 
 int listenSocketStatus;
 
