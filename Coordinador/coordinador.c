@@ -873,6 +873,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				} else if (strcmp(ALGORITMODEDISTRIBUCION, "KE") == 0) {
 					instanciaEncargada = seleccionKeyExplicit(bufferClave[0]);
 				}
+				setearInstancia(bufferClave, instanciaEncargada);
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
 			//actualizarVectorInstanciasConectadas();
