@@ -4,7 +4,6 @@ cliente_t v_instanciasConectadas[NUMEROCLIENTES];
 instancia_t instanciasIDsUsados[NUMEROCLIENTES];
 int instanciaSiguiente = 0;
 int cantidadInstanciasConectadas = 0;
-//int identificadorInstancia = 0;
 int idEsiEjecutando = 0;
 int* tamanioValorStatus;
 char* valorStatus;
@@ -508,7 +507,9 @@ void actualizarVectorInstanciasConectadas(){
 	int h= 0;
 	for(int i=0; i< NUMEROCLIENTES; i++){
 		if(strcmp(socketCliente[i].nombre, "Instancia") == 0){
+			sem_wait(&mutexVectorInstanciasConectadas);
 			v_instanciasConectadas[h] = socketCliente[i];
+			sem_post(&mutexVectorInstanciasConectadas);
 			h++;
 		}
 	}
@@ -542,6 +543,8 @@ int seleccionLeastSpaceUsed(){
 
 	header->codigoOperacion = 5;
 	for(int i=0; i<cantidadInstanciasConectadas; i++){
+
+		sem_wait(&mutexVectorInstanciasConectadas);
 		enviarHeader(v_instanciasConectadas[i].fd, header);
 
 		if(recv(v_instanciasConectadas[i].fd, entradasLibres, sizeof(int), 0) < 0){
@@ -549,6 +552,7 @@ int seleccionLeastSpaceUsed(){
 		}
 
 		log_info(logger, "Entradas libres instancia %d: %d", v_instanciasConectadas[i].identificadorInstancia, *entradasLibres);
+		sem_post(&mutexVectorInstanciasConectadas);
 
 		entradasLibresPorInstancia[i] = *entradasLibres;
 	}
@@ -557,7 +561,10 @@ int seleccionLeastSpaceUsed(){
 	free(entradasLibres);
 
 	int maximo = entradasLibresPorInstancia[0];
+
+	sem_wait(&mutexVectorInstanciasConectadas);
 	int instanciaSeleccionada = v_instanciasConectadas[0].identificadorInstancia;
+	sem_post(&mutexVectorInstanciasConectadas);
 
 	/*Busco la que tenga mas entradas libres*/
 	for(int j=0; j<cantidadInstanciasConectadas; j++){
@@ -576,6 +583,9 @@ int seleccionKeyExplicit(char inicial){
 	int numeroInstancias = cantidadInstanciasConectadas;
 	int letrasUsadas;
 	actualizarVectorInstanciasConectadas();
+
+
+	sem_wait(&mutexVectorInstanciasConectadas);
 
 	/*Primero asigno letra a cada instancia */
 	v_instanciasConectadas[0].primeraLetra = 'a';
@@ -608,6 +618,8 @@ int seleccionKeyExplicit(char inicial){
 			return v_instanciasConectadas[h].identificadorInstancia;
 		}
 	}
+	sem_post(&mutexVectorInstanciasConectadas);
+
 	return -1;
 }
 
@@ -844,7 +856,10 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 				sem_wait(&semaforo_planificadorOK);
 
+				sem_wait(&mutexVectorInstanciasConectadas);
 				enviarSetInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
+				sem_post(&mutexVectorInstanciasConectadas);
+
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
 			}
 
@@ -904,7 +919,10 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 				sem_wait(&semaforo_planificadorOK);
 
+				sem_wait(&mutexVectorInstanciasConectadas);
 				enviarStoreInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
+				sem_post(&mutexVectorInstanciasConectadas);
+
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
 			}
 			break;
@@ -1134,6 +1152,7 @@ void eliminarClaveDeTabla(char* clave){
 	}
 }
 
+
 cliente_t* buscarESI(int* IDESI) {
 	for(int i=0; i<NUMEROCLIENTES; i++) {
 		if(socketCliente[i].identificadorESI == *IDESI) {
@@ -1142,6 +1161,7 @@ cliente_t* buscarESI(int* IDESI) {
 	}
 	return NULL;
 }
+
 
 int cantidadinstanciasIDsUsados(){
 	int cantidad = 0;
@@ -1154,6 +1174,7 @@ int cantidadinstanciasIDsUsados(){
 	return cantidad;
 }
 
+
 void desconectarInstancia(int idInstancia){
 	for(int i =0; i < NUMEROCLIENTES; i++){
 		if(instanciasIDsUsados[i].identificadorInstancia == idInstancia){
@@ -1161,6 +1182,7 @@ void desconectarInstancia(int idInstancia){
 		}
 	}
 }
+
 
 void agregarInstanciaAVectorIDs(int identificadorInstancia){
 	for(int i =0; i < NUMEROCLIENTES; i++){
@@ -1172,6 +1194,7 @@ void agregarInstanciaAVectorIDs(int identificadorInstancia){
 	}
 }
 
+
 void conectarInstancia(int idInstancia){
 	for(int i =0; i < NUMEROCLIENTES; i++){
 		if(instanciasIDsUsados[i].identificadorInstancia == idInstancia){
@@ -1179,6 +1202,7 @@ void conectarInstancia(int idInstancia){
 		}
 	}
 }
+
 
 int existeIdInstancia(int idInstancia){
 	for(int i =0; i < NUMEROCLIENTES; i++){
@@ -1189,6 +1213,7 @@ int existeIdInstancia(int idInstancia){
 	return -1;
 }
 
+
 int verificarInstanciaConectada(int idInstancia){
 	for(int i =0; i < NUMEROCLIENTES; i++){
 		if(instanciasIDsUsados[i].identificadorInstancia == idInstancia && instanciasIDsUsados[i].conectada == 1){
@@ -1197,6 +1222,7 @@ int verificarInstanciaConectada(int idInstancia){
 	}
 	return -1;
 }
+
 
 int main(void) {
 	struct sigaction finalizacion;
@@ -1238,6 +1264,7 @@ int main(void) {
 	sem_init(&semaforo_planificador, 0 , 0);
 	sem_init(&semaforo_planificadorOK, 0 , 0);
 	sem_init(&mutexEsiEjecutando, 0, 1);
+	sem_init(&mutexVectorInstanciasConectadas, 0, 1);
 	sem_init(&semaforo_instancia, 0, 0);
 	sem_init(&semaforo_instanciaOK, 0,0);
 
