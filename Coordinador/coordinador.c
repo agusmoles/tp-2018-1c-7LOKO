@@ -591,9 +591,6 @@ int seleccionKeyExplicit(char inicial){
 	int letrasUsadas;
 	actualizarVectorInstanciasConectadas();
 
-
-	sem_wait(&mutexVectorInstanciasConectadas);
-
 	/*Primero asigno letra a cada instancia */
 	v_instanciasConectadas[0].primeraLetra = 'a';
 
@@ -625,7 +622,6 @@ int seleccionKeyExplicit(char inicial){
 			return v_instanciasConectadas[h].identificadorInstancia;
 		}
 	}
-	sem_post(&mutexVectorInstanciasConectadas);
 
 	return -1;
 }
