@@ -164,6 +164,8 @@ void recibirSentenciaESI(void* argumentos){
 						break;
 
 				default: /* Si no hay errores */
+						sem_wait(&mutexOperacionEsi);
+
 						log_info(logger, ANSI_COLOR_BOLDWHITE"Header recibido. COD OP: %d - TAM: %d"ANSI_COLOR_RESET, buffer_header->codigoOperacion, buffer_header->tamanioClave);
 
 						sem_wait(&mutexEsiEjecutando);
@@ -171,6 +173,7 @@ void recibirSentenciaESI(void* argumentos){
 						sem_post(&mutexEsiEjecutando);
 
 						tratarSegunOperacion(buffer_header, args->socketCliente, args->socketPlanificador);
+						sem_post(&mutexOperacionEsi);
 
 						break;
 			}
@@ -1268,6 +1271,7 @@ int main(void) {
 	sem_init(&mutexVectorInstanciasConectadas, 0, 1);
 	sem_init(&semaforo_instancia, 0, 0);
 	sem_init(&semaforo_instanciaOK, 0,0);
+	sem_init(&mutexOperacionEsi, 0,1);
 
 	while(1) {
 		aceptarCliente(listenSocket, socketCliente);
