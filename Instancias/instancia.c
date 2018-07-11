@@ -821,7 +821,7 @@ void mostrarTablaDeEntradas() {
 void mostrarStorage(){
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
 			storage = buscarEnStorage(i);
-			log_info(logger, "Storage %d: %s", i, storage);
+			log_info(logger, "Storage %d: %.*s", i, TAMANIOENTRADA, storage);
 	}
 }
 
@@ -855,7 +855,7 @@ void compactar(){
 			}
 
 			entrada->numero = j;
-		} else {
+		} else {						// SI ES LA MISMA, LA COPIO DE NUEVO AL NUEVO STORAGE
 			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
 			storage = buscarEnStorage(entrada->numero);
 			strncpy(storageCompactado, storage, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
@@ -866,9 +866,6 @@ void compactar(){
 
 	free(storageFijo);
 	storageFijo = storageCompactadoFijo;
-
-	mostrarStorage();
-	mostrarTablaDeEntradas();
 
 	if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL COMPACTAR POR LEVANTAR DE DISCO...
 		if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {

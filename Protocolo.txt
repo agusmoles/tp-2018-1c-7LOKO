@@ -40,6 +40,7 @@ COD. OP
 7. Para indicar que todas las instancias deben compactar
 8. Para inidicar las entradas libres que tiene la instancia
 9. Para que la instancia le indique al coordinador que el SET/STORE salio bien
+10. Para que la instancia le indique al coordinador que el SET no se realizo por no haber espacio (incluyendo el reemplazo y demas)
 
 El Planificador, luego de recibir una sentencia por parte del Coordinador, le devuelve a éste un 0 si el ESI se bloqueo, un 1 si se ejecuto con normalidad o un -1 si se aborto.
 
