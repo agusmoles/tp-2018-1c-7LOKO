@@ -265,6 +265,7 @@ void recibirMensaje_Instancias(void* argumentos) {
 	int resultado_recv;
 	tamanioValorStatus = malloc(sizeof(int));
 	header_t* header = malloc(sizeof(header_t));
+	header_t* headerComp;
 
 	while(flag) {
 		FD_ZERO(&descriptoresLectura);
@@ -312,17 +313,21 @@ void recibirMensaje_Instancias(void* argumentos) {
 								break;
 
 							case 7:	// INSTANCIAS DEBEN COMPACTAR
-								header_t* header = malloc(sizeof(header_t));
+								headerComp = malloc(sizeof(header_t));
 
-								header->codigoOperacion = 7; // Para indicar que todas las instancias deben compactar
-								header->tamanioClave = -1;	// VALOR ABSURDO
+								headerComp->codigoOperacion = 7; // Para indicar que todas las instancias deben compactar
+								headerComp->tamanioClave = -1;	// VALOR ABSURDO
 
 								for(int i=0; i<cantidadInstanciasConectadas; i++){
-									enviarHeader(v_instanciasConectadas[i].fd, header);
+									if(v_instanciasConectadas[i].identificadorInstancia != args->socketCliente.identificadorInstancia){
+										enviarHeader(v_instanciasConectadas[i].fd, headerComp);
+									}
 								}
 
 								log_info(logOperaciones, "******Compactaron las instancias******");
 
+
+								free(headerComp);
 								break;
 
 							default:
