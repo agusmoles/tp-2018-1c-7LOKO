@@ -312,9 +312,8 @@ void recibirMensaje_Instancias(void* argumentos) {
 								break;
 
 							case 7:	// INSTANCIAS DEBEN COMPACTAR
-								header_t* header = malloc(sizeof(header_t));
 
-								header->codigoOperacion = 7; // Para indicar que todas las instancias deben compactar
+								header->codigoOperacion = 7; // Para indicar que las instancias deben compactar
 								header->tamanioClave = -1;	// VALOR ABSURDO
 
 								for(int i=0; i<cantidadInstanciasConectadas; i++){
@@ -336,6 +335,7 @@ void recibirMensaje_Instancias(void* argumentos) {
 			}
 		}
 	}
+	free(header);
 	pthread_exit(NULL);
 }
 
