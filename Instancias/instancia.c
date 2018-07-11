@@ -88,9 +88,7 @@ void conectarConCoordinador(int socket) {
 		select(fdmax + 1, &descriptorCoordinador, NULL, NULL, NULL);
 
 		if (FD_ISSET(socket, &descriptorCoordinador)) {
-			sem_wait(&mutexOperaciones);
 			recibirInstruccion(socket);
-			sem_post(&mutexOperaciones);
 		}
 	}
 }
@@ -224,7 +222,9 @@ void recibirInstruccion(int socket){
 		bufferValor = malloc(*tamanioValor);
 		recibirValor(socket, tamanioValor, bufferValor);
 
+		sem_wait(&mutexOperaciones);
 		set(bufferClave, bufferValor);
+		sem_post(&mutexOperaciones);
 
 		mostrarStorage();
 
@@ -235,7 +235,9 @@ void recibirInstruccion(int socket){
 		/* Recibo clave */
 		recibirClave(socket, buffer_header, bufferClave);
 
+		sem_wait(&mutexOperaciones);
 		store(bufferClave);
+		sem_post(&mutexOperaciones);
 		break;
 	case 3: /* Status */
 		recibirClave(socket, buffer_header, bufferClave);
@@ -781,13 +783,13 @@ void dump() {
 void mostrarTablaDeEntradas() {
 	entrada_t* entrada;
 
+	sem_wait(&mutexTablaDeEntradas);
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
-		if (DEBUG) {
-			printf(ANSI_COLOR_BOLDWHITE"Num. Entrada: %d - Clave: %s - Largo: %d\n"ANSI_COLOR_RESET, entrada->numero, entrada->clave, entrada->largo);
-		}
+		printf(ANSI_COLOR_BOLDWHITE"Num. Entrada: %d - Clave: %s - Largo: %d\n"ANSI_COLOR_RESET, entrada->numero, entrada->clave, entrada->largo);
 	}
+	sem_post(&mutexTablaDeEntradas);
 }
 
 void mostrarStorage(){
@@ -807,11 +809,18 @@ void compactar(){
 	header->codigoOperacion = 7;		// CODIGO PARA QUE COMPACTEN
 	header->tamanioClave = -1;			// TAMANIO ABSURDO
 
-	sem_wait(&mutexOperaciones);
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
 		storageCompactado = storageCompactadoFijo + i * TAMANIOENTRADA;
 		strcpy(storageCompactado, "");
 	}
+
+	sem_wait(&mutexTablaDeEntradas);
+	list_sort(tablaEntradas, (void*) comparadorNumeroEntrada);
+	sem_post(&mutexTablaDeEntradas);
+
+	printf(ANSI_COLOR_BOLDYELLOW"**********ORDENE LA TABLA DE ENTRADAS*************\n"ANSI_COLOR_RESET);
+
+	mostrarTablaDeEntradas();
 
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
@@ -819,7 +828,7 @@ void compactar(){
 		if (entrada->numero != j) {				// SI LA ENTRADA ESTA EN OTRA POSICION DE J (J VA RECORRIENDO EN ORDEN DE VACIOS), ENTONCES COPIO
 			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
 			storage = buscarEnStorage(entrada->numero);
-			memcpy(storageCompactado, storage, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
+			strncpy(storageCompactado, storage, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
 
 			if (DEBUG) {
 				printf(ANSI_COLOR_BOLDWHITE"Movi ENTRADA %d a %d - Valor %s\n"ANSI_COLOR_RESET, entrada->numero, j, storageCompactado);
@@ -833,7 +842,6 @@ void compactar(){
 
 	free(storageFijo);
 	storageFijo = storageCompactadoFijo;
-	sem_post(&mutexOperaciones);
 
 	if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL COMPACTAR POR LEVANTAR DE DISCO...
 		if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {
@@ -842,6 +850,14 @@ void compactar(){
 	}
 
 	free(header);
+}
+
+int comparadorNumeroEntrada(entrada_t* entrada, entrada_t* entrada2) {
+	if (entrada->numero < entrada2->numero) {
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 
