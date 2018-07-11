@@ -301,7 +301,7 @@ void conectarConCoordinador() {
 				} else {		// SI LA CLAVE NO ESTA EN EL DICCIONARIO...
 					abortarESI(IDESI);
 
-					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, *idEsiParaDiccionario, clave);
+					log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por querer hacer STORE de la clave %s inexistente"ANSI_COLOR_RESET, *IDESI, clave);
 
 					informarAlCoordinador(socket, -1); // -1 PORQUE SE ABORTO UN ESI
 
@@ -631,7 +631,7 @@ void recibirMensaje(cliente* ESI) {
 					ESI->rafagaActual++;
 
 					if (strcmp(algoritmoPlanificacion, "SJF-CD") == 0) {	//SI ES CON DESALOJO DEBO ORDENAR LA COLA CADA VEZ QUE EJECUTA UNA SENTENCIA
-						ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
+						ESI->estimacionProximaRafaga--;
 
 						if(DEBUG) {
 							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->estimacionRafagaActual);
@@ -824,8 +824,8 @@ void verificarDesalojoPorSJF(cliente* ESIEjecutando) {
 			list_add(listos, ESIEjecutando);	// LO AGREGO AL FINAL DE LA LISTA DE LISTOS
 			list_remove(listos, 0);		// Y SACO DE LISTOS AL QUE VA A EJECUTAR
 			sem_post(&mutexListos);
-			ESIEjecutando->rafagaActual = 0;	// SE RESETEA LA RAFAGA ACTUAL (PORQUE FUE DESALOJADO)
-			ESIEjecutando->estimacionRafagaActual = ESIEjecutando->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
+//			ESIEjecutando->rafagaActual = 0;	// SE RESETEA LA RAFAGA ACTUAL (PORQUE FUE DESALOJADO)
+//			ESIEjecutando->estimacionRafagaActual = ESIEjecutando->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
 
 			sem_wait(&mutexEjecutando);
 			list_add(ejecutando, primerESIListo);
