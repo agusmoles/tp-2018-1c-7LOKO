@@ -297,6 +297,19 @@ void enviarHeaderOperacionOK() {
 	free(header);
 }
 
+void enviarHeaderOperacionSETFail() {
+	header_t* header = malloc(sizeof(header_t));
+
+	header->codigoOperacion = 10;	// AVISO QUE ESTA SALIO OK LA OPERACION
+	header->tamanioClave = -1; 		// TAMANIO ABSURDO
+
+	if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {
+		_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header de operacion OK al Coordinador"ANSI_COLOR_RESET);
+	}
+
+	free(header);
+}
+
 void enviarTamanioValor(int socket, int* tamanioValor){
 	if (send(socket, tamanioValor, sizeof(int32_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
@@ -446,7 +459,7 @@ void set(char* clave, char* valor){
 
 		if (posicion == -1) {
 			log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el SET por no haber suficientes entradas atomicas"ANSI_COLOR_RESET);
-			enviarHeaderOperacionOK();
+			enviarHeaderOperacionSETFail();
 		} else {
 			list_add(tablaEntradas, entrada);
 			log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
