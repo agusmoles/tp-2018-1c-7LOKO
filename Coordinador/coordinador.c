@@ -293,37 +293,42 @@ void recibirMensaje_Instancias(void* argumentos) {
 				default:
 						sem_wait(&semaforo_instancia);
 						switch(header->codigoOperacion) {
-						case 3: // COMANDO STATUS
-							if(recv(args->socketCliente.fd, tamanioValorStatus, sizeof(int), 0) < 0) {
-								_exit_with_error(args->socket, "No se pudo recibir el tamanio del valor comando status");
-							}
-
-							if(*tamanioValorStatus > 0){
-								valorStatus = malloc(*tamanioValorStatus);
-								if(recv(args->socketCliente.fd, valorStatus, *tamanioValorStatus, 0) < 0){
-									_exit_with_error(args->socket, "No se pudo recibir el valor de la instancia");
+							case 3: // COMANDO STATUS
+								if(recv(args->socketCliente.fd, tamanioValorStatus, sizeof(int), 0) < 0) {
+									_exit_with_error(args->socket, "No se pudo recibir el tamanio del valor comando status");
 								}
-							}
-							break;
-						case 6: // ERROR STORE CLAVE REEMPLAZADA
-							log_error(logOperaciones, );	// LOGUEAR EL ERROR (NO SE SI HAY QUE HACER ALGO MAS)
-							break;
-						case 7:	// INSTANCIAS DEBEN COMPACTAR
-							header_t* header = malloc(sizeof(header_t));
 
-							header->codigoOperacion = 7; // Para indicar que todas las instancias deben compactar
-							header->tamanioClave = -1;	// VALOR ABSURDO
+								if(*tamanioValorStatus > 0){
+									valorStatus = malloc(*tamanioValorStatus);
+									if(recv(args->socketCliente.fd, valorStatus, *tamanioValorStatus, 0) < 0){
+										_exit_with_error(args->socket, "No se pudo recibir el valor de la instancia");
+									}
+								}
+								break;
 
-							for(int i=0; i<cantidadInstanciasConectadas; i++){
-								enviarHeader(v_instanciasConectadas[i].fd, header);
+							case 6: // ERROR STORE CLAVE REEMPLAZADA
+								log_error(logger, ANSI_COLOR_BOLDRED"Error de Clave Reemplazada (STORE)"ANSI_COLOR_RESET);
+								log_error(logOperaciones, "ESI %d: **Error: Clave Reemplazada (STORE)**", idEsiEjecutando);
+								break;
+
+							case 7:	// INSTANCIAS DEBEN COMPACTAR
+								header_t* header = malloc(sizeof(header_t));
+
+								header->codigoOperacion = 7; // Para indicar que todas las instancias deben compactar
+								header->tamanioClave = -1;	// VALOR ABSURDO
+
+								for(int i=0; i<cantidadInstanciasConectadas; i++){
+									enviarHeader(v_instanciasConectadas[i].fd, header);
+								}
+
+								log_info(logOperaciones, "******Compactaron las instancias******");
+								break;
+
+							default:
+								break;
 							}
-							break;
-						default:
-							break;
-						}
 
 						sem_post(&semaforo_instanciaOK);
-
 						break;
 
 			}
@@ -884,6 +889,10 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				enviarSetInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 				sem_post(&mutexVectorInstanciasConectadas);
 
+				/* Si solicita compactar */
+				sem_post(&semaforo_instancia);
+				sem_wait(&semaforo_instanciaOK);
+
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
 			}
 
@@ -946,6 +955,10 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				sem_wait(&mutexVectorInstanciasConectadas);
 				enviarStoreInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
 				sem_post(&mutexVectorInstanciasConectadas);
+
+				/* Si la clave habia sido reemplazada */
+				sem_post(&semaforo_instancia);
+				sem_wait(&semaforo_instanciaOK);
 
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
 			}
