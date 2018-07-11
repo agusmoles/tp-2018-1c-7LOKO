@@ -297,6 +297,19 @@ void enviarHeaderOperacionOK() {
 	free(header);
 }
 
+void enviarHeaderOperacionSETFail() {
+	header_t* header = malloc(sizeof(header_t));
+
+	header->codigoOperacion = 10;	// AVISO QUE ESTA SALIO OK LA OPERACION
+	header->tamanioClave = -1; 		// TAMANIO ABSURDO
+
+	if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {
+		_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header de operacion OK al Coordinador"ANSI_COLOR_RESET);
+	}
+
+	free(header);
+}
+
 void enviarTamanioValor(int socket, int* tamanioValor){
 	if (send(socket, tamanioValor, sizeof(int32_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
@@ -314,7 +327,7 @@ int entradasLibres() {
 
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
 		storage = buscarEnStorage(i);
-		if (strcmp(storage, "") == 0) {
+		if (storage[0] == '\0') {
 			contador++;
 		}
 	}
@@ -444,10 +457,14 @@ void set(char* clave, char* valor){
 			}
 		}
 
-
-		list_add(tablaEntradas, entrada);
-		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
-		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego el valor %s al storage en la posicion %d"ANSI_COLOR_RESET, valor, posicion);
+		if (posicion == -1) {
+			log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el SET por no haber suficientes entradas atomicas"ANSI_COLOR_RESET);
+			enviarHeaderOperacionSETFail();
+		} else {
+			list_add(tablaEntradas, entrada);
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego el valor %s al storage en la posicion %d"ANSI_COLOR_RESET, valor, posicion);
+		}
 	}
 }
 
@@ -456,6 +473,10 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	int posicion = -1;
 	int posicionEntrada;
 	entrada_t* entradaSeleccionada;
+
+	if ((cantidadValoresAtomicos() + entradasLibres()) < espaciosNecesarios) {
+		return posicion;
+	}
 
 	do {
 		if (strcmp(ALGORITMOREEMPLAZO, "CIRC") == 0) {
@@ -528,11 +549,28 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	return posicion;
 }
 
+int cantidadValoresAtomicos() {
+	int contador = 0;
+	entrada_t* entrada;
+
+	for (int i=0; i<list_size(tablaEntradas); i++) {
+		entrada = list_get(tablaEntradas, i);
+
+		if (entrada->largo == 1) {
+			contador++;
+		}
+	}
+
+	return contador;
+}
+
 entrada_t* buscarEntradaAtomicaMasGrande(int* posicion) {
 	entrada_t* entrada;
 	entrada_t* entradaMasGrande;
 	int maximo = -1;
 
+
+	ordenarTablaDeEntradas();
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
@@ -553,6 +591,7 @@ entrada_t* buscarEntradaMenosReferenciada(int* posicion) {
 	entrada_t* entradaMenosReferenciada;
 	int maximo = -1;
 
+	ordenarTablaDeEntradas();
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
@@ -795,7 +834,7 @@ void mostrarTablaDeEntradas() {
 void mostrarStorage(){
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
 			storage = buscarEnStorage(i);
-			log_info(logger, "Storage %d: %s", i, storage);
+			log_info(logger, "Storage %d: %.*s", i, TAMANIOENTRADA, storage);
 	}
 }
 
@@ -814,13 +853,7 @@ void compactar(){
 		strcpy(storageCompactado, "");
 	}
 
-	sem_wait(&mutexTablaDeEntradas);
-	list_sort(tablaEntradas, (void*) comparadorNumeroEntrada);
-	sem_post(&mutexTablaDeEntradas);
-
-	printf(ANSI_COLOR_BOLDYELLOW"**********ORDENE LA TABLA DE ENTRADAS*************\n"ANSI_COLOR_RESET);
-
-	mostrarTablaDeEntradas();
+	ordenarTablaDeEntradas();
 
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
@@ -835,6 +868,10 @@ void compactar(){
 			}
 
 			entrada->numero = j;
+		} else {						// SI ES LA MISMA, LA COPIO DE NUEVO AL NUEVO STORAGE
+			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
+			storage = buscarEnStorage(entrada->numero);
+			strncpy(storageCompactado, storage, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
 		}
 
 		j += entrada->largo;		// MUEVO J
@@ -853,11 +890,13 @@ void compactar(){
 }
 
 int comparadorNumeroEntrada(entrada_t* entrada, entrada_t* entrada2) {
-	if (entrada->numero < entrada2->numero) {
-		return 1;
-	} else {
-		return 0;
-	}
+	return entrada->numero < entrada2->numero;
+}
+
+void ordenarTablaDeEntradas() {
+	sem_wait(&mutexTablaDeEntradas);
+	list_sort(tablaEntradas, (void*) comparadorNumeroEntrada);
+	sem_post(&mutexTablaDeEntradas);
 }
 
 
