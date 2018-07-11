@@ -263,7 +263,7 @@ void recibirMensaje_Instancias(void* argumentos) {
 	int fdmax = args->socketCliente.fd + 1;
 	int flag = 1;
 	int resultado_recv;
-	tamanioValorStatus;
+	tamanioValorStatus = malloc(sizeof(int));
 	header_t* header = malloc(sizeof(header_t));
 
 	while(flag) {
@@ -294,8 +294,6 @@ void recibirMensaje_Instancias(void* argumentos) {
 						sem_wait(&semaforo_instancia);
 						switch(header->codigoOperacion) {
 						case 3: // COMANDO STATUS
-							tamanioValorStatus = malloc(sizeof(int));
-
 							if(recv(args->socketCliente.fd, tamanioValorStatus, sizeof(int), 0) < 0) {
 								_exit_with_error(args->socket, "No se pudo recibir el tamanio del valor comando status");
 							}
@@ -308,9 +306,17 @@ void recibirMensaje_Instancias(void* argumentos) {
 							}
 							break;
 						case 6: // ERROR STORE CLAVE REEMPLAZADA
+							log_error(logOperaciones, );	// LOGUEAR EL ERROR (NO SE SI HAY QUE HACER ALGO MAS)
 							break;
 						case 7:	// INSTANCIAS DEBEN COMPACTAR
+							header_t* header = malloc(sizeof(header_t));
 
+							header->codigoOperacion = 7; // Para indicar que todas las instancias deben compactar
+							header->tamanioClave = -1;	// VALOR ABSURDO
+
+							for(int i=0; i<cantidadInstanciasConectadas; i++){
+								enviarHeader(v_instanciasConectadas[i].fd, header);
+							}
 							break;
 						default:
 							break;
