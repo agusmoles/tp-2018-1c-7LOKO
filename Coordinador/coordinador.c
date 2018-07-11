@@ -263,7 +263,8 @@ void recibirMensaje_Instancias(void* argumentos) {
 	int fdmax = args->socketCliente.fd + 1;
 	int flag = 1;
 	int resultado_recv;
-	tamanioValorStatus =  malloc(sizeof(int));
+	tamanioValorStatus;
+	header_t* header = malloc(sizeof(header_t));
 
 	while(flag) {
 		FD_ZERO(&descriptoresLectura);
@@ -272,7 +273,7 @@ void recibirMensaje_Instancias(void* argumentos) {
 		select(fdmax, &descriptoresLectura, NULL, NULL, NULL);
 
 		if (FD_ISSET(args->socketCliente.fd, &descriptoresLectura)) {
-		switch(resultado_recv = recv(args->socketCliente.fd, tamanioValorStatus, sizeof(int), 0)) {
+		switch(resultado_recv = recv(args->socketCliente.fd, header, sizeof(header_t), 0)) {
 				case -1: _exit_with_error(args->socket, "No se pudo recibir el mensaje del cliente");
 						break;
 
@@ -291,13 +292,30 @@ void recibirMensaje_Instancias(void* argumentos) {
 
 				default:
 						sem_wait(&semaforo_instancia);
-						/* comando status */
-						if(*tamanioValorStatus > 0){
-							valorStatus = malloc(*tamanioValorStatus);
-							if(recv(args->socketCliente.fd, valorStatus, *tamanioValorStatus, 0) < 0){
-								_exit_with_error(args->socket, "No se pudo recibir el valor de la instancia");
+						switch(header->codigoOperacion) {
+						case 3: // COMANDO STATUS
+							tamanioValorStatus = malloc(sizeof(int));
+
+							if(recv(args->socketCliente.fd, tamanioValorStatus, sizeof(int), 0) < 0) {
+								_exit_with_error(args->socket, "No se pudo recibir el tamanio del valor comando status");
 							}
+
+							if(*tamanioValorStatus > 0){
+								valorStatus = malloc(*tamanioValorStatus);
+								if(recv(args->socketCliente.fd, valorStatus, *tamanioValorStatus, 0) < 0){
+									_exit_with_error(args->socket, "No se pudo recibir el valor de la instancia");
+								}
+							}
+							break;
+						case 6: // ERROR STORE CLAVE REEMPLAZADA
+							break;
+						case 7:	// INSTANCIAS DEBEN COMPACTAR
+
+							break;
+						default:
+							break;
 						}
+
 						sem_post(&semaforo_instanciaOK);
 
 						break;
