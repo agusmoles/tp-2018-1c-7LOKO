@@ -34,6 +34,7 @@ int IDENTIFICADORINSTANCIA;
 int STORAGEAPUNTADO;
 int DUMP;
 int socketCoordinador;
+int LEVANTODEDISCO;
 
 sem_t mutexTablaDeEntradas;
 sem_t mutexOperaciones;
