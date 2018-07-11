@@ -567,7 +567,7 @@ int seleccionLeastSpaceUsed(){
 		entradasLibresPorInstancia[h] = 0;
 	}
 
-	header->codigoOperacion = 5;
+	header->codigoOperacion = 8;
 	for(int i=0; i<cantidadInstanciasConectadas; i++){
 
 		sem_wait(&mutexVectorInstanciasConectadas);

@@ -254,7 +254,10 @@ void recibirInstruccion(int socket){
 		}
 
 		break;
-	case 5: /* NOTIFICAR ENTRADAS LIBRES */
+	case 7: // SE DEBE COMPACTAR
+		compactar();
+		break;
+	case 8: /* NOTIFICAR ENTRADAS LIBRES */
 		entradasLibresCoordinador = malloc(sizeof(int));
 
 		*entradasLibresCoordinador = entradasLibres();
@@ -740,6 +743,7 @@ void compactar(){
 	char* storageCompactado;
 	entrada_t* entrada;
 
+	sem_wait(&mutexOperaciones);
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
 		storageCompactado = storageCompactadoFijo + i * TAMANIOENTRADA;
 		strcpy(storageCompactado, "");
@@ -765,7 +769,7 @@ void compactar(){
 
 	free(storageFijo);
 	storageFijo = storageCompactadoFijo;
-
+	sem_post(&mutexOperaciones);
 }
 
 
