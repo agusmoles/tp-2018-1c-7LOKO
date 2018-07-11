@@ -35,6 +35,7 @@ int STORAGEAPUNTADO;
 int DUMP;
 
 sem_t mutexTablaDeEntradas;
+sem_t mutexOperaciones;
 
 t_log* logger;
 t_config* config;

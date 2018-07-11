@@ -28,6 +28,7 @@ void setearConfigEnVariables() {
 	CANTIDADENTRADAS  = config_get_int_value(config, "Cantidad de Entradas");
 	IDENTIFICADORINSTANCIA = config_get_int_value(config, "ID de Instancia");
 	sem_init(&mutexTablaDeEntradas, 0, 1);				// INICIALIZO EL SEMAFORO DEL MUTEX DE LA TABLA DE ENTRADAS
+	sem_init(&mutexOperaciones, 0, 1);
 	STORAGEAPUNTADO = 0;		// LA INICIALIZO
 	DUMP = 0;		// INICIALIZO QUE EL DUMP NO ESTA EN CURSO
 
@@ -86,7 +87,9 @@ void conectarConCoordinador(int socket) {
 		select(fdmax + 1, &descriptorCoordinador, NULL, NULL, NULL);
 
 		if (FD_ISSET(socket, &descriptorCoordinador)) {
+			sem_wait(&mutexOperaciones);
 			recibirInstruccion(socket);
+			sem_post(&mutexOperaciones);
 		}
 	}
 }
@@ -692,11 +695,12 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 void dump() {
 	entrada_t* entrada;
 	while (1) {
-		sleep(INTERVALODUMP);
+		usleep(INTERVALODUMP);
 
 		mostrarTablaDeEntradas();
 
 		DUMP = 1;
+		sem_wait(&mutexOperaciones);
 		for (int i=0; i<list_size(tablaEntradas); i++) {
 			sem_wait(&mutexTablaDeEntradas);
 			entrada = list_get(tablaEntradas, i);
@@ -704,9 +708,10 @@ void dump() {
 
 			store(entrada->clave);
 		}
+		sem_post(&mutexOperaciones);
 		DUMP = 0;
 
-		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************");
+//		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************");
 	}
 }
 
