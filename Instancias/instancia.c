@@ -314,7 +314,7 @@ int entradasLibres() {
 
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
 		storage = buscarEnStorage(i);
-		if (strcmp(storage, "") == 0) {
+		if (storage[0] == '\0') {
 			contador++;
 		}
 	}
@@ -444,10 +444,14 @@ void set(char* clave, char* valor){
 			}
 		}
 
-
-		list_add(tablaEntradas, entrada);
-		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
-		log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego el valor %s al storage en la posicion %d"ANSI_COLOR_RESET, valor, posicion);
+		if (posicion == -1) {
+			log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el SET por no haber suficientes entradas atomicas"ANSI_COLOR_RESET);
+			enviarHeaderOperacionOK();
+		} else {
+			list_add(tablaEntradas, entrada);
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego la entrada: Clave %s - Entrada %d - Tamanio Valor %d "ANSI_COLOR_RESET, entrada->clave, entrada->numero, entrada->tamanio_valor);
+			log_info(logger, ANSI_COLOR_BOLDCYAN"Se agrego el valor %s al storage en la posicion %d"ANSI_COLOR_RESET, valor, posicion);
+		}
 	}
 }
 
@@ -456,6 +460,10 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	int posicion = -1;
 	int posicionEntrada;
 	entrada_t* entradaSeleccionada;
+
+	if ((cantidadValoresAtomicos() + entradasLibres()) < espaciosNecesarios) {
+		return posicion;
+	}
 
 	do {
 		if (strcmp(ALGORITMOREEMPLAZO, "CIRC") == 0) {
@@ -526,6 +534,21 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	}
 
 	return posicion;
+}
+
+int cantidadValoresAtomicos() {
+	int contador = 0;
+	entrada_t* entrada;
+
+	for (int i=0; i<list_size(tablaEntradas); i++) {
+		entrada = list_get(tablaEntradas, i);
+
+		if (entrada->largo == 1) {
+			contador++;
+		}
+	}
+
+	return contador;
 }
 
 entrada_t* buscarEntradaAtomicaMasGrande(int* posicion) {
@@ -832,6 +855,10 @@ void compactar(){
 			}
 
 			entrada->numero = j;
+		} else {
+			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
+			storage = buscarEnStorage(entrada->numero);
+			strncpy(storageCompactado, storage, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
 		}
 
 		j += entrada->largo;		// MUEVO J
@@ -839,6 +866,9 @@ void compactar(){
 
 	free(storageFijo);
 	storageFijo = storageCompactadoFijo;
+
+	mostrarStorage();
+	mostrarTablaDeEntradas();
 
 	if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL COMPACTAR POR LEVANTAR DE DISCO...
 		if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {

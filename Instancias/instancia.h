@@ -71,6 +71,7 @@ void recibirInstruccion(int socket);
 int entradasLibres();
 void set(char* clave, char* valor);
 int reemplazarSegunAlgoritmo(int espaciosNecesarios);
+int cantidadValoresAtomicos();
 entrada_t* buscarEntradaAtomicaMasGrande(int* posicion);
 entrada_t* buscarEntradaMenosReferenciada(int* posicion);
 void sumarUnoALasNoReferencias(entrada_t* entrada);
