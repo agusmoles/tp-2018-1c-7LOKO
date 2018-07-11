@@ -31,6 +31,7 @@ void setearConfigEnVariables() {
 	sem_init(&mutexOperaciones, 0, 1);
 	STORAGEAPUNTADO = 0;		// LA INICIALIZO
 	DUMP = 0;		// INICIALIZO QUE EL DUMP NO ESTA EN CURSO
+	LEVANTODEDISCO = 0;		// INICIALIZO QUE NO LEVANTO DE DISCO
 
     storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
     inicializarStorage();
@@ -87,9 +88,7 @@ void conectarConCoordinador(int socket) {
 		select(fdmax + 1, &descriptorCoordinador, NULL, NULL, NULL);
 
 		if (FD_ISSET(socket, &descriptorCoordinador)) {
-			sem_wait(&mutexOperaciones);
 			recibirInstruccion(socket);
-			sem_post(&mutexOperaciones);
 		}
 	}
 }
@@ -168,6 +167,7 @@ void levantarClaveDeDisco(char* clave) {
 	char* valor;
 	size_t len = 0;
 	FILE* f;
+	LEVANTODEDISCO = 1;
 
 	strcpy(directorio, PUNTOMONTAJE);
 	strcat(directorio, clave);
@@ -181,6 +181,8 @@ void levantarClaveDeDisco(char* clave) {
 	}
 
 	set(clave, valor);			// HAGO EL SET DE CADA CLAVE
+
+	LEVANTODEDISCO = 0;
 }
 
 
@@ -220,7 +222,9 @@ void recibirInstruccion(int socket){
 		bufferValor = malloc(*tamanioValor);
 		recibirValor(socket, tamanioValor, bufferValor);
 
+		sem_wait(&mutexOperaciones);
 		set(bufferClave, bufferValor);
+		sem_post(&mutexOperaciones);
 
 		mostrarStorage();
 
@@ -231,7 +235,9 @@ void recibirInstruccion(int socket){
 		/* Recibo clave */
 		recibirClave(socket, buffer_header, bufferClave);
 
+		sem_wait(&mutexOperaciones);
 		store(bufferClave);
+		sem_post(&mutexOperaciones);
 		break;
 	case 3: /* Status */
 		recibirClave(socket, buffer_header, bufferClave);
@@ -276,6 +282,19 @@ void recibirInstruccion(int socket){
 	free(tamanioValor);
 	free(tamanioValorStatus);
 	free(bufferClave);
+}
+
+void enviarHeaderOperacionOK() {
+	header_t* header = malloc(sizeof(header_t));
+
+	header->codigoOperacion = 9;	// AVISO QUE ESTA SALIO OK LA OPERACION
+	header->tamanioClave = -1; 		// TAMANIO ABSURDO
+
+	if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {
+		_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header de operacion OK al Coordinador"ANSI_COLOR_RESET);
+	}
+
+	free(header);
 }
 
 void enviarTamanioValor(int socket, int* tamanioValor){
@@ -330,6 +349,9 @@ void set(char* clave, char* valor){
 
 				copiarValorAlStorage(entrada, valor, posicion);		// BAJO AL STORAGE EL VALOR
 
+				if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL SET POR LEVANTAR DE DISCO...
+					enviarHeaderOperacionOK();			// LE AVISO AL COORDINADOR QUE SALIO BIEN
+				}
 			} else if(hayEspaciosNoContiguosPara(espaciosNecesarios)) {
 				compactar();
 
@@ -345,6 +367,10 @@ void set(char* clave, char* valor){
 					entrada->numero = posicion;
 
 					copiarValorAlStorage(entrada, valor, posicion);		// BAJO AL STORAGE EL VALOR
+
+					if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL SET POR LEVANTAR DE DISCO...
+						enviarHeaderOperacionOK();			// LE AVISO AL COORDINADOR QUE SALIO BIEN
+					}
 				}
 			}
 
@@ -355,6 +381,10 @@ void set(char* clave, char* valor){
 
 			asignarAEntrada(entrada, valor, espaciosNecesarios);
 			copiarValorAlStorage(entrada, valor, entrada->numero);
+
+			if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL SET POR LEVANTAR DE DISCO...
+				enviarHeaderOperacionOK();			// LE AVISO AL COORDINADOR QUE SALIO BIEN
+			}
 		}
 
 		else {			// SI OCUPA MENOS ESPACIO QUE EL VIEJO VALOR
@@ -362,6 +392,10 @@ void set(char* clave, char* valor){
 
 			asignarAEntrada(entrada, valor, espaciosNecesarios);
 			copiarValorAlStorage(entrada, valor, entrada->numero);
+
+			if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL SET POR LEVANTAR DE DISCO...
+				enviarHeaderOperacionOK();			// LE AVISO AL COORDINADOR QUE SALIO BIEN
+			}
 		}
 
 		log_info(logger, ANSI_COLOR_BOLDCYAN"Se modifico el valor de la clave %s con %s"ANSI_COLOR_RESET, entrada->clave, valor);
@@ -384,6 +418,10 @@ void set(char* clave, char* valor){
 			entrada->numero = posicion;
 
 			copiarValorAlStorage(entrada, valor, posicion);
+
+			if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL SET POR LEVANTAR DE DISCO...
+				enviarHeaderOperacionOK();			// LE AVISO AL COORDINADOR QUE SALIO BIEN
+			}
 		}  else if(hayEspaciosNoContiguosPara(espaciosNecesarios)) {
 			compactar();
 
@@ -399,6 +437,10 @@ void set(char* clave, char* valor){
 				entrada->numero = posicion;
 
 				copiarValorAlStorage(entrada, valor, posicion);
+
+				if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL SET POR LEVANTAR DE DISCO...
+					enviarHeaderOperacionOK();			// LE AVISO AL COORDINADOR QUE SALIO BIEN
+				}
 			}
 		}
 
@@ -601,35 +643,55 @@ void store(char* clave){
 
 	entrada = buscarEnTablaDeEntradas(clave);	// BUSCO LA ENTRADA POR LA CLAVE
 
-	if (!DUMP) {
-		list_iterate(tablaEntradas, (void*) sumarUnoALasNoReferencias);		// LE SUMO UNO A LA CANTIDAD DE NO REFERENCIAS A TODAS LAS ENTRADAS (LA QUE HIZO EL SET ABAJO SE SETEA EN 0)
-		entrada->cantidadDeNoReferencias = 0;
+	if (entrada != NULL) {		// PUEDE HABER SIDO REEMPLAZADA
+		if (!DUMP) {		// SI ES QUE NO ESTA HACIENDO STORE POR EL DUMP...
+			list_iterate(tablaEntradas, (void*) sumarUnoALasNoReferencias);		// LE SUMO UNO A LA CANTIDAD DE NO REFERENCIAS A TODAS LAS ENTRADAS (LA QUE HIZO EL SET ABAJO SE SETEA EN 0)
+			entrada->cantidadDeNoReferencias = 0;
+		}
+		for (int i=0; i<entrada->largo; i++) {			// ENTRADA LARGO ES EL NUM DE ESPACIOS QUE OCUPA EL VALOR
+			storage = buscarEnStorage(entrada->numero + i);
+			string_append(&valor, storage); 		// CONCATENO EL STRING USANDO TODOS LOS ESPACIOS DEL STORAGE
+		}
+
+		if((fd = open(directorioMontaje, O_CREAT | O_RDWR , S_IRWXU )) < 0){
+			log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open "ANSI_COLOR_RESET);
+		}
+
+		size_t tamanio = entrada->tamanio_valor;
+
+		lseek(fd, tamanio-1, SEEK_SET);
+		write(fd, "", 1);
+
+		mem_ptr = mmap(NULL, tamanio , PROT_WRITE | PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
+
+		memcpy(mem_ptr, valor, tamanio-1);
+
+		msync(mem_ptr, tamanio-1, MS_SYNC);
+
+		munmap(mem_ptr, tamanio);
+
+		free(directorioMontaje);
+		free(valor);
+
+		if (!DUMP) {
+			enviarHeaderOperacionOK();		// AVISO QUE SALIO BIEN
+		}
 	}
-	for (int i=0; i<entrada->largo; i++) {			// ENTRADA LARGO ES EL NUM DE ESPACIOS QUE OCUPA EL VALOR
-		storage = buscarEnStorage(entrada->numero + i);
-		string_append(&valor, storage); 		// CONCATENO EL STRING USANDO TODOS LOS ESPACIOS DEL STORAGE
+
+	else {			// SI LA ENTRADA NO EXISTE POR QUE SE REEMPLAZO
+		header_t* header = malloc(sizeof(header_t));
+
+		header->codigoOperacion = 6;		// ERROR STORE CLAVE REEMPLAZADA
+		header->tamanioClave = -1;			// TAMANIO ABSURDO
+
+		log_error(logger, ANSI_COLOR_BOLDRED"ERROR STORE clave %s previamente reemplazada"ANSI_COLOR_RESET, clave);
+
+		if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {
+			_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header de ERROR de STORE"ANSI_COLOR_RESET);
+		}
+
+		free(header);
 	}
-
-
-	if((fd = open(directorioMontaje, O_CREAT | O_RDWR , S_IRWXU )) < 0){
-		log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open "ANSI_COLOR_RESET);
-	}
-
-	size_t tamanio = entrada->tamanio_valor;
-
-	lseek(fd, tamanio-1, SEEK_SET);
-	write(fd, "", 1);
-
-	mem_ptr = mmap(NULL, tamanio , PROT_WRITE | PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
-
-	memcpy(mem_ptr, valor, tamanio-1);
-
-	msync(mem_ptr, tamanio-1, MS_SYNC);
-
-	munmap(mem_ptr, tamanio);
-
-	free(directorioMontaje);
-	free(valor);
 }
 
 /* Busca la entrada que contenga esa clave */
@@ -698,7 +760,7 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 void dump() {
 	entrada_t* entrada;
 	while (1) {
-		usleep(INTERVALODUMP);
+		sleep(INTERVALODUMP);
 
 		mostrarTablaDeEntradas();
 
@@ -714,20 +776,20 @@ void dump() {
 		sem_post(&mutexOperaciones);
 		DUMP = 0;
 
-//		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************");
+		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************"ANSI_COLOR_RESET);
 	}
 }
 
 void mostrarTablaDeEntradas() {
 	entrada_t* entrada;
 
+	sem_wait(&mutexTablaDeEntradas);
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
-		if (DEBUG) {
-			printf(ANSI_COLOR_BOLDWHITE"Num. Entrada: %d - Clave: %s - Largo: %d\n"ANSI_COLOR_RESET, entrada->numero, entrada->clave, entrada->largo);
-		}
+		printf(ANSI_COLOR_BOLDWHITE"Num. Entrada: %d - Clave: %s - Largo: %d\n"ANSI_COLOR_RESET, entrada->numero, entrada->clave, entrada->largo);
 	}
+	sem_post(&mutexTablaDeEntradas);
 }
 
 void mostrarStorage(){
@@ -742,12 +804,23 @@ void compactar(){
 	char* storageCompactadoFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA);
 	char* storageCompactado;
 	entrada_t* entrada;
+	header_t* header = malloc(sizeof(header_t));
 
-	sem_wait(&mutexOperaciones);
+	header->codigoOperacion = 7;		// CODIGO PARA QUE COMPACTEN
+	header->tamanioClave = -1;			// TAMANIO ABSURDO
+
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
 		storageCompactado = storageCompactadoFijo + i * TAMANIOENTRADA;
 		strcpy(storageCompactado, "");
 	}
+
+	sem_wait(&mutexTablaDeEntradas);
+	list_sort(tablaEntradas, (void*) comparadorNumeroEntrada);
+	sem_post(&mutexTablaDeEntradas);
+
+	printf(ANSI_COLOR_BOLDYELLOW"**********ORDENE LA TABLA DE ENTRADAS*************\n"ANSI_COLOR_RESET);
+
+	mostrarTablaDeEntradas();
 
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
@@ -755,7 +828,7 @@ void compactar(){
 		if (entrada->numero != j) {				// SI LA ENTRADA ESTA EN OTRA POSICION DE J (J VA RECORRIENDO EN ORDEN DE VACIOS), ENTONCES COPIO
 			storageCompactado = storageCompactadoFijo + j * TAMANIOENTRADA;
 			storage = buscarEnStorage(entrada->numero);
-			memcpy(storageCompactado, storage, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
+			strncpy(storageCompactado, storage, entrada->tamanio_valor-1);		// COPIO TODO EL VALOR (MENOS EL \0)
 
 			if (DEBUG) {
 				printf(ANSI_COLOR_BOLDWHITE"Movi ENTRADA %d a %d - Valor %s\n"ANSI_COLOR_RESET, entrada->numero, j, storageCompactado);
@@ -769,7 +842,22 @@ void compactar(){
 
 	free(storageFijo);
 	storageFijo = storageCompactadoFijo;
-	sem_post(&mutexOperaciones);
+
+	if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL COMPACTAR POR LEVANTAR DE DISCO...
+		if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {
+			_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header para que compacten"ANSI_COLOR_RESET);
+		}
+	}
+
+	free(header);
+}
+
+int comparadorNumeroEntrada(entrada_t* entrada, entrada_t* entrada2) {
+	if (entrada->numero < entrada2->numero) {
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 
@@ -781,7 +869,7 @@ int main(void) {
 	configurarLogger();
 	crearConfig();
 	setearConfigEnVariables();
-	int socket = conectarSocket();
+	socketCoordinador = conectarSocket();
 
 	/************************************** CREO THREAD PARA DUMP **********************************/
 
@@ -797,12 +885,12 @@ int main(void) {
 	tablaEntradas = list_create();
 	listaStorage = list_create();
 
-	reciboHandshake(socket);
-	envioIdentificador(socket);
+	reciboHandshake(socketCoordinador);
+	envioIdentificador(socketCoordinador);
 
-	conectarConCoordinador(socket);
+	conectarConCoordinador(socketCoordinador);
 
-	close(socket);
+	close(socketCoordinador);
 
 	return EXIT_SUCCESS;
 }

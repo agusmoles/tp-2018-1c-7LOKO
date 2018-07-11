@@ -33,6 +33,8 @@ int CANTIDADENTRADAS;
 int IDENTIFICADORINSTANCIA;
 int STORAGEAPUNTADO;
 int DUMP;
+int socketCoordinador;
+int LEVANTODEDISCO;
 
 sem_t mutexTablaDeEntradas;
 sem_t mutexOperaciones;
@@ -90,3 +92,4 @@ void dump();
 void mostrarTablaDeEntradas();
 void mostrarStorage();
 void compactar();
+int comparadorNumeroEntrada(entrada_t* entrada, entrada_t* entrada2);
