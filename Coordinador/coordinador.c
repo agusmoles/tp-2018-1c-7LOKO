@@ -335,7 +335,13 @@ void recibirMensaje_Instancias(void* argumentos) {
 								free(headerComp);
 								break;
 
+							case 10: // ERROR SET NO HAY SUFICIENTES ENTRADAS ATOMICAS
+								log_error(logger, ANSI_COLOR_BOLDRED"No hay suficientes entradas atomicas para reemplazar"ANSI_COLOR_RESET);
+								log_error(logOperaciones, "ESI %d: **Error: No hay suficientes entradas atomicas para reemplazar**", idEsiEjecutando);
+								break;
+
 							default:
+								_exit_with_error(args->socketCliente.fd, "No cumpliste el protocolo de enviar Header");
 								break;
 							}
 
