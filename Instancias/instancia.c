@@ -533,6 +533,8 @@ entrada_t* buscarEntradaAtomicaMasGrande(int* posicion) {
 	entrada_t* entradaMasGrande;
 	int maximo = -1;
 
+
+	ordenarTablaDeEntradas();
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
@@ -553,6 +555,7 @@ entrada_t* buscarEntradaMenosReferenciada(int* posicion) {
 	entrada_t* entradaMenosReferenciada;
 	int maximo = -1;
 
+	ordenarTablaDeEntradas();
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
 
@@ -814,13 +817,7 @@ void compactar(){
 		strcpy(storageCompactado, "");
 	}
 
-	sem_wait(&mutexTablaDeEntradas);
-	list_sort(tablaEntradas, (void*) comparadorNumeroEntrada);
-	sem_post(&mutexTablaDeEntradas);
-
-	printf(ANSI_COLOR_BOLDYELLOW"**********ORDENE LA TABLA DE ENTRADAS*************\n"ANSI_COLOR_RESET);
-
-	mostrarTablaDeEntradas();
+	ordenarTablaDeEntradas();
 
 	for (int i=0; i<list_size(tablaEntradas); i++) {
 		entrada = list_get(tablaEntradas, i);
@@ -853,11 +850,13 @@ void compactar(){
 }
 
 int comparadorNumeroEntrada(entrada_t* entrada, entrada_t* entrada2) {
-	if (entrada->numero < entrada2->numero) {
-		return 1;
-	} else {
-		return 0;
-	}
+	return entrada->numero < entrada2->numero;
+}
+
+void ordenarTablaDeEntradas() {
+	sem_wait(&mutexTablaDeEntradas);
+	list_sort(tablaEntradas, (void*) comparadorNumeroEntrada);
+	sem_post(&mutexTablaDeEntradas);
 }
 
 

@@ -93,3 +93,4 @@ void mostrarTablaDeEntradas();
 void mostrarStorage();
 void compactar();
 int comparadorNumeroEntrada(entrada_t* entrada, entrada_t* entrada2);
+void ordenarTablaDeEntradas();
