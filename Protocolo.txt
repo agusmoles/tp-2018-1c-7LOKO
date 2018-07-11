@@ -36,6 +36,11 @@ COD. OP
 3. Para indicar que es una operacion del comando Status del Planificador
 4. Clave larga
 5. Para indicar que se deba abortar el ESI (por ejemplo cuando este caida la instancia)
+6. Para inidicar que hubo error de STORE por clave reemplazada
+7. Para indicar que todas las instancias deben compactar
+8. Para inidicar las entradas libres que tiene la instancia
+9. Para que la instancia le indique al coordinador que el SET/STORE salio bien
+10. Para que la instancia le indique al coordinador que el SET no se realizo por no haber espacio (incluyendo el reemplazo y demas)
 
 El Planificador, luego de recibir una sentencia por parte del Coordinador, le devuelve a éste un 0 si el ESI se bloqueo, un 1 si se ejecuto con normalidad o un -1 si se aborto.
 
