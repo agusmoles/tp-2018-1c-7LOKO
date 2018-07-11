@@ -334,7 +334,9 @@ void recibirMensaje_Instancias(void* argumentos) {
 
 								free(headerComp);
 								break;
-
+							case 9:
+								log_info(logOperaciones, "ESI %d: OPERACION: STORE/SET ejecutada correctamente");
+								break;
 							case 10: // ERROR SET NO HAY SUFICIENTES ENTRADAS ATOMICAS
 								log_error(logger, ANSI_COLOR_BOLDRED"No hay suficientes entradas atomicas para reemplazar"ANSI_COLOR_RESET);
 								log_error(logOperaciones, "ESI %d: **Error: No hay suficientes entradas atomicas para reemplazar**", idEsiEjecutando);
