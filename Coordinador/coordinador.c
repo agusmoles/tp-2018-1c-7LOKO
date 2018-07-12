@@ -265,6 +265,7 @@ void recibirMensaje_Instancias(void* argumentos) {
 	int resultado_recv;
 	tamanioValorStatus = malloc(sizeof(int));
 	header_t* header = malloc(sizeof(header_t));
+	header_t* headerComp;
 
 	while(flag) {
 		FD_ZERO(&descriptoresLectura);
@@ -312,19 +313,30 @@ void recibirMensaje_Instancias(void* argumentos) {
 								break;
 
 							case 7:	// INSTANCIAS DEBEN COMPACTAR
-								header_t* header = malloc(sizeof(header_t));
+								headerComp = malloc(sizeof(header_t));
 
-								header->codigoOperacion = 7; // Para indicar que todas las instancias deben compactar
-								header->tamanioClave = -1;	// VALOR ABSURDO
+								headerComp->codigoOperacion = 7; // Para indicar que todas las instancias deben compactar
+								headerComp->tamanioClave = -1;	// VALOR ABSURDO
 
 								for(int i=0; i<cantidadInstanciasConectadas; i++){
-									enviarHeader(v_instanciasConectadas[i].fd, header);
+									if(v_instanciasConectadas[i].identificadorInstancia != args->socketCliente.identificadorInstancia){
+										enviarHeader(v_instanciasConectadas[i].fd, headerComp);
+									}
 								}
-
 								log_info(logOperaciones, "******Compactaron las instancias******");
+
+								free(headerComp);
+								break;
+							case 9: //TERMINO OK
+								log_info(logOperaciones, "ESI %d: OPERACION: STORE/SET ejecutada correctamente");
+								break;
+							case 10: // ERROR SET NO HAY SUFICIENTES ENTRADAS ATOMICAS
+								log_error(logger, ANSI_COLOR_BOLDRED"No hay suficientes entradas atomicas para reemplazar"ANSI_COLOR_RESET);
+								log_error(logOperaciones, "ESI %d: **Error: No hay suficientes entradas atomicas para reemplazar**", idEsiEjecutando);
 								break;
 
 							default:
+								_exit_with_error(args->socketCliente.fd, "No cumpliste el protocolo de enviar Header");
 								break;
 							}
 
@@ -334,6 +346,7 @@ void recibirMensaje_Instancias(void* argumentos) {
 			}
 		}
 	}
+	free(header);
 	pthread_exit(NULL);
 }
 
@@ -889,11 +902,12 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				enviarSetInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave, bufferValor);
 				sem_post(&mutexVectorInstanciasConectadas);
 
-				/* Si solicita compactar */
-				sem_post(&semaforo_instancia);
-				sem_wait(&semaforo_instanciaOK);
-
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
+
+				/* Si la instancia solicita COMPACTAR */
+				sem_post(&semaforo_instancia);
+
+				sem_wait(&semaforo_instanciaOK);
 			}
 
 			free(tamanioValor);
@@ -956,11 +970,13 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				enviarStoreInstancia(v_instanciasConectadas[instanciaEncargada].fd, header, bufferClave);
 				sem_post(&mutexVectorInstanciasConectadas);
 
-				/* Si la clave habia sido reemplazada */
-				sem_post(&semaforo_instancia);
-				sem_wait(&semaforo_instanciaOK);
-
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
+
+
+				/* Si hubo error de clave reemplazada*/
+				sem_post(&semaforo_instancia);
+
+				sem_wait(&semaforo_instanciaOK);
 			}
 			break;
 		case 4: /* Clave Larga */
