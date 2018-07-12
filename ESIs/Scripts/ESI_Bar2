@@ -1,4 +1,3 @@
-GET bebida1
 GET bebida2
 GET bebida3
 GET bebida4
@@ -13,6 +12,7 @@ GET bebida12
 GET bebida13
 GET bebida14
 GET bebida15
+GET bebida1
 SET bebida1 cerveza
 SET bebida2 fernet
 SET bebida3 cocacola

@@ -204,11 +204,11 @@ void conectarConCoordinador() {
 
 					log_error(logger, ANSI_COLOR_BOLDRED"La clave %s ya estaba tomada por el ESI %d. Se bloqueo al ESI %d"ANSI_COLOR_RESET, clave, *IDEsiQueTieneLaClaveTomada, *idEsiParaDiccionario);
 
+					informarAlCoordinador(socket, 0);	// 0 PORQUE SE BLOQUEO EL ESI
+
 					bloquearESI(clave, IDESI);
 
 					free(idEsiParaDiccionario);
-
-					informarAlCoordinador(socket, 0);	// 0 PORQUE SE BLOQUEO EL ESI
 				} else {
 
 					sem_wait(&mutexDiccionarioClaves);
@@ -326,7 +326,7 @@ void conectarConCoordinador() {
 				log_error(logger, ANSI_COLOR_BOLDRED"Se aborto el ESI %d por acceso a Instancia desconectada"ANSI_COLOR_RESET, *IDESI);
 				break;
 			default:
-				_exit_with_error(ANSI_COLOR_BOLDRED"No se esperaba un codigo de operacion distinto de 0 (GET) o 2 (STORE) del Coordinador"ANSI_COLOR_RESET);
+				_exit_with_error(ANSI_COLOR_BOLDRED"No se esperaba un codigo de operacion distinto de 0-5 del Coordinador"ANSI_COLOR_RESET);
 				break;
 			}
 
@@ -404,11 +404,13 @@ void bloquearESI(char* clave, int* IDESI) {
 		ESI->rafagaActual++;			// CREO QUE AUNQUE SE HAYA BLOQUEADO CUENTA COMO UNA RAFAGA, ENTONCES ANTES DE SETEAR LAS VARIABLES LE SUMO UNO
 		ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
 		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
-		ESI->tasaDeRespuesta = (ESI->tiempoDeEspera + ESI->estimacionProximaRafaga) / ESI->estimacionProximaRafaga;
 
 		sem_wait(&mutexListos);
 		list_iterate(listos, (void *) sumarUnoAlWaitingTime);
 		sem_post(&mutexListos);
+
+		if(DEBUG)
+			printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Waiting Time: %d - RR: %f\n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->tiempoDeEspera, ESI->tasaDeRespuesta);
 
 		ESI->tiempoDeEspera = 0;
 	}
@@ -416,9 +418,7 @@ void bloquearESI(char* clave, int* IDESI) {
 	if(DEBUG) {
 		if (strncmp(algoritmoPlanificacion, "SJF", 3) == 0)
 		printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->estimacionRafagaActual);
-		if (strcmp(algoritmoPlanificacion, "HRRN") == 0)
-		printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Waiting Time: %d - RR: %f\n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->tiempoDeEspera, ESI->tasaDeRespuesta);
-	}
+		}
 
 	if (list_size(listos) >= 2) {			//SI EN LISTOS HAY MAS DE 2 ESIS ORDENO...
 		if(strncmp(algoritmoPlanificacion, "SJF", 3) == 0) { // SI ES SJF
@@ -485,7 +485,7 @@ void informarAlCoordinador(int socketCoordinador, int operacion) {
 	}
 
 	if(DEBUG) {
-		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio el resultado de la operacion al Coordinador");
+		log_info(logger, ANSI_COLOR_BOLDWHITE"Se envio el resultado %d de la operacion al Coordinador"ANSI_COLOR_RESET, operacion);
 	}
 }
 
@@ -722,10 +722,10 @@ void recibirMensaje(cliente* ESI) {
 							ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
 							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Estimacion Rafaga Anterior/Actual: %f \n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->estimacionRafagaActual);
 						}
-						if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
-							ESI->tasaDeRespuesta = (ESI->tiempoDeEspera + ESI->estimacionProximaRafaga) / ESI->estimacionProximaRafaga;
-							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Waiting Time: %d - RR: %f\n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->tiempoDeEspera, ESI->tasaDeRespuesta);
-						}
+//						if (strcmp(algoritmoPlanificacion, "HRRN") == 0) {
+//							ESI->tasaDeRespuesta = (ESI->tiempoDeEspera + ESI->estimacionProximaRafaga) / ESI->estimacionProximaRafaga;
+//							printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Waiting Time: %d - RR: %f\n"ANSI_COLOR_RESET, ESI->identificadorESI, ESI->estimacionProximaRafaga, ESI->tiempoDeEspera, ESI->tasaDeRespuesta);
+//						}
 					}
 
 					close(ESI->fd);
@@ -745,7 +745,9 @@ void recibirMensaje(cliente* ESI) {
 						}
 					}
 
-					ordenarProximoAEjecutar();	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
+					if (list_is_empty(ejecutando)) {
+						ordenarProximoAEjecutar();	//ENVIO ORDEN DE EJECUCION SI HAY LISTOS PARA EJECUTAR
+					}
 				}
 				break;
 
@@ -883,6 +885,8 @@ void sumarUnoAlWaitingTime(cliente* cliente) {
 
 void calcularResponseRatio(cliente* cliente) {
 	cliente->tasaDeRespuesta = (cliente->tiempoDeEspera + cliente->estimacionProximaRafaga) / cliente->estimacionProximaRafaga;
+
+	printf(ANSI_COLOR_BOLDWHITE"ESI %d - Estimacion Proxima Rafaga: %f - Waiting Time: %d - RR: %f\n"ANSI_COLOR_RESET, cliente->identificadorESI, cliente->estimacionProximaRafaga, cliente->tiempoDeEspera, cliente->tasaDeRespuesta);
 }
 
 int esiEstaEjecutando(cliente* ESI) {

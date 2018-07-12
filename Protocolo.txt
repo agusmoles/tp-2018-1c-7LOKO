@@ -44,8 +44,6 @@ COD. OP
 
 El Planificador, luego de recibir una sentencia por parte del Coordinador, le devuelve a éste un 0 si el ESI se bloqueo, un 1 si se ejecuto con normalidad o un -1 si se aborto.
 
-El Planificador, luego de recibir una sentencia STORE además, envia al Coordinador un 1  si hay que mandarle a un ESI que se desbloqueo un OPOK para que siga ejecutando (junto con su ID) o un 0 si no.
-
 ------------------------------------- COMANDO STATUS -----------------------------------------
 
 El Coordinador tiene un servidor dedicado al manejo de este comando y el Planificador se conecta apenas inicia.

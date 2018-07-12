@@ -12,6 +12,6 @@ SET principal4 man-in-black
 GET principal1
 SET principal1 ford
 STORE principal4
+GET principal2
 SET principal2 billy
 STORE principal3
-STORE principal4
