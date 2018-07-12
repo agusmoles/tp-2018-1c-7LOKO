@@ -327,9 +327,11 @@ void recibirMensaje_Instancias(void* argumentos) {
 
 								free(headerComp);
 								break;
+
 							case 9: //TERMINO OK
 								log_info(logOperaciones, "ESI %d: OPERACION: STORE/SET ejecutada correctamente");
 								break;
+
 							case 10: // ERROR SET NO HAY SUFICIENTES ENTRADAS ATOMICAS
 								log_error(logger, ANSI_COLOR_BOLDRED"No hay suficientes entradas atomicas para reemplazar"ANSI_COLOR_RESET);
 								log_error(logOperaciones, "ESI %d: **Error: No hay suficientes entradas atomicas para reemplazar**", idEsiEjecutando);
@@ -438,10 +440,17 @@ void recibirMensajeStatus() {
 			}
 			log_info(logger, ANSI_COLOR_BOLDMAGENTA"Se recibio la clave (status): %s"ANSI_COLOR_RESET, clave);
 
+			actualizarVectorInstanciasConectadas();
 
 			/*Ahora envio instancia encargada */
 			if((instanciaEncargada = buscarInstanciaEncargada(clave)) < 0){
-				instanciaEncargada = seleccionEquitativeLoad();
+				if (strcmp(ALGORITMODEDISTRIBUCION, "EL") == 0) {
+					instanciaEncargada = seleccionEquitativeLoad();
+				} else if (strcmp(ALGORITMODEDISTRIBUCION, "LSU") == 0) {
+					instanciaEncargada = seleccionLeastSpaceUsed();
+				} else if (strcmp(ALGORITMODEDISTRIBUCION, "KE") == 0) {
+					instanciaEncargada = seleccionKeyExplicit(clave[0]);
+				}
 			}
 
 			/* Avisar a la instancia status */
@@ -904,7 +913,7 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave - tamanio_valor - valor"ANSI_COLOR_RESET);
 
-				/* Si la instancia solicita COMPACTAR */
+				/* Si la instancia solicita COMPACTAR/ERROR */
 				sem_post(&semaforo_instancia);
 
 				sem_wait(&semaforo_instanciaOK);
@@ -971,7 +980,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				sem_post(&mutexVectorInstanciasConectadas);
 
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron correctamente a la instancia: header - clave "ANSI_COLOR_RESET);
-
 
 				/* Si hubo error de clave reemplazada*/
 				sem_post(&semaforo_instancia);

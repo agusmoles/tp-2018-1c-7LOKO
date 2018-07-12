@@ -152,6 +152,13 @@ int buscarSocketPlanificador();
 int buscarSocketESI();
 int buscarSocketInstancia(int idInstancia);
 
+/* Algoritmos de distribucion */
+int seleccionEquitativeLoad();
+
+int seleccionLeastSpaceUsed();
+
+int seleccionKeyExplicit(char inicial);
+
 int verificarClaveTomada(int socket);
 
 cliente_t* buscarESI(int* IDESI);
