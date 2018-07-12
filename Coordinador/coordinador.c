@@ -453,22 +453,28 @@ void recibirMensajeStatus() {
 				}
 			}
 
-			/* Avisar a la instancia status */
-			headerStatus->codigoOperacion = 3;
-			headerStatus->tamanioClave = *tamanioClave;
-
 			if((socketInstancia = buscarSocketInstancia(instanciaEncargada))< 0){
 				_exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"No se encontro la instancia (status) "ANSI_COLOR_RESET);
 			}
 
-			enviarHeader(socketInstancia, headerStatus);
-			enviarClave(socketInstancia, clave);
-			log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron header y clave a la instancia"ANSI_COLOR_RESET);
+			if(verificarInstanciaConectada(instanciaEncargada) > 0){
+				/* Avisar a la instancia status */
+				headerStatus->codigoOperacion = 3;
+				headerStatus->tamanioClave = *tamanioClave;
 
-			/*Chequear si existe valor actual*/
-			sem_post(&semaforo_instancia);
+				enviarHeader(socketInstancia, headerStatus);
+				enviarClave(socketInstancia, clave);
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se enviaron header y clave a la instancia"ANSI_COLOR_RESET);
 
-			sem_wait(&semaforo_instanciaOK);
+				/*Chequear si existe valor actual*/
+				sem_post(&semaforo_instancia);
+
+				sem_wait(&semaforo_instanciaOK);
+			} else{
+
+				*tamanioValorStatus = -2;
+
+			}
 
 			/*Envio el tamanio valor*/
 			if(send(socketStatusPlanificador, tamanioValorStatus, sizeof(int), 0) < 0){
