@@ -19,5 +19,3 @@ cd parsi; sudo make install
 cd ..
 
 clear
-
-./pruebaMinima
