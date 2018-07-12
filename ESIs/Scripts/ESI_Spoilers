@@ -1,9 +1,10 @@
 GET spoiler1
 GET spoiler2
 SET spoiler1 era-el-padre-de-luke
-SET spoler2 tambien-esta-muerto
+SET spoiler2 tambien-esta-muerto
 STORE spoiler1
 GET spoiler3
+GET spoiler1
 SET spoiler1 y-de-leia
 SET spoiler1 de-chewie-no
 SET spoiler1 era-el-padre-de-luke
