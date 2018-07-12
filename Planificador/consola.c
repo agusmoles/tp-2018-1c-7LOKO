@@ -389,7 +389,15 @@ int com_status(char **args){
 			log_error(loggerConsola, ANSI_COLOR_BOLDRED"El valor se guardaria en la instancia %d"ANSI_COLOR_RESET, *instancia);
 		}
 
-		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave se guardaria en la instancia %d"ANSI_COLOR_RESET, *instancia);
+		log_error(loggerConsola, ANSI_COLOR_BOLDRED"El valor se guardaria en la instancia %d"ANSI_COLOR_RESET, *instancia);
+	} else if (*tamanioValor == -2) {
+		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La instancia donde estaba guardado el valor esta caida"ANSI_COLOR_RESET);
+
+		if (recv(socketStatus, instancia, sizeof(int), 0) < 0) {
+			log_error(loggerConsola, ANSI_COLOR_BOLDRED"El valor estaba guardado en la instancia %d"ANSI_COLOR_RESET, *instancia);
+		}
+
+		log_error(loggerConsola, ANSI_COLOR_BOLDRED"El valor estaba guardado en la instancia %d"ANSI_COLOR_RESET, *instancia);
 	} else {
 
 		bufferValor = malloc(*tamanioValor);

@@ -52,6 +52,6 @@ Cuando se ejecute el "status clave" en la consola, la secuencia va a ser:
 
 1. Planificador envia tamaño de clave
 2. Planificador envia clave
-3. Planificador recibe tamaño del valor almacenado y, en caso de no tenerlo, un -1
+3. Planificador recibe tamaño del valor almacenado. En caso de no tenerlo, un -1 y un -2 en caso de que la instancia donde el valor estaba almacenado esta caida.
 4. Si no lo tiene, solo manda en que instancia (un INT) se guardaria el valor (sin efecto en el algoritmo para el proximo guardado de valor)
 5. Si lo tiene, manda el valor y luego en que instancia esta guardado

@@ -88,7 +88,9 @@ void conectarConCoordinador(int socket) {
 		select(fdmax + 1, &descriptorCoordinador, NULL, NULL, NULL);
 
 		if (FD_ISSET(socket, &descriptorCoordinador)) {
+			sem_wait(&mutexOperaciones);
 			recibirInstruccion(socket);
+			sem_post(&mutexOperaciones);
 		}
 	}
 }
@@ -235,9 +237,7 @@ void recibirInstruccion(int socket){
 		bufferValor = malloc(*tamanioValor);
 		recibirValor(socket, tamanioValor, bufferValor);
 
-		sem_wait(&mutexOperaciones);
 		set(bufferClave, bufferValor);
-		sem_post(&mutexOperaciones);
 
 		mostrarStorage();
 
@@ -248,16 +248,13 @@ void recibirInstruccion(int socket){
 		/* Recibo clave */
 		recibirClave(socket, buffer_header, bufferClave);
 
-		sem_wait(&mutexOperaciones);
 		store(bufferClave);
-		sem_post(&mutexOperaciones);
 		break;
 	case 3: /* Status */
 		recibirClave(socket, buffer_header, bufferClave);
 
 		enviarHeader(socketCoordinador, 3, strlen(bufferClave) + 1);
 
-		sem_wait(&mutexOperaciones);
 		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL) {
 			valor = buscarEnStorage(entrada->numero);
 			*tamanioValorStatus = entrada->tamanio_valor;
@@ -277,7 +274,6 @@ void recibirInstruccion(int socket){
 			enviarTamanioValor(socket, tamanioValorStatus);
 			log_info(logger, "Se envio el tamanio del valor al coordinador");
 		}
-		sem_post(&mutexOperaciones);
 
 		break;
 	case 7: // SE DEBE COMPACTAR
@@ -833,9 +829,9 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 void dump() {
 	entrada_t* entrada;
 	while (1) {
-		sleep(INTERVALODUMP);
+		usleep(INTERVALODUMP);
 
-		mostrarTablaDeEntradas();
+//		mostrarTablaDeEntradas();
 
 		DUMP = 1;
 		sem_wait(&mutexOperaciones);
@@ -849,7 +845,7 @@ void dump() {
 		sem_post(&mutexOperaciones);
 		DUMP = 0;
 
-		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************"ANSI_COLOR_RESET);
+//		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************"ANSI_COLOR_RESET);
 	}
 }
 
