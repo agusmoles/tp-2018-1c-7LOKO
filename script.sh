@@ -18,10 +18,6 @@ cd parsi; sudo make install
 
 cd ..
 
-git clone https://github.com/sisoputnfrba/tp-2018-1c-7LOKO.git
-
-cd tp-2018-1c-7LOKO
-
 clear
 
 ./pruebaMinima
