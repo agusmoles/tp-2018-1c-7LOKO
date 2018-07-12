@@ -87,6 +87,7 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor);
 entrada_t* buscarEnTablaDeEntradas(char* clave);
 char* buscarEnStorage(int entrada);
 entrada_t* buscarEntrada(int numeroDeStorage, int* posicion);
+void enviarHeader(int socket, int codigoOP, int tamanioClave);
 void enviarHeaderOperacionOK();
 void enviarHeaderOperacionSETFail();
 void enviarTamanioValor(int socket, int* tamanioValor);

@@ -242,11 +242,15 @@ void recibirInstruccion(int socket){
 	case 3: /* Status */
 		recibirClave(socket, buffer_header, bufferClave);
 
+		enviarHeader(socketCoordinador, 3, -1);
+
 		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL && (valor = buscarEnStorage(entrada->numero)) != NULL){
 				*tamanioValorStatus = entrada->tamanio_valor;
 				valorStatus = malloc(*tamanioValorStatus);
-				memcpy(valorStatus, valor, entrada->tamanio_valor-1);		// NO TIENE \0
+				memcpy(valorStatus, valor, entrada->tamanio_valor);		// NO TIENE \0
 				valorStatus[entrada->tamanio_valor] = '\0';					// SE LO AGREGO
+
+				printf(ANSI_COLOR_BOLDWHITE"VALOR STATUS %s\n"ANSI_COLOR_RESET, valorStatus);
 
 				enviarTamanioValor(socket, tamanioValorStatus);
 				log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el tamanio del valor al coordinador"ANSI_COLOR_RESET);
@@ -284,6 +288,19 @@ void recibirInstruccion(int socket){
 	free(bufferClave);
 }
 
+void enviarHeader(int socket, int codigoOP, int tamanioClave) {
+	header_t* header = malloc(sizeof(header_t));
+
+	header->codigoOperacion = codigoOP;
+	header->tamanioClave = tamanioClave;
+
+	if (send(socket, header, sizeof(header_t), 0) < 0) {
+		_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header de operacion OK al Coordinador"ANSI_COLOR_RESET);
+	}
+
+	free(header);
+}
+
 void enviarHeaderOperacionOK() {
 	header_t* header = malloc(sizeof(header_t));
 
@@ -311,6 +328,7 @@ void enviarHeaderOperacionSETFail() {
 }
 
 void enviarTamanioValor(int socket, int* tamanioValor){
+	printf(ANSI_COLOR_BOLDWHITE"TAM VALOR: %d\n"ANSI_COLOR_RESET, *tamanioValor);
 	if (send(socket, tamanioValor, sizeof(int32_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
 	}
