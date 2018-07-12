@@ -242,26 +242,29 @@ void recibirInstruccion(int socket){
 	case 3: /* Status */
 		recibirClave(socket, buffer_header, bufferClave);
 
-		enviarHeader(socketCoordinador, 3, -1);
+		enviarHeader(socketCoordinador, 3, strlen(bufferClave) + 1);
 
-		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL && (valor = buscarEnStorage(entrada->numero)) != NULL){
-				*tamanioValorStatus = entrada->tamanio_valor;
-				valorStatus = malloc(*tamanioValorStatus);
-				memcpy(valorStatus, valor, entrada->tamanio_valor);		// NO TIENE \0
-				valorStatus[entrada->tamanio_valor] = '\0';					// SE LO AGREGO
+		sem_wait(&mutexOperaciones);
+		if((entrada = buscarEnTablaDeEntradas(bufferClave)) != NULL) {
+			valor = buscarEnStorage(entrada->numero);
+			*tamanioValorStatus = entrada->tamanio_valor;
+			valorStatus = malloc(*tamanioValorStatus);
+			memcpy(valorStatus, valor, entrada->tamanio_valor-1);		// NO TIENE \0
+			valorStatus[entrada->tamanio_valor] = '\0';					// SE LO AGREGO
 
-				printf(ANSI_COLOR_BOLDWHITE"VALOR STATUS %s\n"ANSI_COLOR_RESET, valorStatus);
+//			printf(ANSI_COLOR_BOLDWHITE"VALOR STATUS %s\n"ANSI_COLOR_RESET, valorStatus);
 
-				enviarTamanioValor(socket, tamanioValorStatus);
-				log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el tamanio del valor al coordinador"ANSI_COLOR_RESET);
-				enviarValor(socket, *tamanioValorStatus, valorStatus);
-				log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor al coordinador"ANSI_COLOR_RESET);
-				free(valorStatus);
-			}else{
-				*tamanioValorStatus = -1;
-				enviarTamanioValor(socket, tamanioValorStatus);
-				log_info(logger, "Se envio el tamanio del valor al coordinador");
+			enviarTamanioValor(socket, tamanioValorStatus);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el tamanio del valor al coordinador"ANSI_COLOR_RESET);
+			enviarValor(socket, *tamanioValorStatus, valorStatus);
+			log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor al coordinador"ANSI_COLOR_RESET);
+			free(valorStatus);
+		}else{
+			*tamanioValorStatus = -1;
+			enviarTamanioValor(socket, tamanioValorStatus);
+			log_info(logger, "Se envio el tamanio del valor al coordinador");
 		}
+		sem_post(&mutexOperaciones);
 
 		break;
 	case 7: // SE DEBE COMPACTAR
@@ -298,6 +301,8 @@ void enviarHeader(int socket, int codigoOP, int tamanioClave) {
 		_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header de operacion OK al Coordinador"ANSI_COLOR_RESET);
 	}
 
+//	printf(ANSI_COLOR_BOLDWHITE"ENVIO HEADER %d AL COORDINADOR\n"ANSI_COLOR_RESET, header->codigoOperacion);
+
 	free(header);
 }
 
@@ -310,6 +315,8 @@ void enviarHeaderOperacionOK() {
 	if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {
 		_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header de operacion OK al Coordinador"ANSI_COLOR_RESET);
 	}
+
+//	printf(ANSI_COLOR_BOLDWHITE"ENVIO HEADER %d AL COORDINADOR\n"ANSI_COLOR_RESET, header->codigoOperacion);
 
 	free(header);
 }
@@ -324,11 +331,12 @@ void enviarHeaderOperacionSETFail() {
 		_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header de operacion OK al Coordinador"ANSI_COLOR_RESET);
 	}
 
+//	printf(ANSI_COLOR_BOLDWHITE"ENVIO HEADER %d AL COORDINADOR\n"ANSI_COLOR_RESET, header->codigoOperacion);
+
 	free(header);
 }
 
 void enviarTamanioValor(int socket, int* tamanioValor){
-	printf(ANSI_COLOR_BOLDWHITE"TAM VALOR: %d\n"ANSI_COLOR_RESET, *tamanioValor);
 	if (send(socket, tamanioValor, sizeof(int32_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el tamanio del valor"ANSI_COLOR_RESET);
 	}
@@ -398,10 +406,6 @@ void set(char* clave, char* valor){
 					entrada->numero = posicion;
 
 					copiarValorAlStorage(entrada, valor, posicion);		// BAJO AL STORAGE EL VALOR
-
-					if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL SET POR LEVANTAR DE DISCO...
-						enviarHeaderOperacionOK();			// LE AVISO AL COORDINADOR QUE SALIO BIEN
-					}
 				}
 			}
 
@@ -468,10 +472,6 @@ void set(char* clave, char* valor){
 				entrada->numero = posicion;
 
 				copiarValorAlStorage(entrada, valor, posicion);
-
-				if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL SET POR LEVANTAR DE DISCO...
-					enviarHeaderOperacionOK();			// LE AVISO AL COORDINADOR QUE SALIO BIEN
-				}
 			}
 		}
 
@@ -558,6 +558,9 @@ int reemplazarSegunAlgoritmo(int espaciosNecesarios) {
 	} while(hayEspaciosNoContiguosPara(espaciosNecesarios) == 0);			// MIENTRAS QUE NO HAYA ESPACIOS (NO) CONTIGUOS, QUE SIGA LIBERANDO
 
 	if ((posicion = hayEspaciosContiguosPara(espaciosNecesarios)) >= 0) {	// SI YA ESTABAN CONTIGUOS, ENTONCES DEVUELVO
+		if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL SET POR LEVANTAR DE DISCO...
+			enviarHeaderOperacionOK();			// LE AVISO AL COORDINADOR QUE SALIO BIEN
+		}
 		return posicion;
 	} else {																// SINO, PRIMERO COMPACTO, ASIGNO Y DEVUELVO
 		compactar();
@@ -861,10 +864,6 @@ void compactar(){
 	char* storageCompactadoFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA);
 	char* storageCompactado;
 	entrada_t* entrada;
-	header_t* header = malloc(sizeof(header_t));
-
-	header->codigoOperacion = 7;		// CODIGO PARA QUE COMPACTEN
-	header->tamanioClave = -1;			// TAMANIO ABSURDO
 
 	for (int i=0; i<CANTIDADENTRADAS; i++) {
 		storageCompactado = storageCompactadoFijo + i * TAMANIOENTRADA;
@@ -899,12 +898,8 @@ void compactar(){
 	storageFijo = storageCompactadoFijo;
 
 	if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL COMPACTAR POR LEVANTAR DE DISCO...
-		if (send(socketCoordinador, header, sizeof(header_t), 0) < 0) {
-			_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header para que compacten"ANSI_COLOR_RESET);
-		}
+		enviarHeader(socketCoordinador, 7, -1);
 	}
-
-	free(header);
 }
 
 int comparadorNumeroEntrada(entrada_t* entrada, entrada_t* entrada2) {
