@@ -40,6 +40,8 @@ void setearConfigEnVariables() {
 	PUERTO = config_get_string_value(config, "Puerto Coordinador");
 	ALGORITMODEDISTRIBUCION = config_get_string_value(config, "Algoritmo de Distribución");
 	RETARDO = config_get_int_value(config, "Retardo");
+	CANTIDADENTRADAS = config_get_int_value(config, "Cantidad de Entradas");
+	TAMANIOENTRADA = config_get_int_value(config, "Tamanio de Entrada");
 }
 
 int conectarSocketYReservarPuerto() {
@@ -1070,6 +1072,16 @@ void aceptarCliente(int socket, cliente_t* socketCliente) {
 						break;
 
 				case 2: asignarNombreAlSocketCliente(&socketCliente[i], "Instancia");
+
+						/* Envio cantidad y tamaño de entradas */
+						if(send(socketCliente[i].fd, &TAMANIOENTRADA, sizeof(int), 0) < 0){
+							_exit_with_error(socketCliente[i].fd, "No se pudo enviar tamanio de entrada");
+						}
+
+						if(send(socketCliente[i].fd, &CANTIDADENTRADAS, sizeof(int), 0) < 0){
+							_exit_with_error(socketCliente[i].fd, "No se pudo enviar la cantidad de entradas");
+						}
+
 						identificadorInstancia = malloc(sizeof(int));
 
 						/* Recibir identificador de instancia */

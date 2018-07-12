@@ -24,8 +24,8 @@ void setearConfigEnVariables() {
 	PUNTOMONTAJE = config_get_string_value(config, "Punto de montaje");
 	NOMBREINSTANCIA = config_get_string_value(config, "Nombre de la Instancia");
 	INTERVALODUMP = config_get_int_value(config, "Intervalo de dump");
-	TAMANIOENTRADA = config_get_int_value(config, "Tamanio de Entrada");
-	CANTIDADENTRADAS  = config_get_int_value(config, "Cantidad de Entradas");
+	//TAMANIOENTRADA = config_get_int_value(config, "Tamanio de Entrada");
+	//CANTIDADENTRADAS  = config_get_int_value(config, "Cantidad de Entradas");
 	IDENTIFICADORINSTANCIA = config_get_int_value(config, "ID de Instancia");
 	sem_init(&mutexTablaDeEntradas, 0, 1);				// INICIALIZO EL SEMAFORO DEL MUTEX DE LA TABLA DE ENTRADAS
 	sem_init(&mutexOperaciones, 0, 1);
@@ -33,9 +33,9 @@ void setearConfigEnVariables() {
 	DUMP = 0;		// INICIALIZO QUE EL DUMP NO ESTA EN CURSO
 	LEVANTODEDISCO = 0;		// INICIALIZO QUE NO LEVANTO DE DISCO
 
-    storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
-    inicializarStorage();
-    storage = storageFijo; 			// SIEMPRE TOCAR EL STORAGE AUXILIAR (STORAGE), EL OTRO NO
+//    storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
+//    inicializarStorage();
+//    storage = storageFijo; 			// SIEMPRE TOCAR EL STORAGE AUXILIAR (STORAGE), EL OTRO NO
 }
 
 void inicializarStorage() {
@@ -121,6 +121,19 @@ void envioIdentificador(int socket) {
 	if (send(socket, identificador, strlen(identificador)+1, 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el identificador"ANSI_COLOR_RESET);
 	}
+
+	/* Recibir cantidad y tamaño de entradas */
+	if(recv(socket, &TAMANIOENTRADA, sizeof(int), 0) < 0){
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir el tamanio de entrada"ANSI_COLOR_RESET);
+	}
+
+	if(recv(socket, &CANTIDADENTRADAS, sizeof(int), 0) < 0){
+		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo recibir la cantidad de entradas"ANSI_COLOR_RESET);
+	}
+
+	storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
+	inicializarStorage();
+	storage = storageFijo; 			// SIEMPRE TOCAR EL STORAGE AUXILIAR (STORAGE), EL OTRO NO
 
 	if (send(socket, &IDENTIFICADORINSTANCIA, sizeof(int), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar ID de Instancia"ANSI_COLOR_RESET);
