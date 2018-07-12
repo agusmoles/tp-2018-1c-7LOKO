@@ -389,7 +389,7 @@ int com_status(char **args){
 			log_error(loggerConsola, ANSI_COLOR_BOLDRED"El valor se guardaria en la instancia %d"ANSI_COLOR_RESET, *instancia);
 		}
 
-
+		log_error(loggerConsola, ANSI_COLOR_BOLDRED"La clave se guardaria en la instancia %d"ANSI_COLOR_RESET, *instancia);
 	} else {
 
 		bufferValor = malloc(*tamanioValor);
@@ -398,7 +398,7 @@ int com_status(char **args){
 			_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir el valor en status"ANSI_COLOR_RESET);
 		}
 
-		log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"El valor de la clave %s es %s"ANSI_COLOR_RESET, args[1], bufferValor);
+		log_info(loggerConsola, ANSI_COLOR_BOLDMAGENTA"El valor de la clave %s es %.*s"ANSI_COLOR_RESET, args[1], *tamanioValor-1, bufferValor);
 
 		if (recv(socketStatus, instancia, sizeof(int), 0) < 0) {
 			_exit_with_error(ANSI_COLOR_BOLDRED"No se pudo recibir la instancia en status"ANSI_COLOR_RESET);

@@ -328,7 +328,7 @@ void recibirMensaje_Instancias(void* argumentos) {
 								free(headerComp);
 								break;
 							case 9: //TERMINO OK
-								log_info(logOperaciones, "ESI %d: OPERACION: STORE/SET ejecutada correctamente");
+								log_info(logOperaciones, "ESI %d: OPERACION: STORE/SET ejecutada correctamente", idEsiEjecutando);
 								break;
 							case 10: // ERROR SET NO HAY SUFICIENTES ENTRADAS ATOMICAS
 								log_error(logger, ANSI_COLOR_BOLDRED"No hay suficientes entradas atomicas para reemplazar"ANSI_COLOR_RESET);
@@ -473,7 +473,7 @@ void recibirMensajeStatus() {
 					_exit_with_error(socketStatusPlanificador, ANSI_COLOR_BOLDRED"No se pudo enviar el valor (status) "ANSI_COLOR_RESET);
 				}
 
-				log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %s al planificador"ANSI_COLOR_RESET, valorStatus);
+				log_info(logger, ANSI_COLOR_BOLDGREEN"Se envio el valor %.*s al planificador"ANSI_COLOR_RESET, *tamanioValorStatus-1, valorStatus);
 			}
 
 			if(send(socketStatusPlanificador, &instanciaEncargada, sizeof(int), 0) < 0){
