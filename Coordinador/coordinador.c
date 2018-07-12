@@ -374,8 +374,8 @@ void recibirMensaje_Planificador(void* argumentos) {
 			sem_post(&mutexEsiEjecutando);
 			int resultado = verificarClaveTomada(args->socketCliente.fd);
 
+//			printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI %d: %d\n"ANSI_COLOR_RESET, idEsiEjecutando, socketESI);
 			if(resultado == 0){
-				printf(ANSI_COLOR_BOLDWHITE"SOCKET ESI %d: %d\n"ANSI_COLOR_RESET, idEsiEjecutando, socketESI);
 				log_error(logger, ANSI_COLOR_BOLDRED"Error GET - SET - STORE (Clave no tomada por el ESI) "ANSI_COLOR_RESET);
 				log_error(logOperaciones, "ESI %d: **Error: Clave no bloqueada**", idEsiEjecutando);
 				enviarMensaje(socketESI, "OPBL");
