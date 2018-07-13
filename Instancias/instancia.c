@@ -283,6 +283,9 @@ void recibirInstruccion(int socket){
 		entradasLibresCoordinador = malloc(sizeof(int));
 
 		*entradasLibresCoordinador = entradasLibres();
+
+		enviarHeader(socketCoordinador, 8, -1);
+
 		if (send(socket, entradasLibresCoordinador, sizeof(int), 0) < 0) {
 			_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la cantidad de entradas libres"ANSI_COLOR_RESET);
 		}
