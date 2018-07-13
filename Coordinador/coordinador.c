@@ -626,9 +626,7 @@ int seleccionLeastSpaceUsed(){
 
 	int maximo = entradasLibresPorInstancia[0];
 
-	sem_wait(&mutexVectorInstanciasConectadas);
 	int instanciaSeleccionada = v_instanciasConectadas[0].identificadorInstancia;
-	sem_post(&mutexVectorInstanciasConectadas);
 
 	/*Busco la que tenga mas entradas libres*/
 	for(int j=0; j<cantidadInstanciasConectadas; j++){
