@@ -829,9 +829,9 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 void dump() {
 	entrada_t* entrada;
 	while (1) {
-		usleep(INTERVALODUMP);
+		sleep(INTERVALODUMP);
 
-//		mostrarTablaDeEntradas();
+		mostrarTablaDeEntradas();
 
 		DUMP = 1;
 		sem_wait(&mutexOperaciones);
@@ -845,7 +845,7 @@ void dump() {
 		sem_post(&mutexOperaciones);
 		DUMP = 0;
 
-//		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************"ANSI_COLOR_RESET);
+		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************"ANSI_COLOR_RESET);
 	}
 }
 
@@ -909,6 +909,8 @@ void compactar(){
 	if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL COMPACTAR POR LEVANTAR DE DISCO...
 		enviarHeader(socketCoordinador, 7, -1);
 	}
+
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"La compactacion termino"ANSI_COLOR_RESET);
 }
 
 int comparadorNumeroEntrada(entrada_t* entrada, entrada_t* entrada2) {
