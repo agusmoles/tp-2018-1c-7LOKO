@@ -909,6 +909,8 @@ void compactar(){
 	if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL COMPACTAR POR LEVANTAR DE DISCO...
 		enviarHeader(socketCoordinador, 7, -1);
 	}
+
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"La compactacion termino"ANSI_COLOR_RESET);
 }
 
 int comparadorNumeroEntrada(entrada_t* entrada, entrada_t* entrada2) {
