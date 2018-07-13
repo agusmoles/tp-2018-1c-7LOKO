@@ -611,7 +611,6 @@ int seleccionLeastSpaceUsed(){
 	header->codigoOperacion = 8;
 	for(int i=0; i<cantidadInstanciasConectadas; i++){
 
-		sem_wait(&mutexVectorInstanciasConectadas);
 		enviarHeader(v_instanciasConectadas[i].fd, header);
 
 		if(recv(v_instanciasConectadas[i].fd, entradasLibres, sizeof(int), 0) < 0){
@@ -619,8 +618,6 @@ int seleccionLeastSpaceUsed(){
 		}
 
 		log_info(logger, "Entradas libres instancia %d: %d", v_instanciasConectadas[i].identificadorInstancia, *entradasLibres);
-		sem_post(&mutexVectorInstanciasConectadas);
-
 		entradasLibresPorInstancia[i] = *entradasLibres;
 	}
 
@@ -629,9 +626,7 @@ int seleccionLeastSpaceUsed(){
 
 	int maximo = entradasLibresPorInstancia[0];
 
-	sem_wait(&mutexVectorInstanciasConectadas);
 	int instanciaSeleccionada = v_instanciasConectadas[0].identificadorInstancia;
-	sem_post(&mutexVectorInstanciasConectadas);
 
 	/*Busco la que tenga mas entradas libres*/
 	for(int j=0; j<cantidadInstanciasConectadas; j++){
