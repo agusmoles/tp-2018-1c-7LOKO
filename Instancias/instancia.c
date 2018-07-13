@@ -829,9 +829,9 @@ void recibirValor(int socket, int32_t* tamanioValor, char* bufferValor){
 void dump() {
 	entrada_t* entrada;
 	while (1) {
-		usleep(INTERVALODUMP);
+		sleep(INTERVALODUMP);
 
-//		mostrarTablaDeEntradas();
+		mostrarTablaDeEntradas();
 
 		DUMP = 1;
 		sem_wait(&mutexOperaciones);
@@ -845,7 +845,7 @@ void dump() {
 		sem_post(&mutexOperaciones);
 		DUMP = 0;
 
-//		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************"ANSI_COLOR_RESET);
+		log_info(logger, ANSI_COLOR_BOLDYELLOW"*********** TERMINO EL DUMP *************"ANSI_COLOR_RESET);
 	}
 }
 
