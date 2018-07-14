@@ -64,6 +64,7 @@ sem_t semaforo_instanciaOK;
 sem_t mutexEsiEjecutando;
 sem_t mutexVectorInstanciasConectadas;
 sem_t mutexOperacionEsi;
+sem_t mutexEntradasLibres;
 
 int listenSocketStatus;
 

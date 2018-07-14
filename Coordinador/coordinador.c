@@ -7,6 +7,7 @@ int cantidadInstanciasConectadas = 0;
 int idEsiEjecutando = 0;
 int* tamanioValorStatus;
 char* valorStatus;
+int *entradasLibres;
 
 /* Funciones de conexion */
 void _exit_with_error(int socket, char* mensaje) {
@@ -330,6 +331,13 @@ void recibirMensaje_Instancias(void* argumentos) {
 								free(headerComp);
 								break;
 
+							case 8: //ENTRADAS LIBRES
+								entradasLibres = malloc(sizeof(int));
+
+								if(recv(args->socketCliente.fd, entradasLibres, sizeof(int), 0) < 0){
+									_exit_with_error(args->socket, ANSI_COLOR_BOLDRED"No se recibieron las entradas libres"ANSI_COLOR_RESET);
+								}
+								break;
 							case 9: //TERMINO OK
 								log_info(logOperaciones, "ESI %d: OPERACION: STORE/SET ejecutada correctamente", idEsiEjecutando);
 								break;
@@ -601,7 +609,6 @@ int seleccionEquitativeLoad(){
 
 int seleccionLeastSpaceUsed(){
 	int entradasLibresPorInstancia[cantidadInstanciasConectadas];
-	int *entradasLibres = malloc(sizeof(int));
 	header_t* header = malloc(sizeof(header_t));
 
 	for(int h=0; h<cantidadInstanciasConectadas; h++){
@@ -609,20 +616,22 @@ int seleccionLeastSpaceUsed(){
 	}
 
 	header->codigoOperacion = 8;
+	header->tamanioClave = -1;
+
 	for(int i=0; i<cantidadInstanciasConectadas; i++){
+		log_info(logger, "FD Instancia: %d", v_instanciasConectadas[i].fd);
 
 		enviarHeader(v_instanciasConectadas[i].fd, header);
 
-		if(recv(v_instanciasConectadas[i].fd, entradasLibres, sizeof(int), 0) < 0){
-			_exit_with_error(v_instanciasConectadas[i].fd, ANSI_COLOR_BOLDRED"No se recibieron las entradas libres"ANSI_COLOR_RESET);
-		}
+		sem_post(&semaforo_instancia);
+		sem_wait(&semaforo_instanciaOK);
 
+		sem_wait(&mutexEntradasLibres);
 		log_info(logger, "Entradas libres instancia %d: %d", v_instanciasConectadas[i].identificadorInstancia, *entradasLibres);
 		entradasLibresPorInstancia[i] = *entradasLibres;
+		sem_post(&mutexEntradasLibres);
 	}
-
 	free(header);
-	free(entradasLibres);
 
 	int maximo = entradasLibresPorInstancia[0];
 
@@ -1342,6 +1351,7 @@ int main(void) {
 	sem_init(&semaforo_instancia, 0, 0);
 	sem_init(&semaforo_instanciaOK, 0,0);
 	sem_init(&mutexOperacionEsi, 0,1);
+	sem_init(&mutexEntradasLibres, 0, 1);
 
 	while(1) {
 		aceptarCliente(listenSocket, socketCliente);
