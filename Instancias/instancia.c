@@ -32,6 +32,7 @@ void setearConfigEnVariables() {
 	STORAGEAPUNTADO = 0;		// LA INICIALIZO
 	DUMP = 0;		// INICIALIZO QUE EL DUMP NO ESTA EN CURSO
 	LEVANTODEDISCO = 0;		// INICIALIZO QUE NO LEVANTO DE DISCO
+	COMPACTARPORPEDIDO = 0;	// INICIALIZO QUE NO COMPACTO POR PEDIDO
 
 //    storageFijo = malloc(CANTIDADENTRADAS * TAMANIOENTRADA); // CREO VECTOR
 //    inicializarStorage();
@@ -277,7 +278,9 @@ void recibirInstruccion(int socket){
 
 		break;
 	case 7: // SE DEBE COMPACTAR
+		COMPACTARPORPEDIDO = 1;
 		compactar();
+		COMPACTARPORPEDIDO = 0;
 		break;
 	case 8: /* NOTIFICAR ENTRADAS LIBRES */
 		entradasLibresCoordinador = malloc(sizeof(int));
@@ -728,7 +731,7 @@ void store(char* clave){
 		}
 
 		if((fd = open(directorioMontaje, O_CREAT | O_RDWR , S_IRWXU )) < 0){
-			log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open "ANSI_COLOR_RESET);
+			log_error(logger, ANSI_COLOR_BOLDRED"No se pudo realizar el open por path inexistente"ANSI_COLOR_RESET);
 		}
 
 		size_t tamanio = entrada->tamanio_valor;
@@ -911,7 +914,7 @@ void compactar(){
 	free(storageFijo);
 	storageFijo = storageCompactadoFijo;
 
-	if (!LEVANTODEDISCO) {				// SI ES QUE NO HAGO EL COMPACTAR POR LEVANTAR DE DISCO...
+	if (!LEVANTODEDISCO && !COMPACTARPORPEDIDO) {				// SI ES QUE NO HAGO EL COMPACTAR POR LEVANTAR DE DISCO NI POR PEDIDO...
 		enviarHeader(socketCoordinador, 7, -1);
 	}
 

@@ -35,6 +35,7 @@ int STORAGEAPUNTADO;
 int DUMP;
 int socketCoordinador;
 int LEVANTODEDISCO;
+int COMPACTARPORPEDIDO;
 
 sem_t mutexTablaDeEntradas;
 sem_t mutexOperaciones;
