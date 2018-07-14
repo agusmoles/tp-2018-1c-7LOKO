@@ -597,12 +597,12 @@ int seleccionEquitativeLoad(){
 		if(instanciaSiguiente < cantidadInstanciasConectadas){
 			sem_wait(&mutexInstanciaSiguiente);
 			instanciaSiguiente++;
-			sem_wait(&mutexInstanciaSiguiente);
+			sem_post(&mutexInstanciaSiguiente);
 			return v_instanciasConectadas[(instanciaSiguiente-1)].identificadorInstancia;
 		}else {
 			sem_wait(&mutexInstanciaSiguiente);
 			instanciaSiguiente = 1;
-			sem_wait(&mutexInstanciaSiguiente);
+			sem_post(&mutexInstanciaSiguiente);
 			return v_instanciasConectadas[(instanciaSiguiente -1 )].identificadorInstancia;
 		}
 
