@@ -619,8 +619,6 @@ int seleccionLeastSpaceUsed(){
 	header->tamanioClave = -1;
 
 	for(int i=0; i<cantidadInstanciasConectadas; i++){
-		log_info(logger, "FD Instancia: %d", v_instanciasConectadas[i].fd);
-
 		enviarHeader(v_instanciasConectadas[i].fd, header);
 
 		sem_post(&semaforo_instancia);
@@ -630,6 +628,8 @@ int seleccionLeastSpaceUsed(){
 		log_info(logger, "Entradas libres instancia %d: %d", v_instanciasConectadas[i].identificadorInstancia, *entradasLibres);
 		entradasLibresPorInstancia[i] = *entradasLibres;
 		sem_post(&mutexEntradasLibres);
+
+		free(entradasLibres);
 	}
 	free(header);
 
@@ -733,6 +733,7 @@ void enviarHeader(int socket, header_t* header) {
 	if (send(socket, header, sizeof(header_t), 0) < 0) {
 		_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar el header"ANSI_COLOR_RESET);
 	}
+	log_info(logger, ANSI_COLOR_BOLDYELLOW"Envie header %d"ANSI_COLOR_RESET, header->codigoOperacion);
 }
 
 void enviarClave(int socket, char* clave) {
@@ -890,7 +891,6 @@ void tratarSegunOperacion(header_t* header, cliente_t* socketESI, int socketPlan
 				setearInstancia(bufferClave, instanciaEncargada);
 			}
 			printf(ANSI_COLOR_BOLDCYAN"-> La sentencia sera tratada por la Instancia %d \n"ANSI_COLOR_RESET, instanciaEncargada);
-			//actualizarVectorInstanciasConectadas();
 
 			/* Verificar que este conectada la instancia -> sino notificar al Planificador */
 			if(verificarInstanciaConectada(instanciaEncargada) < 0){

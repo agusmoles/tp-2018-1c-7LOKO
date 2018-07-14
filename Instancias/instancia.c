@@ -290,6 +290,8 @@ void recibirInstruccion(int socket){
 			_exit_with_error(socket, ANSI_COLOR_BOLDRED"No se pudo enviar la cantidad de entradas libres"ANSI_COLOR_RESET);
 		}
 
+		log_info(logger,ANSI_COLOR_BOLDYELLOW"Entradas libres: %d"ANSI_COLOR_RESET, *entradasLibresCoordinador);
+
 		free(entradasLibresCoordinador);
 		break;
 	default:
@@ -313,7 +315,7 @@ void enviarHeader(int socket, int codigoOP, int tamanioClave) {
 		_exit_with_error(socketCoordinador, ANSI_COLOR_BOLDRED"No se pudo enviar el header de operacion OK al Coordinador"ANSI_COLOR_RESET);
 	}
 
-//	printf(ANSI_COLOR_BOLDWHITE"ENVIO HEADER %d AL COORDINADOR\n"ANSI_COLOR_RESET, header->codigoOperacion);
+	printf(ANSI_COLOR_BOLDWHITE"ENVIO HEADER %d AL COORDINADOR\n"ANSI_COLOR_RESET, header->codigoOperacion);
 
 	free(header);
 }
