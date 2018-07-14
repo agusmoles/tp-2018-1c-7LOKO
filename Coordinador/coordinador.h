@@ -65,6 +65,7 @@ sem_t mutexEsiEjecutando;
 sem_t mutexVectorInstanciasConectadas;
 sem_t mutexOperacionEsi;
 sem_t mutexEntradasLibres;
+sem_t mutexInstanciaSiguiente;
 
 int listenSocketStatus;
 
