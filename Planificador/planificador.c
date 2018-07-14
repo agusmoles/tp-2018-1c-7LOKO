@@ -404,6 +404,7 @@ void bloquearESI(char* clave, int* IDESI) {
 		ESI->rafagaActual++;			// CREO QUE AUNQUE SE HAYA BLOQUEADO CUENTA COMO UNA RAFAGA, ENTONCES ANTES DE SETEAR LAS VARIABLES LE SUMO UNO
 		ESI->estimacionProximaRafaga = (alfaPlanificacion / 100) * ESI->rafagaActual + (1 - (alfaPlanificacion / 100) ) * ESI->estimacionRafagaActual;
 		ESI->estimacionRafagaActual = ESI->estimacionProximaRafaga;		// AHORA LA RAFAGA ANTERIOR PASA A SER LA ESTIMADA PORQUE SE DESALOJO
+		ESI->tasaDeRespuesta = (ESI->tiempoDeEspera + ESI->estimacionProximaRafaga) / ESI->estimacionProximaRafaga;
 
 		sem_wait(&mutexListos);
 		list_iterate(listos, (void *) sumarUnoAlWaitingTime);
