@@ -595,10 +595,14 @@ int seleccionEquitativeLoad(){
 	if (verificarSiExistenInstanciasConectadas() > 0){
 
 		if(instanciaSiguiente < cantidadInstanciasConectadas){
+			sem_wait(&mutexInstanciaSiguiente);
 			instanciaSiguiente++;
+			sem_wait(&mutexInstanciaSiguiente);
 			return v_instanciasConectadas[(instanciaSiguiente-1)].identificadorInstancia;
 		}else {
+			sem_wait(&mutexInstanciaSiguiente);
 			instanciaSiguiente = 1;
+			sem_wait(&mutexInstanciaSiguiente);
 			return v_instanciasConectadas[(instanciaSiguiente -1 )].identificadorInstancia;
 		}
 
@@ -633,9 +637,8 @@ int seleccionLeastSpaceUsed(){
 	}
 	free(header);
 
-	int maximo = entradasLibresPorInstancia[0];
-
-	int instanciaSeleccionada = v_instanciasConectadas[0].identificadorInstancia;
+	int maximo = -1;
+	int instanciaSeleccionada;
 
 	/*Busco la que tenga mas entradas libres*/
 	for(int j=0; j<cantidadInstanciasConectadas; j++){
@@ -1352,6 +1355,8 @@ int main(void) {
 	sem_init(&semaforo_instanciaOK, 0,0);
 	sem_init(&mutexOperacionEsi, 0,1);
 	sem_init(&mutexEntradasLibres, 0, 1);
+	sem_init(&mutexInstanciaSiguiente, 0, 1);
+
 
 	while(1) {
 		aceptarCliente(listenSocket, socketCliente);
